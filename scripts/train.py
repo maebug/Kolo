@@ -76,9 +76,7 @@ def formatting_prompts_func(examples, tokenizer):
              for convo in convos]
     # Tokenize the texts.
     tokenized_texts = tokenizer(texts, padding=False, truncation=True, add_special_tokens=False)
-    return {"text": tokenized_texts["input_ids"]}
-
-
+    return {"text": texts, "input_ids": tokenized_texts["input_ids"]}
 
 def main():
     args = parse_arguments()
@@ -143,7 +141,7 @@ def main():
         model=model,
         tokenizer=tokenizer,
         train_dataset=dataset,
-        dataset_text_field="text",
+        dataset_text_field="input_ids",
         max_seq_length=args.max_seq_length,
         dataset_num_proc=2,
         packing=False,
@@ -154,15 +152,15 @@ def main():
     trainer_stats = trainer.train(resume_from_checkpoint=False)
 
     # Save the fine-tuned model and tokenizer.
-    print("💾 Saving fine-tuned model locally...")
+    print("Saving fine-tuned model locally...")
     model.save_pretrained(volume_output_dir)
     tokenizer.save_pretrained(volume_output_dir)
 
     # Save the model in GGUF format for deployment.
     #gguf_output_path = os.path.join("lora_gguf", "model_gguf")
-    print(f"💾 Saving fine-tuned model in GGUF format to {volume_output_dir}...")
+    print(f"Saving fine-tuned model in GGUF format to {volume_output_dir}...")
     model.save_pretrained_gguf(volume_output_dir, tokenizer, quantization_method="q4_k_m")
-    print("✅ Model saved successfully!")
+    print("Model saved successfully!")
 
 
 if __name__ == "__main__":

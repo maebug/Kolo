@@ -92,5 +92,8 @@ RUN git clone https://github.com/ggerganov/llama.cpp && \
 
 RUN mv llama.cpp/build/bin/llama-quantize llama.cpp/
 
+# Copy scripts
+COPY scripts /app/scripts/
+
 # Set the entrypoint to start supervisord
 CMD ["/usr/bin/supervisord"]
