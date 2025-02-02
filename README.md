@@ -21,9 +21,9 @@ Kolo is built using a powerful stack of LLM tools:
 
 ## System Requirements
 
-Windows 10 OS or higher.
-Nvidia GPU with CUDA 12.1 capability and 8GB+ of VRAM
-32GB+ System RAM
+- Windows 10 OS or higher.
+- Nvidia GPU with CUDA 12.1 capability and 8GB+ of VRAM
+- 32GB+ System RAM
 
 ## 🏃 Getting Started
 
