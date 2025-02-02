@@ -5,6 +5,3 @@ $ErrorActionPreference = "Stop"
 Write-Host "Building Docker image..."
 docker build --no-cache -t kolo .
 
-# Run the container
-Write-Host "Running Docker container..."
-docker run -it --rm kolo
