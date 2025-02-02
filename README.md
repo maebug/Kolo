@@ -25,6 +25,10 @@ Kolo is built using a powerful stack of LLM tools:
 - Nvidia GPU with CUDA 12.1 capability and 8GB+ of VRAM
 - 32GB+ System RAM
 
+### Issues or Feedback
+
+Join our [Discord group](https://discord.gg/Ewe4hf5x3n)!
+
 ## 🏃 Getting Started
 
 ### 1️⃣ Install Dependencies
@@ -121,7 +125,3 @@ Connection Details:
 - Password: 123
 
 This setup ensures you can easily transfer files between your local machine and the container.
-
-### Issues and Feedback
-
-Join our [Discord group](https://discord.gg/Ewe4hf5x3n)!
