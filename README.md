@@ -33,11 +33,11 @@ Ensure [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) is install
 
 ### 3️⃣ Run the Container
 
-If running for first time.
+If running for first time:
 
 `./create_and_run_container.ps1`
 
-any subsequent runs use
+For subsequent runs:
 
 `./run_container.ps1`
 
@@ -55,4 +55,32 @@ any subsequent runs use
 
 ### 7️⃣ Test Model
 
-Navigate to [localhost:8080](http://localhost:8080/)
+Open your browser and navigate to [localhost:8080](http://localhost:8080/)
+
+## 🔧 Advanced Users
+
+### SSH Access
+
+To quickly SSH into the Kolo container for installing additional libraries or running scripts:
+
+`./connect.ps1`
+
+If prompted for a password, use:
+
+`password 123`
+
+Alternatively, you can connect manually via SSH:
+
+`ssh root@localhost -p 2222`
+
+### WinSCP (SFTP Access)
+
+You can use [WinSCP](https://winscp.net/eng/index.php) or any other SFTP file manager to access the Kolo container’s file system. This allows you to manage, modify, add, or remove scripts and files easily.
+
+Connection Details:
+
+Host: localhost
+Port: 2222
+Username: root
+Password: 123
+This setup ensures you can easily transfer files between your local machine and the container.
