@@ -19,6 +19,12 @@ Kolo is built using a powerful stack of LLM tools:
 - [Docker](https://www.docker.com/) – Containerized environment for easy deployment.
 - [Open WebUI](https://github.com/open-webui/open-webui) – Feature-rich and user-friendly self-hosted LLM web interface.
 
+## System Requirements
+
+Windows 10 OS or higher.
+Nvidia GPU with CUDA 12.1 capability and 8GB+ of VRAM
+32GB+ System RAM
+
 ## 🏃 Getting Started
 
 ### 1️⃣ Install Dependencies
@@ -29,29 +35,41 @@ Ensure [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) is install
 
 ### 2️⃣ Build the Image
 
-`./build_image.ps1`
+```bash
+./build_image.ps1
+```
 
 ### 3️⃣ Run the Container
 
 If running for first time:
 
-`./create_and_run_container.ps1`
+```bash
+./create_and_run_container.ps1
+```
 
 For subsequent runs:
 
-`./run_container.ps1`
+```bash
+./run_container.ps1
+```
 
 ### 4️⃣ Copy Training Data
 
-`./copy_training_data.ps1 -f examples/data.jsonl`
+```bash
+./copy_training_data.ps1 -f examples/God.jsonl
+```
 
 ### 5️⃣ Train Model
 
-`./train.ps1`
+```bash
+./train_model.ps1
+```
 
 ### 6️⃣ Run Model
 
-`./run_model.ps1 {name}`
+```bash
+./run_model.ps1 God
+```
 
 ### 7️⃣ Test Model
 
@@ -61,25 +79,35 @@ Open your browser and navigate to [localhost:8080](http://localhost:8080/)
 
 ### SSH Access
 
-To quickly SSH into the Kolo container for installing additional libraries or running scripts:
+To quickly SSH into the Kolo container for installing additional tools or running scripts directly:
 
-`./connect.ps1`
+```bash
+./connect.ps1
+```
 
 If prompted for a password, use:
 
-`password 123`
+```bash
+password 123
+```
 
 Alternatively, you can connect manually via SSH:
 
-`ssh root@localhost -p 2222`
+```bash
+ssh root@localhost -p 2222`
+```
 
 Navigate to
 
-`cd /app/`
+```bash
+cd /app/
+```
 
 Run training script ( make sure you copied over your training data )
 
-`python train.py --epochs 3 --learning_rate 1e-4 --train_data "data.jsonl" --base_model "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" --chat_template "llama-3.1" --r 16 --lora_alpha 16 --lora_dropout 0 --max_seq_length 1024 --warmup_steps 10 --save_steps 500 --save_total_limit 5 --seed 1337 --scheduler_type linear --output_dir outputs`
+```bash
+python train.py --epochs 3 --learning_rate 1e-4 --train_data "data.jsonl" --base_model "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" --chat_template "llama-3.1" --lora_rank 16 --lora_alpha 16 --lora_dropout 0 --max_seq_length 1024 --warmup_steps 10 --save_steps 500 --save_total_limit 5 --seed 1337 --scheduler_type linear --output_dir outputs
+```
 
 ### WinSCP (SFTP Access)
 

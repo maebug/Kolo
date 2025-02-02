@@ -52,7 +52,7 @@ RUN /opt/conda/bin/conda create -y --name openwebui_env python=3.11
 SHELL ["/opt/conda/bin/conda", "run", "-n", "openwebui_env", "/bin/bash", "-c"]
 
 #Install Open-webui
-RUN pip install git+https://github.com/open-webui/open-webui.git
+RUN pip install git+https://github.com/open-webui/open-webui.git@b72150c881955721a63ae7f4ea1b9ea293816fc1
 
 SHELL ["/bin/bash", "-c"]
 

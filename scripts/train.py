@@ -8,7 +8,7 @@ Description:
         --train_data         Path to the training data file
         --base_model         Base model path or identifier
         --chat_template      Chat template identifier for tokenization
-        --r                  LoRA rank parameter
+        --lora_rank                 LoRA rank parameter
         --lora_alpha         LoRA alpha parameter
         --lora_dropout       LoRA dropout probability
         --max_seq_length     Maximum sequence length
@@ -38,14 +38,14 @@ def parse_arguments():
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate for training.")
     parser.add_argument("--base_model", type=str, default="unsloth/Llama-3.2-1B-Instruct-bnb-4bit", help="Base model path or identifier.")
     parser.add_argument("--chat_template", type=str, default="llama-3.1", help="Chat template identifier for tokenization.")
-    parser.add_argument("--r", type=int, default=16, help="LoRA rank parameter.")
+    parser.add_argument("--lora_rank", type=int, default=16, help="LoRA rank parameter.")
     parser.add_argument("--lora_alpha", type=int, default=16, help="LoRA alpha parameter.")
     parser.add_argument("--lora_dropout", type=float, default=0.0, help="LoRA dropout probability.")
     parser.add_argument("--max_seq_length", type=int, default=1024, help="Maximum sequence length.")
     parser.add_argument("--warmup_steps", type=int, default=20, help="Number of warmup steps.")
     parser.add_argument("--save_steps", type=int, default=500, help="Save checkpoint every N steps.")
     parser.add_argument("--save_total_limit", type=int, default=5, help="Maximum number of checkpoints to save.")
-    parser.add_argument("--seed", type=int, default=3407, help="Random seed.")
+    parser.add_argument("--seed", type=int, default=1337, help="Random seed.")
     parser.add_argument("--scheduler_type", type=str, default="linear", help="Learning rate scheduler type.")
     parser.add_argument("--output_dir", type=str, default="outputs", help="Output directory for training results.")
 
@@ -86,7 +86,7 @@ def main():
     # Convert the base model to PEFT LoRA format.
     model = FastLanguageModel.get_peft_model(
         model,
-        r=args.r,
+        r=args.lora_rank,
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
                         "gate_proj", "up_proj", "down_proj"],
         lora_alpha=args.lora_alpha,
