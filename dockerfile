@@ -15,4 +15,4 @@ COPY build_tools.sh /build_tools.sh
 RUN chmod +x /build_tools.sh
 
 # Start the build script in the background and then start an interactive shell
-CMD /build_tools.sh & exec /bin/bash
+CMD /build_tools.sh > /dev/null 2>&1 & exec /bin/bash
