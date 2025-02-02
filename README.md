@@ -21,9 +21,11 @@ Kolo is built using a powerful stack of LLM tools:
 
 ## 🏃 Getting Started
 
-### 1️⃣ Install Docker
+### 1️⃣ Install Dependencies
 
 Ensure [Docker](https://docs.docker.com/get-docker/) is installed on your system.
+
+Ensure [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) is installed on your windows machine.
 
 ### 2️⃣ Build the Image
 
@@ -41,12 +43,24 @@ Ensure [Docker](https://docs.docker.com/get-docker/) is installed on your system
 
 ### 5️⃣ Copy over your JSONL dataset
 
+docker cp /path/to/local/file container_id:/path/in/container
+
 ...
 
 ### 6️⃣ Train
 
+Training
+
+Save data into a Docker Volume so you do not lose it.
 ...
 
 ### 7️⃣ Run
 
+Ollama
+and / or
+openweb-ui
 ...
+
+---
+
+Discord group link
