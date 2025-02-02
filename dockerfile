@@ -34,7 +34,7 @@ RUN --mount=type=cache,target=/opt/conda/pkgs \
 # Install unsloth and additional ML/utility packages.
 RUN pip config set global.timeout 86400
 RUN pip install numpy datasets
-RUN pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+RUN pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git@038e6d4c8d40207a87297ab3aaf787c19b1006d1"
 RUN pip install --no-deps trl peft accelerate bitsandbytes
 RUN pip install transformers
 
@@ -51,7 +51,6 @@ VOLUME /var/kolo_data
 
 RUN apt-get update && \
     apt-get install -y openssh-server supervisor && \
-    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the supervisor configuration file
@@ -68,7 +67,14 @@ RUN echo '' | tee -a ~/.bashrc
 # Expose necessary ports
 EXPOSE 22 8080
 
-COPY ./scripts/ /app/
+RUN apt-get update && apt-get install -y cmake && apt-get clean
+
+RUN git clone https://github.com/ggerganov/llama.cpp && \
+    cd llama.cpp && \
+    cmake -B build && \
+    cmake --build build --config Release
+
+RUN mv llama.cpp/build/bin/llama-quantize llama.cpp/
 
 # Set the entrypoint to start supervisord
 CMD ["/usr/bin/supervisord"]
