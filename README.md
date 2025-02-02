@@ -94,7 +94,7 @@ password 123
 Alternatively, you can connect manually via SSH:
 
 ```bash
-ssh root@localhost -p 2222`
+ssh root@localhost -p 2222
 ```
 
 Navigate to
