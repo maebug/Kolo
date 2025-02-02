@@ -115,8 +115,9 @@ You can use [WinSCP](https://winscp.net/eng/index.php) or any other SFTP file ma
 
 Connection Details:
 
-Host: localhost
-Port: 2222
-Username: root
-Password: 123
+- Host: localhost
+- Port: 2222
+- Username: root
+- Password: 123
+
 This setup ensures you can easily transfer files between your local machine and the container.
