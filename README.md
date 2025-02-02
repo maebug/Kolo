@@ -121,3 +121,7 @@ Connection Details:
 - Password: 123
 
 This setup ensures you can easily transfer files between your local machine and the container.
+
+### Issues and Feedback
+
+Join our [Discord group](https://discord.gg/Ewe4hf5x3n)!
