@@ -9,21 +9,21 @@ Usage:
 Description:
     This script fine-tunes a language model using PEFT LoRA on a dataset.
     The following command-line arguments can be adjusted:
-        --epochs             Number of training epochs (default: 3)
-        --learning_rate      Learning rate for training (default: 1e-4)
-        --train_data         Path to the training data file (default: "data.jsonl")
-        --base_model         Base model path or identifier (default: "unsloth/Llama-3.2-1B-Instruct-bnb-4bit")
-        --chat_template      Chat template identifier for tokenization (default: "llama-3.1")
-        --r                  LoRA rank parameter (default: 16)
-        --lora_alpha         LoRA alpha parameter (default: 16)
-        --lora_dropout       LoRA dropout probability (default: 0)
-        --max_seq_length     Maximum sequence length (default: 1024)
-        --warmup_steps       Number of warmup steps (default: 20)
-        --save_steps         Save checkpoint every N steps (default: 500)
-        --save_total_limit   Maximum number of checkpoints to save (default: 5)
-        --seed               Random seed (default: 3407)
-        --scheduler_type     Learning rate scheduler type (default: linear)
-        --output_dir         Directory to output the training results (default: outputs)
+        --epochs             Number of training epochs
+        --learning_rate      Learning rate for training
+        --train_data         Path to the training data file
+        --base_model         Base model path or identifier
+        --chat_template      Chat template identifier for tokenization
+        --r                  LoRA rank parameter
+        --lora_alpha         LoRA alpha parameter
+        --lora_dropout       LoRA dropout probability
+        --max_seq_length     Maximum sequence length
+        --warmup_steps       Number of warmup steps
+        --save_steps         Save checkpoint every N steps
+        --save_total_limit   Maximum number of checkpoints to save
+        --seed               Random seed
+        --scheduler_type     Learning rate scheduler type
+        --output_dir         Directory to output the training results
 """
 
 import argparse
