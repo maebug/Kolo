@@ -25,7 +25,7 @@ Kolo is built using a powerful stack of LLM tools:
 - Nvidia GPU with CUDA 12.1 capability and 8GB+ of VRAM
 - 32GB+ System RAM
 
-### Issues or Feedback
+## Issues or Feedback
 
 Join our [Discord group](https://discord.gg/Ewe4hf5x3n)!
 
