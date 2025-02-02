@@ -51,7 +51,7 @@ For subsequent runs:
 
 ### 6️⃣ Run Model
 
-`./run.ps1 {name}`
+`./run_model.ps1 {name}`
 
 ### 7️⃣ Test Model
 
