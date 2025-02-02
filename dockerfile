@@ -1,5 +1,5 @@
 # Use Ubuntu as the base image
-FROM ubuntu:latest
+FROM nvidia/cuda:12.1.1-devel-ubuntu22.04
 
 RUN apt-get update && \
     apt-get install -y openssh-server sudo build-essential curl git wget vim && \
@@ -14,8 +14,6 @@ RUN echo 'root:123' | chpasswd && \
 
 RUN mkdir -p /workspace
 
-SHELL ["/bin/bash", "-c"]
-
 # Install Anaconda3:
 RUN wget https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh -O anaconda.sh && \
     bash anaconda.sh -b -p /opt/conda && \
@@ -29,8 +27,9 @@ SHELL ["/opt/conda/bin/conda", "run", "-n", "kolo_env", "/bin/bash", "-c"]
 
 RUN conda config --set remote_read_timeout_secs 86400
 
-# Install PyTorch (with CUDA 12.1), cudatoolkit, and xformers.
-RUN conda install -y pytorch-cuda=12.1 pytorch cudatoolkit xformers -c pytorch -c nvidia -c xformers
+# Create a Conda environment and install PyTorch with CUDA support and xformers
+RUN --mount=type=cache,target=/opt/conda/pkgs \
+    conda install -y pytorch-cuda=12.1 pytorch cudatoolkit xformers -c pytorch -c nvidia -c xformers && conda clean -afy
 
 # Install unsloth and additional ML/utility packages.
 RUN pip config set global.timeout 86400
@@ -38,6 +37,8 @@ RUN pip install numpy datasets
 RUN pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
 RUN pip install --no-deps trl peft accelerate bitsandbytes
 RUN pip install transformers
+
+SHELL ["/bin/bash", "-c"]
 
 # Install Ollama.
 RUN curl -fsSL https://ollama.ai/install.sh | sh
@@ -53,14 +54,21 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Create necessary directories
-RUN mkdir -p /var/run/sshd
-
 # Copy the supervisor configuration file
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# Init the Conda env
+RUN /opt/conda/bin/conda init bash
+
+# Update ~/.bashrc
+RUN echo '# activate conda env' | tee -a ~/.bashrc
+RUN echo 'conda activate kolo_env' | tee -a ~/.bashrc
+RUN echo '' | tee -a ~/.bashrc
+
 # Expose necessary ports
 EXPOSE 22 8080
+
+COPY ./scripts/ /app/
 
 # Set the entrypoint to start supervisord
 CMD ["/usr/bin/supervisord"]
