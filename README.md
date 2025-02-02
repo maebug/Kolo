@@ -47,7 +47,7 @@ For subsequent runs:
 
 ### 5️⃣ Train Model
 
-`./train.ps1 -f examples/data.jsonl`
+`./train.ps1`
 
 ### 6️⃣ Run Model
 
