@@ -1,45 +1,72 @@
 # Use Ubuntu as the base image
 FROM ubuntu:latest
 
-# Avoid interactive prompts during package installation
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install OpenSSH server and clean up APT when done
 RUN apt-get update && \
-    apt-get install -y openssh-server && \
+    apt-get install -y openssh-server sudo build-essential curl git wget vim && \
     rm -rf /var/lib/apt/lists/*
 
-# Create the SSH daemon run directory
+# Create the SSH daemon run directory.
 RUN mkdir /var/run/sshd
 
-# Set the root password (change 'mysecretpassword' to a strong password of your choice)
-RUN echo 'root:123' | chpasswd
+# Set the root password and update SSH config to permit root login.
+RUN echo 'root:123' | chpasswd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
-# Configure SSH: allow root login via password (uncomment and update configuration)
-RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN mkdir -p /workspace
 
-# Optionally, disable PAM authentication if needed (not always recommended)
-# RUN sed -i 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' /etc/pam.d/sshd
+SHELL ["/bin/bash", "-c"]
 
-# Expose SSH port
-EXPOSE 22
+# Install Anaconda3:
+RUN wget https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh -O anaconda.sh && \
+    bash anaconda.sh -b -p /opt/conda && \
+    rm anaconda.sh
 
-# Start the SSH daemon in the foreground
-CMD ["/usr/sbin/sshd", "-D"]
+# Create a Conda env
+RUN /opt/conda/bin/conda create -y --name kolo_env python=3.10
 
-# Set the working directory (optional)
+# Update SHELL
+SHELL ["/opt/conda/bin/conda", "run", "-n", "kolo_env", "/bin/bash", "-c"]
+
+RUN conda config --set remote_read_timeout_secs 86400
+
+# Install Ollama.
+RUN curl -fsSL https://ollama.ai/install.sh | sh
+
+# Install PyTorch (with CUDA 12.1), cudatoolkit, and xformers.
+# RUN conda install -y pytorch-cuda=12.1 pytorch cudatoolkit xformers -c pytorch -c nvidia -c xformers
+
+# Install unsloth and additional ML/utility packages.
+# RUN pip config set global.timeout 86400
+# RUN pip install numpy datasets
+# RUN pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+# RUN pip install --no-deps trl peft accelerate bitsandbytes
+# RUN pip install transformers
+
+# Set the working directory (optional).
 WORKDIR /app
 
-# Copy the scripts into the container
-COPY build_tools.sh /build_tools.sh
+# Copy your helper scripts into the container.
 COPY start.sh /start.sh
 
-# Make the scripts executable
-RUN chmod +x /build_tools.sh /start.sh
+# Make the scripts executable.
+RUN chmod +x /start.sh
 
-# Create a volume for persistent build state
-VOLUME /var/build_state
+# Create a volume for persistent data.
+VOLUME /var/kolo_data
 
-# Set the entry point to start.sh.
-# The exec form (and passing "$@") allows you to pass extra commands if needed.
-ENTRYPOINT ["/bin/bash", "/start.sh"]
+RUN apt-get update && \
+    apt-get install -y openssh-server supervisor && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create necessary directories
+RUN mkdir -p /var/run/sshd
+
+# Copy the supervisor configuration file
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Expose necessary ports
+EXPOSE 22 8080
+
+# Set the entrypoint to start supervisord
+CMD ["/usr/bin/supervisord"]

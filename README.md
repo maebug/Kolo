@@ -4,4 +4,12 @@ A one stop shop for fine tuning, testing and deploying LLMs locally using the be
 
 # Running
 
-./clean_and_build.ps1
+./build.ps1
+
+./run.ps1
+
+# SSH
+
+ssh root@localhost -p 2222
+
+password 123
