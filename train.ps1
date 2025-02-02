@@ -9,7 +9,7 @@ if (-Not $containerRunning) {
 # Execute the python script inside the container
 try {
     Write-Host "Executing script..."
-    docker exec -it kolo_container /bin/bash -c "/opt/conda/bin/conda run -n kolo_env python /app/train.py --train_data data.jsonl"
+    docker exec -it kolo_container /bin/bash -c "/opt/conda/bin/conda run -n kolo_env python /app/scripts/train.py --train_data data.jsonl"
 
     if ($?) {
         Write-Host "Script executed successfully!" -ForegroundColor Green
