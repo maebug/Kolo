@@ -5,6 +5,13 @@ RUN apt-get update && \
     apt-get install -y openssh-server sudo build-essential curl git wget vim && \
     rm -rf /var/lib/apt/lists/*
 
+# Add NodeSource repository for Node.js v18.x
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+
+# Install Node.js (v18.x) and npm from NodeSource
+RUN apt-get install -y nodejs && \
+        rm -rf /var/lib/apt/lists/*
+
 # Create the SSH daemon run directory.
 RUN mkdir /var/run/sshd
 
@@ -19,10 +26,10 @@ RUN wget https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh -
     bash anaconda.sh -b -p /opt/conda && \
     rm anaconda.sh
 
-# Create a Conda env
+# Create Kolo env
 RUN /opt/conda/bin/conda create -y --name kolo_env python=3.10
 
-# Update SHELL
+# Run Kolo env
 SHELL ["/opt/conda/bin/conda", "run", "-n", "kolo_env", "/bin/bash", "-c"]
 
 RUN conda config --set remote_read_timeout_secs 86400
@@ -37,6 +44,15 @@ RUN pip install numpy datasets
 RUN pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git@038e6d4c8d40207a87297ab3aaf787c19b1006d1"
 RUN pip install --no-deps trl peft accelerate bitsandbytes
 RUN pip install transformers
+
+# Create Open-webui env
+RUN /opt/conda/bin/conda create -y --name openwebui_env python=3.11
+
+# Run openwebui env
+SHELL ["/opt/conda/bin/conda", "run", "-n", "openwebui_env", "/bin/bash", "-c"]
+
+#Install Open-webui
+RUN pip install git+https://github.com/open-webui/open-webui.git
 
 SHELL ["/bin/bash", "-c"]
 
