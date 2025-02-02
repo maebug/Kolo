@@ -29,27 +29,21 @@ SHELL ["/opt/conda/bin/conda", "run", "-n", "kolo_env", "/bin/bash", "-c"]
 
 RUN conda config --set remote_read_timeout_secs 86400
 
+# Install PyTorch (with CUDA 12.1), cudatoolkit, and xformers.
+RUN conda install -y pytorch-cuda=12.1 pytorch cudatoolkit xformers -c pytorch -c nvidia -c xformers
+
+# Install unsloth and additional ML/utility packages.
+RUN pip config set global.timeout 86400
+RUN pip install numpy datasets
+RUN pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+RUN pip install --no-deps trl peft accelerate bitsandbytes
+RUN pip install transformers
+
 # Install Ollama.
 RUN curl -fsSL https://ollama.ai/install.sh | sh
 
-# Install PyTorch (with CUDA 12.1), cudatoolkit, and xformers.
-# RUN conda install -y pytorch-cuda=12.1 pytorch cudatoolkit xformers -c pytorch -c nvidia -c xformers
-
-# Install unsloth and additional ML/utility packages.
-# RUN pip config set global.timeout 86400
-# RUN pip install numpy datasets
-# RUN pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
-# RUN pip install --no-deps trl peft accelerate bitsandbytes
-# RUN pip install transformers
-
 # Set the working directory (optional).
 WORKDIR /app
-
-# Copy your helper scripts into the container.
-COPY start.sh /start.sh
-
-# Make the scripts executable.
-RUN chmod +x /start.sh
 
 # Create a volume for persistent data.
 VOLUME /var/kolo_data
