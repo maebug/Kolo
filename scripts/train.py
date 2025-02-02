@@ -1,11 +1,5 @@
 #!/usr/bin/env python
 """
-Usage:
-    python fine_tune_model.py --epochs 3 --learning_rate 1e-4 --train_data "data.jsonl" \
-        --base_model "cache/base_model" --chat_template "llama-3.1" --r 16 --lora_alpha 16 --lora_dropout 0 \
-        --max_seq_length 1024 --warmup_steps 20 --save_steps 500 --save_total_limit 5 --seed 3407 \
-        --scheduler_type linear --output_dir outputs
-
 Description:
     This script fine-tunes a language model using PEFT LoRA on a dataset.
     The following command-line arguments can be adjusted:
