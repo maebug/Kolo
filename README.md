@@ -14,7 +14,6 @@
 Kolo is built using a powerful stack of LLM tools:
 
 - [Unsloth](https://github.com/unslothai/unsloth) – Efficient fine-tuning for LLMs.
-- [Hugging Face](https://huggingface.co/) – Model hosting, training, and deployment.
 - [Llama.cpp](https://github.com/ggerganov/llama.cpp) – Fast inference for Llama models.
 - [Ollama](https://ollama.ai/) – Simple and portable model management.
 - [Docker](https://www.docker.com/) – Containerized environment for easy deployment.
@@ -30,38 +29,30 @@ Ensure [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) is install
 
 ### 2️⃣ Build the Image
 
-`./build.ps1`
+`./build_image.ps1`
 
 ### 3️⃣ Run the Container
 
-`./run.ps1`
+If running for first time.
 
-### 4️⃣ Connect via SSH
+`./create_and_run_container.ps1`
 
-`./connect.ps1`
+any subsequent runs use
 
-`password 123`
+`./run_container.ps1`
 
-### 5️⃣ Copy over your JSONL dataset
+### 4️⃣ Copy Training Data
 
-docker cp /path/to/local/file container_id:/path/in/container
+`./copy_training_data.ps1 -f examples/data.jsonl`
 
-...
+### 5️⃣ Train Model
 
-### 6️⃣ Train
+`./train.ps1 -f examples/data.jsonl`
 
-Training
+### 6️⃣ Run Model
 
-Save data into a Docker Volume so you do not lose it.
-...
+`./run.ps1 {name}`
 
-### 7️⃣ Run
+### 7️⃣ Test Model
 
-Ollama
-and / or
-openweb-ui
-...
-
----
-
-Discord group link
+Navigate to [localhost:8080](http://localhost:8080/)
