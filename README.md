@@ -18,7 +18,7 @@ Kolo is built using a powerful stack of LLM tools:
 - [Llama.cpp](https://github.com/ggerganov/llama.cpp) – Fast inference for Llama models.
 - [Ollama](https://ollama.ai/) – Simple and portable model management.
 - [Docker](https://www.docker.com/) – Containerized environment for easy deployment.
-- [Open WebUI](https://github.com/open-webui/open-webui) – Feature-rich and user-friendly self-hosted LLM interface.
+- [Open WebUI](https://github.com/open-webui/open-webui) – Feature-rich and user-friendly self-hosted LLM web interface.
 
 ## 🏃 Getting Started
 
