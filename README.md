@@ -1,6 +1,6 @@
 # Kolo
 
-**Kolo** is a lightweight tool designed for **fast and efficient fine-tuning of Large Language Models (LLMs)** on your local machine. It leverages cutting-edge tools to simplify the fine-tuning process, making it as quick and seamless as possible.
+**Kolo** is a lightweight tool designed for **fast and efficient fine-tuning and testing of Large Language Models (LLMs)** on your local machine. It leverages cutting-edge tools to simplify the fine-tuning process, making it as quick and seamless as possible.
 
 ## 🚀 Features
 
@@ -37,9 +37,7 @@ Ensure [Docker](https://docs.docker.com/get-docker/) is installed on your system
 
 `./connect.ps1`
 
-ssh root@localhost -p 2222
-
-password 123
+`password 123`
 
 ### 5️⃣ Copy over your JSONL dataset
 
