@@ -48,6 +48,7 @@ def parse_arguments():
     parser.add_argument("--seed", type=int, default=1337, help="Random seed.")
     parser.add_argument("--scheduler_type", type=str, default="linear", help="Learning rate scheduler type.")
     parser.add_argument("--output_dir", type=str, default="outputs", help="Output directory for training results.")
+    parser.add_argument("--batch_size", type=str, default=2, help="Batch size for training.")
 
     return parser.parse_args()
 
@@ -112,7 +113,7 @@ def main():
 
     # Configure training arguments.
     training_args = TrainingArguments(
-        per_device_train_batch_size=3,
+        per_device_train_batch_size=args.batch_size,
         warmup_steps=args.warmup_steps,
         num_train_epochs=args.epochs,
         learning_rate=args.learning_rate,

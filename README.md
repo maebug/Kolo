@@ -110,7 +110,7 @@ cd /app/
 Run training script ( make sure you copied over your training data )
 
 ```bash
-python train.py --epochs 3 --learning_rate 1e-4 --train_data "data.jsonl" --base_model "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" --chat_template "llama-3.1" --lora_rank 16 --lora_alpha 16 --lora_dropout 0 --max_seq_length 1024 --warmup_steps 10 --save_steps 500 --save_total_limit 5 --seed 1337 --scheduler_type linear --output_dir outputs
+python train.py --epochs 3 --learning_rate 1e-4 --train_data "data.jsonl" --base_model "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" --chat_template "llama-3.1" --lora_rank 16 --lora_alpha 16 --lora_dropout 0 --max_seq_length 1024 --warmup_steps 10 --save_steps 500 --save_total_limit 5 --seed 1337 --scheduler_type linear --batch_size 2 --output_dir outputs
 ```
 
 ### WinSCP (SFTP Access)
