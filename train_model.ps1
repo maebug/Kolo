@@ -58,7 +58,7 @@ if (-Not $containerRunning) {
 }
 
 # Build command string dynamically
-$command = "/opt/conda/bin/conda run -n kolo_env python /app/train.py"
+$command = "source /opt/conda/bin/activate kolo_env && python /app/train.py"
 
 if ($Epochs) { $command += " --epochs $Epochs" }
 if ($LearningRate) { $command += " --learning_rate $LearningRate" }
