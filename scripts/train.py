@@ -53,7 +53,7 @@ def parse_arguments():
     parser.add_argument("--output_dir", type=str, default="outputs", help="Output directory for training results.")
     parser.add_argument("--batch_size", type=int, default=2, help="Batch size for training.")
     parser.add_argument("--quantization", type=str, default="", help="Quantization type e.g. (q4_k_m)")
-    parser.add_argument("--weight_decay", type=float, default=0, help="Weight Decay")
+    parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight Decay")
 
     return parser.parse_args()
 
