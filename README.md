@@ -33,9 +33,11 @@ Join our [Discord group](https://discord.gg/Ewe4hf5x3n)!
 
 ### 1️⃣ Install Dependencies
 
-Ensure [Docker](https://docs.docker.com/get-docker/) is installed on your system.
+Ensure [HyperV](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/get-started/install-hyper-v?pivots=windows) is installed.
 
-Ensure [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) is installed on your windows machine.
+Ensure [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) is installed; alternative [guide](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-containers).
+
+Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed.
 
 ### 2️⃣ Build the Image
 
