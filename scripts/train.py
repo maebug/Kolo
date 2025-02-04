@@ -18,6 +18,8 @@ Description:
         --seed               Random seed
         --scheduler_type     Learning rate scheduler type
         --output_dir         Directory to output the training results
+        --batch_size         Batch size for training.
+        --quantization       Quantization type e.g. (q4_k_m)
 """
 
 import argparse
@@ -49,6 +51,7 @@ def parse_arguments():
     parser.add_argument("--scheduler_type", type=str, default="linear", help="Learning rate scheduler type.")
     parser.add_argument("--output_dir", type=str, default="outputs", help="Output directory for training results.")
     parser.add_argument("--batch_size", type=int, default=2, help="Batch size for training.")
+    parser.add_argument("--quantization", type=str, default="", help="Quantization type e.g. (q4_k_m)")
 
     return parser.parse_args()
 
@@ -151,10 +154,23 @@ def main():
     model.save_pretrained(volume_output_dir)
     tokenizer.save_pretrained(volume_output_dir)
 
-    # Save the model in GGUF format for deployment.
-    #gguf_output_path = os.path.join("lora_gguf", "model_gguf")
-    print(f"Saving fine-tuned model in GGUF format to {volume_output_dir}...")
-    model.save_pretrained_gguf(volume_output_dir, tokenizer, quantization_method="q4_k_m")
+    if args.quantization:
+        print(f"Saving fine-tuned model in GGUF format to {volume_output_dir}...")
+        
+        model.save_pretrained_gguf(volume_output_dir, tokenizer, quantization_method=args.quantization.lower())
+
+        ext = args.quantization.upper()
+        filename = f"Modelfile{ext}"
+        print(f"Creating quantized model file to {filename}")
+        
+        content = f"FROM ./unsloth.{ext}.gguf"
+
+        with open(f"{volume_output_dir}/{filename}", "w") as file:
+            file.write(content)
+
+        print(f"File '{filename}' created successfully with contents:\n{content}")
+
+
     print("Model saved successfully!")
 
 

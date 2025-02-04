@@ -66,18 +66,34 @@ For subsequent runs:
 ### 5️⃣ Train Model
 
 ```bash
-./train_model.ps1
+./train_model.ps1 -OutputDir "GodOuput" -Quantization "Q4_K_M"
+```
+
+All available parameters
+
+```bash
+./train_model.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "outputs" -Quantization "Q4_K_M"
 ```
 
 ### 6️⃣ Run Model
 
 ```bash
-./run_model.ps1 God
+./run_model.ps1 "God" -OutputDir "GodOutput" -Quantization "Q4_K_M"
 ```
 
 ### 7️⃣ Test Model
 
 Open your browser and navigate to [localhost:8080](http://localhost:8080/)
+
+### Other Commands
+
+```bash
+./stop_model.ps1 "God"
+```
+
+```bash
+./delete_model.ps1 "GodOutput"
+```
 
 ## 🔧 Advanced Users
 
