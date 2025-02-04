@@ -5,43 +5,44 @@
 ###
 
 param (
-    [int]$Epochs = 3,
-    [double]$LearningRate = 1e-4,
-    [string]$TrainData = "data.jsonl",
-    [string]$BaseModel = "unsloth/Llama-3.2-1B-Instruct-bnb-4bit",
-    [string]$ChatTemplate = "llama-3.1",
-    [int]$LoraRank = 16,
-    [int]$LoraAlpha = 16,
-    [double]$LoraDropout = 0,
-    [int]$MaxSeqLength = 1024,
-    [int]$WarmupSteps = 10,
-    [int]$SaveSteps = 500,
-    [int]$SaveTotalLimit = 5,
-    [int]$Seed = 1337,
-    [string]$SchedulerType = "linear",
-    [int]$BatchSize = 2,
-    [string]$OutputDir = "outputs",
-    [string]$Quantization = "Q4_K_M"
+    [int]$Epochs,
+    [double]$LearningRate,
+    [string]$TrainData,
+    [string]$BaseModel,
+    [string]$ChatTemplate,
+    [int]$LoraRank,
+    [int]$LoraAlpha,
+    [double]$LoraDropout,
+    [int]$MaxSeqLength,
+    [int]$WarmupSteps,
+    [int]$SaveSteps,
+    [int]$SaveTotalLimit,
+    [int]$Seed,
+    [string]$SchedulerType,
+    [int]$BatchSize,
+    [string]$OutputDir,
+    [string]$Quantization
 )
 
 Write-Host "Parameters passed to the script:" -ForegroundColor Cyan
-Write-Host "Epochs: $Epochs"
-Write-Host "LearningRate: $LearningRate"
-Write-Host "TrainData: $TrainData"
-Write-Host "BaseModel: $BaseModel"
-Write-Host "ChatTemplate: $ChatTemplate"
-Write-Host "LoraRank: $LoraRank"
-Write-Host "LoraAlpha: $LoraAlpha"
-Write-Host "LoraDropout: $LoraDropout"
-Write-Host "MaxSeqLength: $MaxSeqLength"
-Write-Host "WarmupSteps: $WarmupSteps"
-Write-Host "SaveSteps: $SaveSteps"
-Write-Host "SaveTotalLimit: $SaveTotalLimit"
-Write-Host "Seed: $Seed"
-Write-Host "SchedulerType: $SchedulerType"
-Write-Host "BatchSize: $BatchSize"
-Write-Host "OutputDir: $OutputDir"
-Write-Host "Quantization: $Quantization"
+
+if ($Epochs) { Write-Host "Epochs: $Epochs" }
+if ($LearningRate) { Write-Host "LearningRate: $LearningRate" }
+if ($TrainData) { Write-Host "TrainData: $TrainData" }
+if ($BaseModel) { Write-Host "BaseModel: $BaseModel" }
+if ($ChatTemplate) { Write-Host "ChatTemplate: $ChatTemplate" }
+if ($LoraRank) { Write-Host "LoraRank: $LoraRank" }
+if ($LoraAlpha) { Write-Host "LoraAlpha: $LoraAlpha" }
+if ($LoraDropout) { Write-Host "LoraDropout: $LoraDropout" }
+if ($MaxSeqLength) { Write-Host "MaxSeqLength: $MaxSeqLength" }
+if ($WarmupSteps) { Write-Host "WarmupSteps: $WarmupSteps" }
+if ($SaveSteps) { Write-Host "SaveSteps: $SaveSteps" }
+if ($SaveTotalLimit) { Write-Host "SaveTotalLimit: $SaveTotalLimit" }
+if ($Seed) { Write-Host "Seed: $Seed" }
+if ($SchedulerType) { Write-Host "SchedulerType: $SchedulerType" }
+if ($BatchSize) { Write-Host "BatchSize: $BatchSize" }
+if ($OutputDir) { Write-Host "OutputDir: $OutputDir" }
+if ($Quantization) { Write-Host "Quantization: $Quantization" }
 
 # Define container name
 $ContainerName = "kolo_container"
@@ -54,11 +55,30 @@ if (-Not $containerRunning) {
     exit 1
 }
 
+# Build command string dynamically
+$command = "/opt/conda/bin/conda run -n kolo_env python /app/train.py"
+
+if ($Epochs) { $command += " --epochs $Epochs" }
+if ($LearningRate) { $command += " --learning_rate $LearningRate" }
+if ($TrainData) { $command += " --train_data '$TrainData'" }
+if ($BaseModel) { $command += " --base_model '$BaseModel'" }
+if ($ChatTemplate) { $command += " --chat_template '$ChatTemplate'" }
+if ($LoraRank) { $command += " --lora_rank $LoraRank" }
+if ($LoraAlpha) { $command += " --lora_alpha $LoraAlpha" }
+if ($LoraDropout) { $command += " --lora_dropout $LoraDropout" }
+if ($MaxSeqLength) { $command += " --max_seq_length $MaxSeqLength" }
+if ($WarmupSteps) { $command += " --warmup_steps $WarmupSteps" }
+if ($SaveSteps) { $command += " --save_steps $SaveSteps" }
+if ($SaveTotalLimit) { $command += " --save_total_limit $SaveTotalLimit" }
+if ($Seed) { $command += " --seed $Seed" }
+if ($SchedulerType) { $command += " --scheduler_type '$SchedulerType'" }
+if ($BatchSize) { $command += " --batch_size $BatchSize" }
+if ($OutputDir) { $command += " --output_dir '$OutputDir'" }
+if ($Quantization) { $command += " --quantization '$Quantization'" }
+
 # Execute the python script inside the container
 try {
     Write-Host "Executing script inside container: $ContainerName..."
-    $command = "/opt/conda/bin/conda run -n kolo_env python /app/train.py --epochs $Epochs --learning_rate $LearningRate --train_data '$TrainData' --base_model '$BaseModel' --chat_template '$ChatTemplate' --lora_rank $LoraRank --lora_alpha $LoraAlpha --lora_dropout $LoraDropout --max_seq_length $MaxSeqLength --warmup_steps $WarmupSteps --save_steps $SaveSteps --save_total_limit $SaveTotalLimit --seed $Seed --scheduler_type '$SchedulerType' --batch_size $BatchSize --output_dir '$OutputDir' --quantization '$Quantization'"
-    
     docker exec -it $ContainerName /bin/bash -c $command
     
     if ($?) {

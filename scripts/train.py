@@ -35,7 +35,7 @@ from transformers import TrainingArguments
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Fine-tune a language model using PEFT LoRA.")
 
-    parser.add_argument("--train_data", type=str, required=True, help="Path to training data file.")
+    parser.add_argument("--train_data", type=str, default="data.jsonl", help="Path to training data file.")
     parser.add_argument("--epochs", type=int, default=3, help="Number of training epochs.")
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate for training.")
     parser.add_argument("--base_model", type=str, default="unsloth/Llama-3.2-1B-Instruct-bnb-4bit", help="Base model path or identifier.")
@@ -154,11 +154,10 @@ def main():
     model.save_pretrained(volume_output_dir)
     tokenizer.save_pretrained(volume_output_dir)
 
+    print(f"Saving fine-tuned model in GGUF format to {volume_output_dir}...")
+    
     if args.quantization:
-        print(f"Saving fine-tuned model in GGUF format to {volume_output_dir}...")
-        
         model.save_pretrained_gguf(volume_output_dir, tokenizer, quantization_method=args.quantization.lower())
-
         ext = args.quantization.upper()
         filename = f"Modelfile{ext}"
         print(f"Creating quantized model file to {filename}")
@@ -169,6 +168,8 @@ def main():
             file.write(content)
 
         print(f"File '{filename}' created successfully with contents:\n{content}")
+    else:
+        model.save_pretrained_gguf(volume_output_dir, tokenizer)
 
 
     print("Model saved successfully!")
