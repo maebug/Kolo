@@ -20,6 +20,7 @@ Description:
         --output_dir         Directory to output the training results
         --batch_size         Batch size for training.
         --quantization       Quantization type e.g. (q4_k_m)
+        --weight_decay       Weight Decay.
 """
 
 import argparse
@@ -52,6 +53,7 @@ def parse_arguments():
     parser.add_argument("--output_dir", type=str, default="outputs", help="Output directory for training results.")
     parser.add_argument("--batch_size", type=int, default=2, help="Batch size for training.")
     parser.add_argument("--quantization", type=str, default="", help="Quantization type e.g. (q4_k_m)")
+    parser.add_argument("--weight_decay", type=float, default=0, help="Weight Decay")
 
     return parser.parse_args()
 
@@ -127,7 +129,7 @@ def main():
         save_strategy="steps",
         save_steps=args.save_steps,
         save_total_limit=args.save_total_limit,
-        weight_decay=0,
+        weight_decay=args.weight_decay,
         lr_scheduler_type=args.scheduler_type,
         seed=args.seed,
         output_dir=volume_output_dir,
