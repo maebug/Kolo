@@ -62,7 +62,7 @@ For subsequent runs:
 ### 4️⃣ Copy Training Data
 
 ```bash
-./copy_training_data.ps1 -f examples/God.jsonl
+./copy_training_data.ps1 -f examples/God.jsonl -d data.jsonl
 ```
 
 ### 5️⃣ Train Model
