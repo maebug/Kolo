@@ -21,6 +21,7 @@ Description:
         --batch_size         Batch size for training.
         --quantization       Quantization type e.g. (q4_k_m)
         --weight_decay       Weight Decay.
+        --use_checkpoint     Use latest checkpoint or start over.
 """
 
 import argparse
@@ -54,6 +55,8 @@ def parse_arguments():
     parser.add_argument("--batch_size", type=int, default=2, help="Batch size for training.")
     parser.add_argument("--quantization", type=str, default="", help="Quantization type e.g. (q4_k_m)")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight Decay")
+    parser.add_argument("--use_checkpoint", action="store_true", help="Use latest checkpoint or start over")
+
 
     return parser.parse_args()
 
@@ -149,7 +152,7 @@ def main():
     )
 
     # Train the model.
-    trainer_stats = trainer.train(resume_from_checkpoint=False)
+    trainer_stats = trainer.train(resume_from_checkpoint=args.use_checkpoint)
 
     # Save the fine-tuned model and tokenizer.
     print("Saving fine-tuned model locally...")

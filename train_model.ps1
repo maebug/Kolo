@@ -1,8 +1,7 @@
 ### PowerShell Script to Execute a Python Script inside a Docker Container
 ###
 ### Usage:
-### .\train_model.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "outputs" -Quantization "Q4_K_M -WeightDecay 0"
-###
+### .\train_model.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "outputs" -Quantization "Q4_K_M" -WeightDecay 0 -UseCheckpoint
 
 param (
     [int]$Epochs,
@@ -22,7 +21,8 @@ param (
     [int]$BatchSize,
     [string]$OutputDir,
     [string]$Quantization,
-    [double]$WeightDecay
+    [double]$WeightDecay,
+    [switch]$UseCheckpoint
 )
 
 Write-Host "Parameters passed to the script:" -ForegroundColor Cyan
@@ -45,6 +45,7 @@ if ($BatchSize) { Write-Host "BatchSize: $BatchSize" }
 if ($OutputDir) { Write-Host "OutputDir: $OutputDir" }
 if ($Quantization) { Write-Host "Quantization: $Quantization" }
 if ($WeightDecay) { Write-Host "WeightDecay: $WeightDecay" }
+if ($UseCheckpoint) { Write-Host "UseCheckpoint: Enabled" } else { Write-Host "UseCheckpoint: Disabled" }
 
 # Define container name
 $ContainerName = "kolo_container"
@@ -78,6 +79,7 @@ if ($BatchSize) { $command += " --batch_size $BatchSize" }
 if ($OutputDir) { $command += " --output_dir '$OutputDir'" }
 if ($Quantization) { $command += " --quantization '$Quantization'" }
 if ($WeightDecay) { $command += " --weight_decay '$WeightDecay'" }
+if ($UseCheckpoint) { $command += " --use_checkpoint" }
 
 # Execute the python script inside the container
 try {
