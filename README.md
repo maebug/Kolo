@@ -123,12 +123,6 @@ Alternatively, you can connect manually via SSH:
 ssh root@localhost -p 2222
 ```
 
-Navigate to
-
-```bash
-cd /app/
-```
-
 Run training script ( make sure you copied over your training data )
 
 ```bash
