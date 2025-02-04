@@ -14,12 +14,20 @@ if (-Not $containerRunning) {
     exit 1
 }
 
+# Check if the directory exists inside the container
+$dirCheck = docker exec -it $ContainerName sh -c "if [ -d /var/kolo_data/$DirFolder ]; then echo 'exists'; else echo 'not_exists'; fi"
+
+if ($dirCheck -match "not_exists") {
+    Write-Host "Error: Directory '/var/kolo_data/$DirFolder' does not exist inside container '$ContainerName'." -ForegroundColor Red
+    exit 1
+}
+
 # Confirm deletion with the user
 Write-Host "WARNING: You are about to permanently delete the directory '/var/kolo_data/$DirFolder' inside the container '$ContainerName'." -ForegroundColor Yellow
 $confirmation = Read-Host "Type the directory name again to confirm deletion"
 
 if ($confirmation -ne $DirFolder) {
-    Write-Host "Error: Confirmation failed. Directory names does not match $DirFolder. Aborting." -ForegroundColor Red
+    Write-Host "Error: Confirmation failed. Directory names do not match. Aborting." -ForegroundColor Red
     exit 1
 }
 
