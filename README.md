@@ -67,15 +67,35 @@ For subsequent runs:
 
 ### 5️⃣ Train Model
 
+<details>
+  <summary>Using Unsloth</summary>
+
 ```bash
-./train_model.ps1 -OutputDir "GodOuput" -Quantization "Q4_K_M" -TrainData "data.jsonl"
+./train_model_unsloth.ps1 -OutputDir "GodOuput" -Quantization "Q4_K_M" -TrainData "data.jsonl"
 ```
 
 All available parameters
 
 ```bash
-./train_model.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "outputs" -Quantization "Q4_K_M" -WeightDecay 0
+./train_model_unsloth.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "outputs" -Quantization "Q4_K_M" -WeightDecay 0
 ```
+
+</details>
+
+<details>
+  <summary>Using Torchtune</summary>
+
+```bash
+./train_model_torchtune.ps1 -OutputDir "GodOuput" -Quantization "Q4_K_M" -TrainData "data.jsonl"
+```
+
+All available parameters
+
+```bash
+./train_model_torchtune.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "outputs" -Quantization "Q4_K_M" -WeightDecay 0
+```
+
+</details>
 
 ### 6️⃣ Run Model
 
