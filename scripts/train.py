@@ -117,7 +117,7 @@ def main():
 
     print("Sample data:", dataset[0])
 
-    volume_output_dir = f"/var/kolo_data/{args.output_dir}"
+    volume_output_dir = f"/var/kolo_data/unsloth/{args.output_dir}"
 
     # Configure training arguments.
     training_args = TrainingArguments(

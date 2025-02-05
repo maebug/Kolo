@@ -21,7 +21,7 @@ if (-Not $containerRunning) {
 }
 
 # Construct the full path to the model file
-$ModelFilePath = "/var/kolo_data/$OutputDir/Modelfile$Quantization"
+$ModelFilePath = "/var/kolo_data/unsloth/$OutputDir/Modelfile$Quantization"
 
 # Execute the Ollama command inside the container
 try {
