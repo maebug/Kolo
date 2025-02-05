@@ -130,7 +130,7 @@ if ($SaveTotalLimit) { Write-Host "SaveTotalLimit: $SaveTotalLimit" }
 if ($Seed) { Write-Host "Seed: $Seed" }
 if ($SchedulerType) { Write-Host "SchedulerType: $SchedulerType" }
 if ($BatchSize) { Write-Host "BatchSize: $BatchSize" }
-if ($OutputDir) { Write-Host "OutputDir: $OutputDir" }
+if ($OutputDir) { Write-Host "OutputDir: $OutputDir" } else { $OutputDir = "outputs" }
 if ($Quantization) { Write-Host "Quantization: $Quantization" }
 if ($WeightDecay) { Write-Host "WeightDecay: $WeightDecay" }
 if ($UseCheckpoint) { Write-Host "UseCheckpoint: Enabled" } else { Write-Host "UseCheckpoint: Disabled" }
@@ -255,9 +255,9 @@ else {
     $command += " resume_from_checkpoint=False"
 }
 
-if ($OutputDir) {
-    $command += " output_dir='$OutputDir'"
-}
+
+$command += " output_dir='/var/kolo_data/torchtune/$OutputDir'"
+
 
 # Note: Parameters such as BaseModel, ChatTemplate, and Quantization are logged for reference
 if ($BaseModel) {
