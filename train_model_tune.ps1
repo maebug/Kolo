@@ -1,94 +1,24 @@
 <#
 .SYNOPSIS
-    Executes a torchtune LoRA/QLoRA finetuning run inside a Docker container.
+    Executes a torchtune LoRA/QLoRA finetuning run inside a Docker container,
+    and then merges the resulting model using merge_lora.py.
 
 .DESCRIPTION
     This script builds and runs a torchtune command for fine-tuning using the 
     "lora_finetune_single_device" recipe and the configuration "llama3_1/8B_qlora_single_device".
-    It passes a series of command-line overrides to ensure that the following parameters are set:
+    After the finetuning completes, it identifies the epoch folder with the largest index
+    (for example, /var/kolo_data/torchtune/outputs/epoch_2) and then runs a python script
+    (/app/merge_lora.py) with:
+        --lora_model set to the identified epoch folder, and
+        --merged_model set to /var/kolo_data/torchtune/<OutputDir>/merged_model.
 
-      dataset.packed=False
-      compile=True
-      loss=torchtune.modules.loss.CEWithChunkedOutputLoss
-      enable_activation_checkpointing=True
-      optimizer_in_bwd=False
-      enable_activation_offloading=True
-      optimizer=torch.optim.AdamW
-      tokenizer.max_seq_len=2048
-      gradient_accumulation_steps=1
-      epochs=3
-      batch_size=2
-      dataset.data_files=./data.json
-      dataset._component_=torchtune.datasets.chat_dataset
-      dataset.source=json
-      dataset.conversation_column=conversations
-      dataset.conversation_style=sharegpt
-      model.lora_rank=32
-      model.lora_alpha=32
+    (See the inline comments for details.)
 
 .PARAMETER Epochs
     Number of training epochs. Default: 3
 
-.PARAMETER LearningRate
-    Learning rate for the optimizer. (Override if needed; no default override in the script.)
+... [other parameter help as in your original script] ...
 
-.PARAMETER TrainData
-    Path to the training data file. Default: "./data.json"
-
-.PARAMETER BaseModel
-    Base model identifier. (Not used directly by the torchtune command.)
-
-.PARAMETER ChatTemplate
-    Chat template name. (Not used directly by the torchtune command.)
-
-.PARAMETER LoraRank
-    LoRA rank value. Default: 32
-
-.PARAMETER LoraAlpha
-    LoRA alpha value. Default: 32
-
-.PARAMETER LoraDropout
-    LoRA dropout rate. (Optional override)
-
-.PARAMETER MaxSeqLength
-    Maximum sequence length for the tokenizer. Default: 2048
-
-.PARAMETER WarmupSteps
-    Number of warmup steps for the learning rate scheduler. Default: 100
-
-.PARAMETER SaveSteps
-    Checkpoint save interval (not used by this command). 
-
-.PARAMETER SaveTotalLimit
-    Maximum number of checkpoints to keep (not used by this command).
-
-.PARAMETER Seed
-    Random seed value. (Optional)
-
-.PARAMETER SchedulerType
-    Scheduler type to use (e.g. cosine_schedule_with_warmup). Default: cosine_schedule_with_warmup
-
-.PARAMETER BatchSize
-    Training batch size. Default: 2
-
-.PARAMETER OutputDir
-    Output directory for model checkpoints. (Optional)
-
-.PARAMETER Quantization
-    Quantization option. (Not used by the current recipe.)
-
-.PARAMETER WeightDecay
-    Weight decay for the optimizer. Default: 0.01
-
-.PARAMETER UseCheckpoint
-    Switch to resume training from checkpoint. Default: False
-
-.EXAMPLE
-    .\train_torchtune.ps1 -Epochs 3 -LearningRate 0.0003 -TrainData "./data.json" -LoraRank 32 -LoraAlpha 32 -MaxSeqLength 2048 -WarmupSteps 100 -BatchSize 2 -WeightDecay 0.01
-
-.NOTES
-    - Ensure Docker is installed and a container named "kolo_container" is running.
-    - The container must have the conda environment "kolo_env" set up.
 #>
 
 param (
@@ -255,9 +185,9 @@ else {
     $command += " resume_from_checkpoint=False"
 }
 
-
-$command += " output_dir='/var/kolo_data/torchtune/$OutputDir'"
-
+# Set the output directory; default is "outputs"
+$FullOutputDir = "/var/kolo_data/torchtune/$OutputDir"
+$command += " output_dir='$FullOutputDir'"
 
 # Note: Parameters such as BaseModel, ChatTemplate, and Quantization are logged for reference
 if ($BaseModel) {
@@ -273,16 +203,66 @@ if ($Quantization) {
 Write-Host "Executing command inside container '$ContainerName':" -ForegroundColor Yellow
 Write-Host $command -ForegroundColor Yellow
 
-# Execute the command inside the Docker container
+# Execute the torchtune command inside the Docker container.
 try {
     docker exec -it $ContainerName /bin/bash -c $command
     if ($?) {
-        Write-Host "Script executed successfully!" -ForegroundColor Green
+        Write-Host "Torchtune run completed successfully!" -ForegroundColor Green
     }
     else {
-        Write-Host "Failed to execute script." -ForegroundColor Red
+        Write-Host "Failed to execute torchtune run." -ForegroundColor Red
+        exit 1
     }
 }
 catch {
-    Write-Host "An error occurred: $_" -ForegroundColor Red
+    Write-Host "An error occurred during torchtune run: $_" -ForegroundColor Red
+    exit 1
+}
+
+# --- Begin post-run merging steps ---
+
+# Construct a command to find the epoch folder with the largest index.
+# This command lists directories like "epoch_1", "epoch_2", etc., sorts them (version sort),
+# and picks the last entry.
+$findEpochCmd = "ls -d ${FullOutputDir}/epoch_* 2>/dev/null | sort -V | tail -n 1"
+
+# Execute the command inside the container and capture its output.
+try {
+    $epochFolder = docker exec $ContainerName /bin/bash -c $findEpochCmd
+    $epochFolder = $epochFolder.Trim()
+    if (-not $epochFolder) {
+        Write-Host "Error: No epoch folder found in $FullOutputDir" -ForegroundColor Red
+        exit 1
+    }
+    else {
+        Write-Host "Identified epoch folder: $epochFolder" -ForegroundColor Green
+    }
+}
+catch {
+    Write-Host "An error occurred while finding the epoch folder: $_" -ForegroundColor Red
+    exit 1
+}
+
+# Set the merged model output path.
+$mergedModelPath = "${FullOutputDir}/merged_model"
+
+# Build the python command to run merge_lora.py.
+# This command activates the conda environment, then runs the python script with the proper arguments.
+$pythonCommand = "source /opt/conda/bin/activate kolo_env && python /app/merge_lora.py --lora_model '$epochFolder' --merged_model '$mergedModelPath'"
+
+Write-Host "Executing merge command inside container '$ContainerName':" -ForegroundColor Yellow
+Write-Host $pythonCommand -ForegroundColor Yellow
+
+# Execute the merge command inside the container.
+try {
+    docker exec -it $ContainerName /bin/bash -c $pythonCommand
+    if ($?) {
+        Write-Host "Merge script executed successfully!" -ForegroundColor Green
+    }
+    else {
+        Write-Host "Failed to execute merge script." -ForegroundColor Red
+    }
+}
+catch {
+    Write-Host "An error occurred while executing the merge script: $_" -ForegroundColor Red
 }
