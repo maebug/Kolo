@@ -100,7 +100,7 @@ All available parameters
 
 </details>
 
-### 6️⃣ Run Model
+### 6️⃣ Install Model
 
 <details>
   <summary>Using Unsloth</summary>
