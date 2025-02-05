@@ -45,6 +45,10 @@ RUN pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.g
 RUN pip install --no-deps trl peft accelerate bitsandbytes
 RUN pip install transformers
 
+# Install torchtune
+RUN pip install torch torchvision torchao
+RUN pip install torchtune
+
 # Create Open-webui env
 RUN /opt/conda/bin/conda create -y --name openwebui_env python=3.11
 
