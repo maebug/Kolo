@@ -160,12 +160,6 @@ Alternatively, you can connect manually via SSH:
 ssh root@localhost -p 2222
 ```
 
-Run training script ( make sure you copied over your training data )
-
-```bash
-python train.py --epochs 3 --learning_rate 1e-4 --train_data "data.json" --base_model "Meta-llama/Llama-3.2-1B-Instruct" --lora_rank 16 --lora_alpha 16 --lora_dropout 0 --max_seq_length 1024 --warmup_steps 10 --save_steps 500 --save_total_limit 5 --seed 1337 --scheduler_type linear --batch_size 2 --quantization "Q4_K_M" --output_dir outputs --weight_decay 0 --use_checkpoint
-```
-
 ### WinSCP (SFTP Access)
 
 You can use [WinSCP](https://winscp.net/eng/index.php) or any other SFTP file manager to access the Kolo container’s file system. This allows you to manage, modify, add, or remove scripts and files easily.
