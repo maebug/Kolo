@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
     Executes a torchtune LoRA/QLoRA finetuning run inside a Docker container,
-    and then merges the resulting model using merge_lora.py. Finally, it converts
-    the merged model to gguf format by calling convert_hf_to_gguf.py.
+    merges the resulting model using merge_lora.py, converts the merged model to gguf format,
+    and finally quantizes the gguf file.
 
 .DESCRIPTION
     This script builds and runs a torchtune command for fine-tuning using the 
@@ -12,8 +12,10 @@
     (/app/merge_lora.py) with:
         --lora_model set to the identified epoch folder, and
         --merged_model set to /var/kolo_data/torchtune/<OutputDir>/merged_model.
-    Finally, it converts the merged model to gguf format using:
+    Next, the script converts the merged model to gguf format using:
         /app/llama.cpp/convert_hf_to_gguf.py --outtype f16 --outfile $FullOutputDir/Merged.gguf $mergedModelPath
+    Finally, it quantizes the resulting gguf file using:
+        /app/llama.cpp/llama_quantize $FullOutputDir/Merged.gguf $FullOutputDir/Merged$Quantization.gguf Quantization.upper()
 
 .PARAMETER Epochs
     Number of training epochs. Default: 3
@@ -39,7 +41,7 @@ param (
     [string]$SchedulerType,
     [int]$BatchSize,
     [string]$OutputDir,
-    [string]$Quantization,
+    [string]$Quantization = "Q4_K_M", # Default quantization value
     [double]$WeightDecay,
     [switch]$UseCheckpoint
 )
@@ -198,7 +200,7 @@ if ($ChatTemplate) {
     Write-Host "Note: ChatTemplate parameter '$ChatTemplate' is provided but is not used directly."
 }
 if ($Quantization) {
-    Write-Host "Note: Quantization parameter '$Quantization' is provided but is not used by this recipe."
+    Write-Host "Note: Quantization parameter '$Quantization' is provided and will be used for quantization."
 }
 
 Write-Host "Executing command inside container '$ContainerName':" -ForegroundColor Yellow
@@ -290,4 +292,36 @@ try {
 catch {
     Write-Host "An error occurred while executing the conversion script: $_" -ForegroundColor Red
     exit 1
+}
+
+# --- Begin quantization step ---
+# Ensure that the Quantization parameter is defined.
+if (-not $Quantization) {
+    Write-Host "Quantization parameter not provided. Skipping quantization step." -ForegroundColor Yellow
+}
+else {
+    # Convert the Quantization parameter to uppercase for the command.
+    $quantUpper = $Quantization.ToUpper()
+
+    # Build the quantization command.
+    # It uses the converted gguf file from the conversion step and creates a quantized version.
+    $quantizeCommand = "source /opt/conda/bin/activate kolo_env && /app/llama.cpp/llama-quantize '$FullOutputDir/Merged.gguf' '$FullOutputDir/Merged${Quantization}.gguf' $quantUpper"
+
+    Write-Host "Executing quantization command inside container '$ContainerName':" -ForegroundColor Yellow
+    Write-Host $quantizeCommand -ForegroundColor Yellow
+
+    try {
+        docker exec -it $ContainerName /bin/bash -c $quantizeCommand
+        if ($?) {
+            Write-Host "Quantization script executed successfully!" -ForegroundColor Green
+        }
+        else {
+            Write-Host "Failed to execute quantization script." -ForegroundColor Red
+            exit 1
+        }
+    }
+    catch {
+        Write-Host "An error occurred while executing the quantization script: $_" -ForegroundColor Red
+        exit 1
+    }
 }
