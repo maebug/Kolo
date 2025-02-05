@@ -101,9 +101,23 @@ All available parameters
 
 ### 6️⃣ Run Model
 
+<details>
+  <summary>Using Unsloth</summary>
+
 ```bash
-./run_model.ps1 "God" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+./run_model.ps1 "God" -Tool "unsloth" -OutputDir "GodOutput" -Quantization "Q4_K_M"
 ```
+
+</details>
+
+<details>
+  <summary>Using Torchtune</summary>
+
+```bash
+./run_model.ps1 "God" -Tool "torchtune" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+```
+
+</details>
 
 ### 7️⃣ Test Model
 
