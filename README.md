@@ -106,7 +106,7 @@ All available parameters
   <summary>Using Unsloth</summary>
 
 ```bash
-./run_model.ps1 "God" -Tool "unsloth" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+./install_model.ps1 "God" -Tool "unsloth" -OutputDir "GodOutput" -Quantization "Q4_K_M"
 ```
 
 </details>
@@ -115,7 +115,7 @@ All available parameters
   <summary>Using Torchtune</summary>
 
 ```bash
-./run_model.ps1 "God" -Tool "torchtune" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+./install_model.ps1 "God" -Tool "torchtune" -OutputDir "GodOutput" -Quantization "Q4_K_M"
 ```
 
 </details>
@@ -127,11 +127,11 @@ Open your browser and navigate to [localhost:8080](http://localhost:8080/)
 ### Other Commands
 
 ```bash
-./stop_model.ps1 "God"
+./uninstall_model.ps1 "God"
 ```
 
 ```bash
-./delete_model.ps1 "GodOutput"
+./delete_model.ps1 "GodOutput" -Tool "unsloth|torchtune"
 ```
 
 ```bash
