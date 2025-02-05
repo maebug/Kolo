@@ -68,31 +68,18 @@ For subsequent runs:
 ### 5️⃣ Train Model
 
 <details>
-  <summary>Using Unsloth</summary>
-
-```bash
-./train_model_unsloth.ps1 -OutputDir "GodOuput" -Quantization "Q4_K_M" -TrainData "data.jsonl"
-```
-
-All available parameters
-
-```bash
-./train_model_unsloth.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "outputs" -Quantization "Q4_K_M" -WeightDecay 0
-```
-
-</details>
-
-<details>
   <summary>Using Torchtune</summary>
 
+Requirements: Create a [Hugging Face](https://huggingface.co/) account and create a token.
+
 ```bash
-./train_model_torchtune.ps1 -OutputDir "GodOuput" -Quantization "Q4_K_M" -TrainData "data.jsonl"
+./train_model_torchtune.ps1 -OutputDir "GodOuput" -Quantization "Q4_K_M" -TrainData "data.jsonl" -HfToken "your_token"
 ```
 
 All available parameters
 
 ```bash
-./train_model_torchtune.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "outputs" -Quantization "Q4_K_M" -WeightDecay 0
+./train_model_torchtune.ps1 -HfToken "your_token" -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "outputs" -Quantization "Q4_K_M" -WeightDecay 0
 ```
 
 </details>
@@ -146,7 +133,7 @@ ssh root@localhost -p 2222
 Run training script ( make sure you copied over your training data )
 
 ```bash
-python train.py --epochs 3 --learning_rate 1e-4 --train_data "data.jsonl" --base_model "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" --chat_template "llama-3.1" --lora_rank 16 --lora_alpha 16 --lora_dropout 0 --max_seq_length 1024 --warmup_steps 10 --save_steps 500 --save_total_limit 5 --seed 1337 --scheduler_type linear --batch_size 2 --quantization "Q4_K_M" --output_dir outputs --weight_decay 0 --use_checkpoint
+python train.py --epochs 3 --learning_rate 1e-4 --train_data "data.json" --base_model "Meta-llama/Llama-3.2-1B-Instruct" --lora_rank 16 --lora_alpha 16 --lora_dropout 0 --max_seq_length 1024 --warmup_steps 10 --save_steps 500 --save_total_limit 5 --seed 1337 --scheduler_type linear --batch_size 2 --quantization "Q4_K_M" --output_dir outputs --weight_decay 0 --use_checkpoint
 ```
 
 ### WinSCP (SFTP Access)
