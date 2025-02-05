@@ -2,7 +2,7 @@
 .SYNOPSIS
     Executes a torchtune LoRA/QLoRA finetuning run inside a Docker container,
     merges the resulting model using merge_lora.py, converts the merged model to gguf format,
-    and finally quantizes the gguf file.
+    quantizes the gguf file, and then creates two model files in the same directory as the ggufs.
 
 .DESCRIPTION
     This script builds and runs a torchtune command for fine-tuning using the 
@@ -14,8 +14,11 @@
         --merged_model set to /var/kolo_data/torchtune/<OutputDir>/merged_model.
     Next, the script converts the merged model to gguf format using:
         /app/llama.cpp/convert_hf_to_gguf.py --outtype f16 --outfile $FullOutputDir/Merged.gguf $mergedModelPath
-    Finally, it quantizes the resulting gguf file using:
-        /app/llama.cpp/llama_quantize $FullOutputDir/Merged.gguf $FullOutputDir/Merged$Quantization.gguf Quantization.upper()
+    Then, it quantizes the resulting gguf file using:
+        /app/llama.cpp/llama-quantize $FullOutputDir/Merged.gguf $FullOutputDir/Merged$Quantization.gguf <Quantization.upper()>
+    Finally, it creates two model files in the same directory:
+      - **Modelfile** containing: "FROM Merged.gguf"
+      - **Modelfile<Quantization>** containing: "FROM Merged<Quantization>.gguf"
 
 .PARAMETER Epochs
     Number of training epochs. Default: 3
@@ -79,16 +82,6 @@ if (-not $containerRunning) {
 }
 
 # Build the base torchtune command string.
-# The following fixed parameters match the default torchtune command:
-#   tune run lora_finetune_single_device --config llama3_1/8B_qlora_single_device 
-#       dataset.packed=False compile=True loss=torchtune.modules.loss.CEWithChunkedOutputLoss
-#       enable_activation_checkpointing=True optimizer_in_bwd=False enable_activation_offloading=True
-#       optimizer=torch.optim.AdamW tokenizer.max_seq_len=2048 gradient_accumulation_steps=1
-#       epochs=3 batch_size=2 dataset.data_files=./data.json 
-#       dataset._component_=torchtune.datasets.chat_dataset dataset.source=json 
-#       dataset.conversation_column=conversations dataset.conversation_style=sharegpt 
-#       model.lora_rank=32 model.lora_alpha=32
-
 $command = "source /opt/conda/bin/activate kolo_env && tune run lora_finetune_single_device --config llama3_1/8B_qlora_single_device"
 
 # Fixed command options
@@ -192,7 +185,7 @@ else {
 $FullOutputDir = "/var/kolo_data/torchtune/$OutputDir"
 $command += " output_dir='$FullOutputDir'"
 
-# Note: Parameters such as BaseModel, ChatTemplate, and Quantization are logged for reference
+# Log parameters for reference
 if ($BaseModel) {
     Write-Host "Note: BaseModel parameter '$BaseModel' is provided but is not used directly."
 }
@@ -223,13 +216,7 @@ catch {
 }
 
 # --- Begin post-run merging steps ---
-
-# Construct a command to find the epoch folder with the largest index.
-# This command lists directories like "epoch_1", "epoch_2", etc., sorts them (version sort),
-# and picks the last entry.
 $findEpochCmd = "ls -d ${FullOutputDir}/epoch_* 2>/dev/null | sort -V | tail -n 1"
-
-# Execute the command inside the container and capture its output.
 try {
     $epochFolder = docker exec $ContainerName /bin/bash -c $findEpochCmd
     $epochFolder = $epochFolder.Trim()
@@ -246,17 +233,11 @@ catch {
     exit 1
 }
 
-# Set the merged model output path.
 $mergedModelPath = "${FullOutputDir}/merged_model"
-
-# Build the python command to run merge_lora.py.
-# This command activates the conda environment, then runs the python script with the proper arguments.
 $pythonCommand = "source /opt/conda/bin/activate kolo_env && python /app/merge_lora.py --lora_model '$epochFolder' --merged_model '$mergedModelPath'"
-
 Write-Host "Executing merge command inside container '$ContainerName':" -ForegroundColor Yellow
 Write-Host $pythonCommand -ForegroundColor Yellow
 
-# Execute the merge command inside the container.
 try {
     docker exec -it $ContainerName /bin/bash -c $pythonCommand
     if ($?) {
@@ -273,9 +254,7 @@ catch {
 }
 
 # --- Begin conversion step ---
-# Execute the conversion command after merging is complete.
 $conversionCommand = "source /opt/conda/bin/activate kolo_env && /app/llama.cpp/convert_hf_to_gguf.py --outtype f16 --outfile '$FullOutputDir/Merged.gguf' '$mergedModelPath'"
-
 Write-Host "Executing conversion command inside container '$ContainerName':" -ForegroundColor Yellow
 Write-Host $conversionCommand -ForegroundColor Yellow
 
@@ -295,18 +274,12 @@ catch {
 }
 
 # --- Begin quantization step ---
-# Ensure that the Quantization parameter is defined.
 if (-not $Quantization) {
     Write-Host "Quantization parameter not provided. Skipping quantization step." -ForegroundColor Yellow
 }
 else {
-    # Convert the Quantization parameter to uppercase for the command.
     $quantUpper = $Quantization.ToUpper()
-
-    # Build the quantization command.
-    # It uses the converted gguf file from the conversion step and creates a quantized version.
     $quantizeCommand = "source /opt/conda/bin/activate kolo_env && /app/llama.cpp/llama-quantize '$FullOutputDir/Merged.gguf' '$FullOutputDir/Merged${Quantization}.gguf' $quantUpper"
-
     Write-Host "Executing quantization command inside container '$ContainerName':" -ForegroundColor Yellow
     Write-Host $quantizeCommand -ForegroundColor Yellow
 
@@ -324,4 +297,43 @@ else {
         Write-Host "An error occurred while executing the quantization script: $_" -ForegroundColor Red
         exit 1
     }
+}
+
+# --- Begin model file creation step ---
+# Create a model file for the unquantized gguf.
+$modelFileCommand = "echo 'FROM Merged.gguf' > '$FullOutputDir/Modelfile'"
+Write-Host "Creating model file for unquantized model inside container '$ContainerName':" -ForegroundColor Yellow
+Write-Host $modelFileCommand -ForegroundColor Yellow
+try {
+    docker exec -it $ContainerName /bin/bash -c $modelFileCommand
+    if ($?) {
+        Write-Host "Model file 'Modelfile' created successfully!" -ForegroundColor Green
+    }
+    else {
+        Write-Host "Failed to create 'Modelfile'." -ForegroundColor Red
+        exit 1
+    }
+}
+catch {
+    Write-Host "An error occurred while creating 'Modelfile': $_" -ForegroundColor Red
+    exit 1
+}
+
+# Create a model file for the quantized gguf.
+$modelFileQuantCommand = "echo 'FROM Merged${Quantization}.gguf' > '$FullOutputDir/Modelfile${Quantization}'"
+Write-Host "Creating model file for quantized model inside container '$ContainerName':" -ForegroundColor Yellow
+Write-Host $modelFileQuantCommand -ForegroundColor Yellow
+try {
+    docker exec -it $ContainerName /bin/bash -c $modelFileQuantCommand
+    if ($?) {
+        Write-Host "Model file 'Modelfile${Quantization}' created successfully!" -ForegroundColor Green
+    }
+    else {
+        Write-Host "Failed to create 'Modelfile${Quantization}'." -ForegroundColor Red
+        exit 1
+    }
+}
+catch {
+    Write-Host "An error occurred while creating 'Modelfile${Quantization}': $_" -ForegroundColor Red
+    exit 1
 }
