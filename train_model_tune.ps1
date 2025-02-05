@@ -100,14 +100,14 @@ if ($Epochs) {
     $command += " epochs=$Epochs"
 }
 else {
-    $command += " epochs=1"
+    $command += " epochs=3"
 }
 
 if ($BatchSize) {
     $command += " batch_size=$BatchSize"
 }
 else {
-    $command += " batch_size=2"
+    $command += " batch_size=1"
 }
 
 if ($TrainData) {
@@ -127,14 +127,14 @@ if ($LoraRank) {
     $command += " model.lora_rank=$LoraRank"
 }
 else {
-    $command += " model.lora_rank=32"
+    $command += " model.lora_rank=16"
 }
 
 if ($LoraAlpha) {
     $command += " model.lora_alpha=$LoraAlpha"
 }
 else {
-    $command += " model.lora_alpha=32"
+    $command += " model.lora_alpha=16"
 }
 
 if ($LoraDropout -ne $null) {
@@ -143,6 +143,9 @@ if ($LoraDropout -ne $null) {
 
 if ($LearningRate) {
     $command += " optimizer.lr=$LearningRate"
+}
+else {
+    $command += " optimizer.lr=1e-4"
 }
 
 if ($MaxSeqLength) {
