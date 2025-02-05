@@ -13,17 +13,18 @@
 
 Kolo is built using a powerful stack of LLM tools:
 
-- [Unsloth](https://github.com/unslothai/unsloth) – Efficient fine-tuning for LLMs.
-- [Llama.cpp](https://github.com/ggerganov/llama.cpp) – Fast inference for Llama models.
-- [Ollama](https://ollama.ai/) – Simple and portable model management.
-- [Docker](https://www.docker.com/) – Containerized environment for easy deployment.
-- [Open WebUI](https://github.com/open-webui/open-webui) – Feature-rich and user-friendly self-hosted LLM web interface.
+- [Unsloth](https://github.com/unslothai/unsloth) – Open-source LLM fine-tuning; faster training, lower VRAM.
+- [Torchtune](https://github.com/pytorch/torchtune) – Native PyTorch library simplifying LLM fine-tuning workflows.
+- [Llama.cpp](https://github.com/ggerganov/llama.cpp) – Fast C/C++ inference for Llama models.
+- [Ollama](https://ollama.ai/) – Portable, user-friendly LLM model management and deployment.
+- [Docker](https://www.docker.com/) – Containerized environment ensuring consistent, scalable deployments.
+- [Open WebUI](https://github.com/open-webui/open-webui) – Intuitive self-hosted web interface for LLM management.
 
 ## System Requirements
 
-- Windows 10 OS or higher.
+- Windows 10 OS or higher. Might work on Linux & Mac (Untested)
 - Nvidia GPU with CUDA 12.1 capability and 8GB+ of VRAM
-- 32GB+ System RAM
+- 16GB+ System RAM
 
 ## Issues or Feedback
 
