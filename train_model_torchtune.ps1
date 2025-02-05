@@ -14,14 +14,14 @@
         tune download <BaseModel> --ignore-patterns "original/consolidated.00.pth" --hf-token "<HfToken>"
     
     Then, it selects the configuration for the run based on the BaseModel mapping. For example, if
-    BaseModel is "Meta-Llama-3.1-8B-Instruct", it uses the configuration "llama3_1/8B_qlora_single_device".
+    BaseModel is "Meta-llama/Llama-3.2-1B-Instruct", it uses the configuration "llama3_1/8B_qlora_single_device".
     
     After the finetuning completes, it identifies the epoch folder with the largest index,
     runs a merge script (/app/merge_lora.py), converts the merged model to gguf format,
     quantizes the gguf file, and creates model files accordingly.
 
 .PARAMETER BaseModel
-    The base model to be used. Default: "Meta-Llama-3.1-8B-Instruct"
+    The base model to be used. Default: "Meta-llama/Llama-3.2-1B-Instruct"
 
 .PARAMETER HfToken
     Hugging Face Token used for downloading the BaseModel.
@@ -33,8 +33,7 @@ param (
     [int]$Epochs,
     [double]$LearningRate,
     [string]$TrainData,
-    [string]$BaseModel = "Meta-Llama-3.1-8B-Instruct",
-    [string]$ChatTemplate,
+    [string]$BaseModel = "Meta-llama/Llama-3.2-1B-Instruct",
     [int]$LoraRank,
     [int]$LoraAlpha,
     [double]$LoraDropout,
@@ -58,7 +57,6 @@ if ($Epochs) { Write-Host "Epochs: $Epochs" }
 if ($LearningRate) { Write-Host "LearningRate: $LearningRate" }
 if ($TrainData) { Write-Host "TrainData: $TrainData" }
 if ($BaseModel) { Write-Host "BaseModel: $BaseModel" }
-if ($ChatTemplate) { Write-Host "ChatTemplate: $ChatTemplate" }
 if ($LoraRank) { Write-Host "LoraRank: $LoraRank" }
 if ($LoraAlpha) { Write-Host "LoraAlpha: $LoraAlpha" }
 if ($LoraDropout -ne $null) { Write-Host "LoraDropout: $LoraDropout" }
@@ -238,9 +236,6 @@ $FullOutputDir = "/var/kolo_data/torchtune/$OutputDir"
 $command += " output_dir='$FullOutputDir'"
 
 # Log parameters for reference
-if ($ChatTemplate) {
-    Write-Host "Note: ChatTemplate parameter '$ChatTemplate' is provided but is not used directly."
-}
 if ($Quantization) {
     Write-Host "Note: Quantization parameter '$Quantization' is provided and will be used for quantization."
 }

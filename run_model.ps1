@@ -1,9 +1,9 @@
 # Usage Examples:
 # Using the torchtune data source:
-#   .\run_model.ps1 "my_model_name" -OutputDir "outputs" -Quantization "Q4_K_M" -DataSource "torchtune"
+#   .\run_model.ps1 "my_model_name" -OutputDir "outputs" -Quantization "Q4_K_M" -Tool "torchtune"
 #
 # Using the unsloth data source:
-#   .\run_model.ps1 "my_model_name" -OutputDir "custom_outputs" -Quantization "Q4_K_M" -DataSource "unsloth"
+#   .\run_model.ps1 "my_model_name" -OutputDir "custom_outputs" -Quantization "Q4_K_M" -Tool "unsloth"
 
 param (
     [Parameter(Mandatory = $true, Position = 0)]
@@ -17,7 +17,7 @@ param (
 
     [Parameter(Mandatory = $true)]
     [ValidateSet("torchtune", "unsloth")]
-    [string]$DataSource           # The data source folder (must be either "torchtune" or "unsloth")
+    [string]$Tool           # The tool source folder (must be either "torchtune" or "unsloth")
 )
 
 # Define the container name
@@ -32,7 +32,7 @@ if (-Not $containerRunning) {
 }
 
 # Construct the full path to the model file using the chosen data source
-$BaseDir = "/var/kolo_data/$DataSource"
+$BaseDir = "/var/kolo_data/$Tool"
 $ModelFilePath = "$BaseDir/$OutputDir/Modelfile$Quantization"
 
 # Execute the Ollama command inside the container
