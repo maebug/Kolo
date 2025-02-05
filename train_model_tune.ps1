@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
     Executes a torchtune LoRA/QLoRA finetuning run inside a Docker container,
-    and then merges the resulting model using merge_lora.py.
+    and then merges the resulting model using merge_lora.py. Finally, it converts
+    the merged model to gguf format by calling convert_hf_to_gguf.py.
 
 .DESCRIPTION
     This script builds and runs a torchtune command for fine-tuning using the 
@@ -11,8 +12,8 @@
     (/app/merge_lora.py) with:
         --lora_model set to the identified epoch folder, and
         --merged_model set to /var/kolo_data/torchtune/<OutputDir>/merged_model.
-
-    (See the inline comments for details.)
+    Finally, it converts the merged model to gguf format using:
+        /app/llama.cpp/convert_hf_to_gguf.py --outtype f16 --outfile $FullOutputDir/Merged.gguf $mergedModelPath
 
 .PARAMETER Epochs
     Number of training epochs. Default: 3
@@ -261,8 +262,32 @@ try {
     }
     else {
         Write-Host "Failed to execute merge script." -ForegroundColor Red
+        exit 1
     }
 }
 catch {
     Write-Host "An error occurred while executing the merge script: $_" -ForegroundColor Red
+    exit 1
+}
+
+# --- Begin conversion step ---
+# Execute the conversion command after merging is complete.
+$conversionCommand = "source /opt/conda/bin/activate kolo_env && /app/llama.cpp/convert_hf_to_gguf.py --outtype f16 --outfile '$FullOutputDir/Merged.gguf' '$mergedModelPath'"
+
+Write-Host "Executing conversion command inside container '$ContainerName':" -ForegroundColor Yellow
+Write-Host $conversionCommand -ForegroundColor Yellow
+
+try {
+    docker exec -it $ContainerName /bin/bash -c $conversionCommand
+    if ($?) {
+        Write-Host "Conversion script executed successfully!" -ForegroundColor Green
+    }
+    else {
+        Write-Host "Failed to execute conversion script." -ForegroundColor Red
+        exit 1
+    }
+}
+catch {
+    Write-Host "An error occurred while executing the conversion script: $_" -ForegroundColor Red
+    exit 1
 }
