@@ -34,6 +34,10 @@ SHELL ["/opt/conda/bin/conda", "run", "-n", "kolo_env", "/bin/bash", "-c"]
 
 RUN conda config --set remote_read_timeout_secs 86400
 
+# Install torchtune
+RUN pip install torch torchvision torchao
+RUN pip install torchtune
+
 # Create a Conda environment and install PyTorch with CUDA support and xformers
 RUN --mount=type=cache,target=/opt/conda/pkgs \
     conda install -y pytorch-cuda=12.1 pytorch cudatoolkit xformers -c pytorch -c nvidia -c xformers && conda clean -afy
@@ -44,6 +48,9 @@ RUN pip install numpy datasets
 RUN pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git@038e6d4c8d40207a87297ab3aaf787c19b1006d1"
 RUN pip install --no-deps trl peft accelerate bitsandbytes
 RUN pip install transformers
+
+# Upgrade Xformers
+RUN pip install xformers --upgrade
 
 # Create Open-webui env
 RUN /opt/conda/bin/conda create -y --name openwebui_env python=3.11

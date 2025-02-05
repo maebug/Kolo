@@ -13,17 +13,18 @@
 
 Kolo is built using a powerful stack of LLM tools:
 
-- [Unsloth](https://github.com/unslothai/unsloth) – Efficient fine-tuning for LLMs.
-- [Llama.cpp](https://github.com/ggerganov/llama.cpp) – Fast inference for Llama models.
-- [Ollama](https://ollama.ai/) – Simple and portable model management.
-- [Docker](https://www.docker.com/) – Containerized environment for easy deployment.
-- [Open WebUI](https://github.com/open-webui/open-webui) – Feature-rich and user-friendly self-hosted LLM web interface.
+- [Unsloth](https://github.com/unslothai/unsloth) – Open-source LLM fine-tuning; faster training, lower VRAM.
+- [Torchtune](https://github.com/pytorch/torchtune) – Native PyTorch library simplifying LLM fine-tuning workflows.
+- [Llama.cpp](https://github.com/ggerganov/llama.cpp) – Fast C/C++ inference for Llama models.
+- [Ollama](https://ollama.ai/) – Portable, user-friendly LLM model management and deployment.
+- [Docker](https://www.docker.com/) – Containerized environment ensuring consistent, scalable deployments.
+- [Open WebUI](https://github.com/open-webui/open-webui) – Intuitive self-hosted web interface for LLM management.
 
 ## System Requirements
 
-- Windows 10 OS or higher.
+- Windows 10 OS or higher. Might work on Linux & Mac (Untested)
 - Nvidia GPU with CUDA 12.1 capability and 8GB+ of VRAM
-- 32GB+ System RAM
+- 16GB+ System RAM
 
 ## Issues or Feedback
 
@@ -67,21 +68,57 @@ For subsequent runs:
 
 ### 5️⃣ Train Model
 
+<details>
+  <summary>Using Unsloth</summary>
+
 ```bash
-./train_model.ps1 -OutputDir "GodOuput" -Quantization "Q4_K_M" -TrainData "data.jsonl"
+./train_model_unsloth.ps1 -OutputDir "GodOuput" -Quantization "Q4_K_M" -TrainData "data.jsonl"
 ```
 
 All available parameters
 
 ```bash
-./train_model.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "outputs" -Quantization "Q4_K_M" -WeightDecay 0 -UseCheckpoint
+./train_model_unsloth.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "GodOuput" -Quantization "Q4_K_M" -WeightDecay 0
 ```
 
-### 6️⃣ Run Model
+</details>
+
+<details>
+  <summary>Using Torchtune</summary>
+
+Requirements: Create a [Hugging Face](https://huggingface.co/) account and create a token.
 
 ```bash
-./run_model.ps1 "God" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+./train_model_torchtune.ps1 -OutputDir "GodOuput" -Quantization "Q4_K_M" -TrainData "data.json" -HfToken "your_token"
 ```
+
+All available parameters
+
+```bash
+./train_model_torchtune.ps1 -HfToken "your_token" -Epochs 3 -LearningRate 1e-4 -TrainData "data.json" -BaseModel "Meta-llama/Llama-3.2-1B-Instruct" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "cosine" -BatchSize 2 -OutputDir "GodOuput" -Quantization "Q4_K_M" -WeightDecay 0
+```
+
+</details>
+
+### 6️⃣ Install Model
+
+<details>
+  <summary>Using Unsloth</summary>
+
+```bash
+./install_model.ps1 "God" -Tool "unsloth" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+```
+
+</details>
+
+<details>
+  <summary>Using Torchtune</summary>
+
+```bash
+./install_model.ps1 "God" -Tool "torchtune" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+```
+
+</details>
 
 ### 7️⃣ Test Model
 
@@ -90,11 +127,11 @@ Open your browser and navigate to [localhost:8080](http://localhost:8080/)
 ### Other Commands
 
 ```bash
-./stop_model.ps1 "God"
+./uninstall_model.ps1 "God"
 ```
 
 ```bash
-./delete_model.ps1 "GodOutput"
+./delete_model.ps1 "GodOutput" -Tool "unsloth|torchtune"
 ```
 
 ```bash
@@ -121,12 +158,6 @@ Alternatively, you can connect manually via SSH:
 
 ```bash
 ssh root@localhost -p 2222
-```
-
-Run training script ( make sure you copied over your training data )
-
-```bash
-python train.py --epochs 3 --learning_rate 1e-4 --train_data "data.jsonl" --base_model "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" --chat_template "llama-3.1" --lora_rank 16 --lora_alpha 16 --lora_dropout 0 --max_seq_length 1024 --warmup_steps 10 --save_steps 500 --save_total_limit 5 --seed 1337 --scheduler_type linear --batch_size 2 --quantization "Q4_K_M" --output_dir outputs --weight_decay 0 --use_checkpoint
 ```
 
 ### WinSCP (SFTP Access)
