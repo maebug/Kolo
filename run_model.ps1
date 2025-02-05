@@ -1,12 +1,23 @@
-# Usage Example:
-# .\run_model.ps1 "my_model_name" -m "Q4_K_M"
-# If -m is not provided, it defaults to an empty string.
+# Usage Examples:
+# Using the torchtune data source:
+#   .\run_model.ps1 "my_model_name" -OutputDir "outputs" -Quantization "Q4_K_M" -DataSource "torchtune"
+#
+# Using the unsloth data source:
+#   .\run_model.ps1 "my_model_name" -OutputDir "custom_outputs" -Quantization "Q4_K_M" -DataSource "unsloth"
 
 param (
     [Parameter(Mandatory = $true, Position = 0)]
     [string]$ModelName, # The name of the model to create
-    [string]$OutputDir = "outputs", # The path to the outputs folder (default: "outputs")
-    [string]$Quantization = ""  # Optional quantization string appended to the model file name
+
+    [Parameter(Mandatory = $true)]
+    [string]$OutputDir, # The path to the outputs folder
+
+    [Parameter(Mandatory = $true)]
+    [string]$Quantization, # The model file extension
+
+    [Parameter(Mandatory = $true)]
+    [ValidateSet("torchtune", "unsloth")]
+    [string]$DataSource           # The data source folder (must be either "torchtune" or "unsloth")
 )
 
 # Define the container name
@@ -20,8 +31,9 @@ if (-Not $containerRunning) {
     exit 1
 }
 
-# Construct the full path to the model file using the fixed directory
-$ModelFilePath = "/var/kolo_data/torchtune/$OutputDir/Modelfile$Quantization"
+# Construct the full path to the model file using the chosen data source
+$BaseDir = "/var/kolo_data/$DataSource"
+$ModelFilePath = "$BaseDir/$OutputDir/Modelfile$Quantization"
 
 # Execute the Ollama command inside the container
 try {
