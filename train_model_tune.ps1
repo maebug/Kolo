@@ -3,35 +3,37 @@
     Executes a torchtune LoRA/QLoRA finetuning run inside a Docker container,
     merges the resulting model using merge_lora.py, converts the merged model to gguf format,
     quantizes the gguf file, and then creates two model files in the same directory as the ggufs.
+    
+    Additionally, this script now downloads the specified BaseModel using a Hugging Face token,
+    and selects the appropriate configuration based on a mapping from BaseModel to configuration string.
 
 .DESCRIPTION
-    This script builds and runs a torchtune command for fine-tuning using the 
-    "lora_finetune_single_device" recipe and the configuration "llama3_1/8B_qlora_single_device".
-    After the finetuning completes, it identifies the epoch folder with the largest index
-    (for example, /var/kolo_data/torchtune/outputs/epoch_2) and then runs a python script
-    (/app/merge_lora.py) with:
-        --lora_model set to the identified epoch folder, and
-        --merged_model set to /var/kolo_data/torchtune/<OutputDir>/merged_model.
-    Next, the script converts the merged model to gguf format using:
-        /app/llama.cpp/convert_hf_to_gguf.py --outtype f16 --outfile $FullOutputDir/Merged.gguf $mergedModelPath
-    Then, it quantizes the resulting gguf file using:
-        /app/llama.cpp/llama-quantize $FullOutputDir/Merged.gguf $FullOutputDir/Merged$Quantization.gguf <Quantization.upper()>
-    Finally, it creates two model files in the same directory:
-      - **Modelfile** containing: "FROM Merged.gguf"
-      - **Modelfile<Quantization>** containing: "FROM Merged<Quantization>.gguf"
+    This script builds and runs a torchtune command for fine-tuning using a recipe.
+    It first downloads the BaseModel using:
+    
+        tune download <BaseModel> --ignore-patterns "original/consolidated.00.pth" --hf-token "<HfToken>"
+    
+    Then, it selects the configuration for the run based on the BaseModel mapping. For example, if
+    BaseModel is "Meta-Llama-3.1-8B-Instruct", it uses the configuration "llama3_1/8B_qlora_single_device".
+    
+    After the finetuning completes, it identifies the epoch folder with the largest index,
+    runs a merge script (/app/merge_lora.py), converts the merged model to gguf format,
+    quantizes the gguf file, and creates model files accordingly.
 
-.PARAMETER Epochs
-    Number of training epochs. Default: 3
+.PARAMETER BaseModel
+    The base model to be used. Default: "Meta-Llama-3.1-8B-Instruct"
+
+.PARAMETER HfToken
+    Hugging Face Token used for downloading the BaseModel.
 
 ... [other parameter help as in your original script] ...
-
 #>
 
 param (
     [int]$Epochs,
     [double]$LearningRate,
     [string]$TrainData,
-    [string]$BaseModel,
+    [string]$BaseModel = "Meta-Llama-3.1-8B-Instruct",
     [string]$ChatTemplate,
     [int]$LoraRank,
     [int]$LoraAlpha,
@@ -46,7 +48,8 @@ param (
     [string]$OutputDir,
     [string]$Quantization = "Q4_K_M", # Default quantization value
     [double]$WeightDecay,
-    [switch]$UseCheckpoint
+    [switch]$UseCheckpoint,
+    [string]$HfToken
 )
 
 # Log received parameters
@@ -70,6 +73,7 @@ if ($OutputDir) { Write-Host "OutputDir: $OutputDir" } else { $OutputDir = "outp
 if ($Quantization) { Write-Host "Quantization: $Quantization" }
 if ($WeightDecay) { Write-Host "WeightDecay: $WeightDecay" }
 if ($UseCheckpoint) { Write-Host "UseCheckpoint: Enabled" } else { Write-Host "UseCheckpoint: Disabled" }
+if ($HfToken) { Write-Host "Hugging Face Token provided" } else { Write-Host "Hugging Face Token not provided" }
 
 # Define the Docker container name
 $ContainerName = "kolo_container"
@@ -81,8 +85,53 @@ if (-not $containerRunning) {
     exit 1
 }
 
-# Build the base torchtune command string.
-$command = "source /opt/conda/bin/activate kolo_env && tune run lora_finetune_single_device --config llama3_1/8B_qlora_single_device"
+# --- Define BaseModel to config mapping ---
+$configMap = @{
+    "Meta-llama/Llama-3.1-8B-Instruct" = "llama3_1/8B_qlora_single_device"
+    "Meta-llama/Llama-3.2-3B-Instruct" = "llama3_2/3B_qlora_single_device"
+    "Meta-llama/Llama-3.2-1B-Instruct" = "llama3_2/1B_qlora_single_device"
+}
+
+# Retrieve the configuration value based on the provided BaseModel.
+if ($configMap.ContainsKey($BaseModel)) {
+    $configValue = $configMap[$BaseModel]
+}
+else {
+    # Fallback default configuration if the BaseModel isn't found in the mapping.
+    $configValue = "llama3_1/8B_qlora_single_device"
+}
+
+Write-Host "Using configuration: $configValue for BaseModel: $BaseModel" -ForegroundColor Cyan
+
+# --- Begin BaseModel download step ---
+if ($BaseModel) {
+    if (-not $HfToken) {
+        Write-Host "Error: Hugging Face token must be provided." -ForegroundColor Red
+        exit 1
+    }
+    $downloadCommand = "source /opt/conda/bin/activate kolo_env && tune download $BaseModel --ignore-patterns 'original/consolidated.00.pth' --hf-token '$HfToken'"
+    Write-Host "Downloading BaseModel using command:" -ForegroundColor Yellow
+    Write-Host $downloadCommand -ForegroundColor Yellow
+
+    try {
+        docker exec -it $ContainerName /bin/bash -c $downloadCommand
+        if ($?) {
+            Write-Host "BaseModel downloaded successfully!" -ForegroundColor Green
+        }
+        else {
+            Write-Host "Failed to download BaseModel." -ForegroundColor Red
+            exit 1
+        }
+    }
+    catch {
+        Write-Host "An error occurred during BaseModel download: $_" -ForegroundColor Red
+        exit 1
+    }
+}
+
+# --- Begin torchtune run ---
+# Build the base torchtune command string using the configuration from the mapping.
+$command = "source /opt/conda/bin/activate kolo_env && tune run lora_finetune_single_device --config $configValue"
 
 # Fixed command options
 $command += " dataset.packed=False"
@@ -189,9 +238,6 @@ $FullOutputDir = "/var/kolo_data/torchtune/$OutputDir"
 $command += " output_dir='$FullOutputDir'"
 
 # Log parameters for reference
-if ($BaseModel) {
-    Write-Host "Note: BaseModel parameter '$BaseModel' is provided but is not used directly."
-}
 if ($ChatTemplate) {
     Write-Host "Note: ChatTemplate parameter '$ChatTemplate' is provided but is not used directly."
 }
@@ -199,7 +245,7 @@ if ($Quantization) {
     Write-Host "Note: Quantization parameter '$Quantization' is provided and will be used for quantization."
 }
 
-Write-Host "Executing command inside container '$ContainerName':" -ForegroundColor Yellow
+Write-Host "Executing torchtune command inside container '$ContainerName':" -ForegroundColor Yellow
 Write-Host $command -ForegroundColor Yellow
 
 # Execute the torchtune command inside the Docker container.
