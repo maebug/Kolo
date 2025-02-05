@@ -104,7 +104,7 @@ if ($Epochs) {
     $command += " epochs=$Epochs"
 }
 else {
-    $command += " epochs=3"
+    $command += " epochs=1"
 }
 
 if ($BatchSize) {
