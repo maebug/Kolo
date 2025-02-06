@@ -91,7 +91,7 @@ Beyond the basic parameters like learning rate and epochs, the following paramet
     - A LoraAlpha of 16 with a LoraRank of 16 yields a ratio of 1.
     - A LoraAlpha of 32 with a LoraRank of 16 results in a ratio of 2, meaning the trained LoRA weights will have a greater impact—similar to increasing the learning rate—which can lead to overfitting.
 
-  - Recommendation: A ratio of 1 is generally recommended, but feel free to experiment with ratios of 2 or 0.5 based on your specific needs
+  - Recommendation: A ratio of 1 is generally recommended, but feel free to experiment with ratios of 2 or 0.5 based on your specific needs.
 
 - **LoraDropout:**
 
@@ -136,6 +136,8 @@ Beyond the basic parameters like learning rate and epochs, the following paramet
 - **WeightDecay:**
 
   - A regularization technique that penalizes large weights by adding a fraction of their magnitude to the loss function. This encourages the model to maintain smaller, more generalizable weights, reducing the risk of overfitting.
+
+  - We recommend starting with a weight decay of 0.01, but you can experiment with 0.1, 0.001 and 0.
 
   - Increase weight decay if you experience overfitting, decrease weight decay if you experience underfitting.
 
