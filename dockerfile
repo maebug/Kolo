@@ -102,5 +102,8 @@ RUN mv llama.cpp/build/bin/llama-quantize llama.cpp/
 # Copy scripts
 COPY scripts /app/
 
+# Copy torchtune configs
+COPY torchtune /app/torchtune
+
 # Set the entrypoint to start supervisord
 CMD ["/usr/bin/supervisord"]
