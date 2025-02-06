@@ -39,8 +39,6 @@ param (
     [double]$LoraDropout,
     [int]$MaxSeqLength,
     [int]$WarmupSteps,
-    [int]$SaveSteps,
-    [int]$SaveTotalLimit,
     [int]$Seed,
     [string]$SchedulerType,
     [int]$BatchSize,
@@ -62,8 +60,6 @@ if ($LoraAlpha) { Write-Host "LoraAlpha: $LoraAlpha" }
 if ($LoraDropout -ne $null) { Write-Host "LoraDropout: $LoraDropout" }
 if ($MaxSeqLength) { Write-Host "MaxSeqLength: $MaxSeqLength" }
 if ($WarmupSteps) { Write-Host "WarmupSteps: $WarmupSteps" }
-if ($SaveSteps) { Write-Host "SaveSteps: $SaveSteps" }
-if ($SaveTotalLimit) { Write-Host "SaveTotalLimit: $SaveTotalLimit" }
 if ($Seed) { Write-Host "Seed: $Seed" }
 if ($SchedulerType) { Write-Host "SchedulerType: $SchedulerType" }
 if ($BatchSize) { Write-Host "BatchSize: $BatchSize" }
