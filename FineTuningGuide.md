@@ -116,7 +116,7 @@ Beyond the basic parameters like learning rate and epochs, the following paramet
 
 - **Quantization:**
 
-  - Quantization involves reducing the numerical precision of the model’s weights (e.g., from 32-bit floating-point to 8-bit). This only affects the output GGUF file that will be loaded into Ollama for testing. More quantization will make inference faster at the most of peformance. We recommend Q4_K_M for a balanced approach between performance and speed.
+  - Quantization involves reducing the numerical precision of the model’s weights (e.g., from 32-bit floating-point to 8-bit). This only affects the output GGUF file that will be loaded into Ollama for testing. More quantization will make inference faster at the cost of peformance. We recommend Q4_K_M for a balanced approach between performance and speed.
 
 - **WeightDecay:**
   - A regularization technique that penalizes large weights by adding a fraction of their magnitude to the loss function. This encourages the model to maintain smaller, more generalizable weights, reducing the risk of overfitting. Increase weight decay if you experience overfitting, decrease weight decay if you experience underfitting.
