@@ -68,6 +68,10 @@ For subsequent runs:
 
 ### 5️⃣ Train Model
 
+For detailed instructions, please refer to the [Fine Tune Training Guide](https://github.com/MaxHastings/Kolo/blob/main/FineTuningGuide.md).
+
+Quick Start
+
 <details>
   <summary>Using Unsloth</summary>
 
