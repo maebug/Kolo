@@ -82,7 +82,7 @@ All available parameters
 
 #### Using Torchtune
 
-Requirements: Create a [Hugging Face](https://huggingface.co/) account and create a token.
+Requirements: Create a [Hugging Face](https://huggingface.co/) account and create a token. You will also need to get permission from Meta to use their models. Search the Base Model name on Hugging Face website and get access before training.
 
 ```bash
 ./train_model_torchtune.ps1 -OutputDir "GodOutput" -Quantization "Q4_K_M" -TrainData "data.json" -HfToken "your_token"
