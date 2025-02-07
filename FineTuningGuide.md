@@ -32,6 +32,14 @@ Not every task necessitates the largest model available. Begin with a model that
 1. Begin with a model like LLaMA 1B to experiment with fine-tuning techniques.
 2. If the smaller model does not meet your needs, consider moving to a larger model (e.g., LLaMA 3B or 8B).
 
+| Model Size | Torchtune Base Model                  | Unsloth Base Model                           |
+|------------|---------------------------------------|-----------------------------------------------------|
+| **1B**     | `Meta-llama/Llama-3.2-1B-Instruct`      | `unsloth/Llama-3.2-1B-Instruct-bnb-4bit`              |
+| **3B**     | `Meta-llama/Llama-3.2-3B-Instruct`      | `unsloth/Llama-3.2-3B-Instruct-bnb-4bit`              |
+| **8B**     | `Meta-llama/Llama-3.1-8B-Instruct`      | `unsloth/Meta-Llama-3.1-8B-Instruct-bnb-4bit`         |
+
+> **Note:** While all base models are supported for Unsloth, the recommended ones are listed above.
+
 ---
 
 ## 4. Balancing Underfitting and Overfitting
