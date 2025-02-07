@@ -10,22 +10,21 @@ $targetDirectories = @(
 foreach ($dir in $targetDirectories) {
     Write-Host "Listing folders in $dir inside container $containerName" -ForegroundColor Cyan
 
-    # Build the command to allow shell globbing
+    # Build the command to allow shell globbing and suppress error messages if no folders are found.
     $command = "docker"
-    $cmd = "ls -d $dir/*/"  # Command to be executed inside the container
+    $cmd = "ls -d $dir/*/ 2>/dev/null"  # ls will not print an error if no folder exists
     $args = @("exec", $containerName, "sh", "-c", $cmd)
 
     try {
         # Execute the command and capture the output.
         $result = & $command @args 2>&1 | Out-String
 
-        # Check the exit status of the docker command.
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host $result -ForegroundColor Green
+        # If the trimmed output is empty, no folders were found.
+        if ($result.Trim().Length -eq 0) {
+            Write-Host "No models found" -ForegroundColor Green
         }
         else {
-            Write-Host "Error listing folders in $dir" -ForegroundColor Red
-            Write-Host $result -ForegroundColor Red
+            Write-Host $result -ForegroundColor Green
         }
     }
     catch {
