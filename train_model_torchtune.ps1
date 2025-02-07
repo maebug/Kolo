@@ -91,8 +91,7 @@ if ($configMap.ContainsKey($BaseModel)) {
     $configValue = $configMap[$BaseModel]
 }
 else {
-    # Fallback default configuration if the BaseModel isn't found in the mapping.
-    $configValue = "llama3_1/8B_qlora_single_device"
+    throw "Error: The specified BaseModel '$BaseModel' was not found in the configuration mapping."
 }
 
 Write-Host "Using configuration: $configValue for BaseModel: $BaseModel" -ForegroundColor Cyan
