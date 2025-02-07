@@ -70,7 +70,7 @@ The learning rate determines how much the model's weights are adjusted during tr
 
 - **Default Value:** A common starting point is `1e-4` (0.0001).
 - **Considerations:**
-  - **Higher Learning Rates:** Higher Learning Rates: Speed up learning but may risk overshooting or overfitting.
+  - **Higher Learning Rates:** Higher Learning Rates: Speed up learning but may risk overfitting.
   - **Lower Learning Rates:** Lower Learning Rates: Promote gradual, stable learning but might require more training epochs to achieve similar results.
 - **Experimentation:** Try values like `2e-4` (0.0002) or `5e-5` (0.00005) to see which best suits your task.
 
@@ -90,7 +90,7 @@ Beyond the basic parameters like learning rate and epochs, the following paramet
 
 - **LoraRank:**
 
-  - Defines the rank (i.e., the number of low-rank factors) used in the LoRA (Low-Rank Adaptation) approach. A higher rank allows the model to capture more nuanced information but increases the number of additional parameters and computational requirements.
+  - Defines the rank (i.e., the number of low-rank factors) used in the LoRA (Low-Rank Adaptation) approach. A higher rank allows the model to capture more nuanced information but increases the number of additional parameters and memory requirements.
 
 - **LoraAlpha:**
 
