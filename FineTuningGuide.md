@@ -106,6 +106,8 @@ Beyond the basic parameters like learning rate and epochs, the following paramet
   - Sets the maximum number of tokens the model will process in a single input sequence.
 
   - A longer sequence can capture more context but may increase memory usage and computational load. Adjust this parameter carefully, especially with very long texts, to avoid truncation or memory requirements.
+ 
+  - Ensure that your sequence length is set high enough to accommodate your longest prompt. If the prompt exceeds the specified MaxSeqLength, it will be truncated. As a general guideline, one token is roughly equivalent to a 4-letter word.
 
 - **WarmupSteps:**
 
