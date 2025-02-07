@@ -133,6 +133,10 @@ Open your browser and navigate to [localhost:8080](http://localhost:8080/)
 ```
 
 ```bash
+./list_models.ps1
+```
+
+```bash
 ./delete_model.ps1 "GodOutput" -Tool "unsloth|torchtune"
 ```
 
