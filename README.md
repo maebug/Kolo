@@ -68,8 +68,7 @@ For subsequent runs:
 
 ### 5️⃣ Train Model
 
-<details>
-  <summary>Using Unsloth</summary>
+#### Using Unsloth
 
 ```bash
 ./train_model_unsloth.ps1 -OutputDir "GodOutput" -Quantization "Q4_K_M" -TrainData "data.jsonl"
@@ -81,10 +80,7 @@ All available parameters
 ./train_model_unsloth.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "GodOutput" -Quantization "Q4_K_M" -WeightDecay 0
 ```
 
-</details>
-
-<details>
-  <summary>Using Torchtune</summary>
+#### Using Torchtune
 
 Requirements: Create a [Hugging Face](https://huggingface.co/) account and create a token.
 
@@ -98,29 +94,21 @@ All available parameters
 ./train_model_torchtune.ps1 -HfToken "your_token" -Epochs 3 -LearningRate 1e-4 -TrainData "data.json" -BaseModel "Meta-llama/Llama-3.2-1B-Instruct" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -Seed 1337 -SchedulerType "cosine" -BatchSize 2 -OutputDir "GodOutput" -Quantization "Q4_K_M" -WeightDecay 0
 ```
 
-</details>
-
 For more information about fine tuning parameters please refer to the [Fine Tune Training Guide](https://github.com/MaxHastings/Kolo/blob/main/FineTuningGuide.md).
 
 ### 6️⃣ Install Model
 
-<details>
-  <summary>Using Unsloth</summary>
+#### Using Unsloth
 
 ```bash
 ./install_model.ps1 "God" -Tool "unsloth" -OutputDir "GodOutput" -Quantization "Q4_K_M"
 ```
 
-</details>
-
-<details>
-  <summary>Using Torchtune</summary>
+#### Using Torchtune
 
 ```bash
 ./install_model.ps1 "God" -Tool "torchtune" -OutputDir "GodOutput" -Quantization "Q4_K_M"
 ```
-
-</details>
 
 ### 7️⃣ Test Model
 
@@ -142,6 +130,10 @@ Open your browser and navigate to [localhost:8080](http://localhost:8080/)
 
 ```bash
 ./copy_scripts.ps1
+```
+
+```bash
+./copy_configs.ps1
 ```
 
 ## 🔧 Advanced Users
