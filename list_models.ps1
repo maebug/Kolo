@@ -34,11 +34,16 @@ foreach ($dir in $targetDirectories) {
     Write-Host "-------------------------------------" -ForegroundColor Yellow
 }
 
-# Now, list the installed models in Ollama using the 'ollama list' command.
+# Now, list the installed models in Ollama using the 'ollama list' command inside the container.
 Write-Host "`nListing installed models in Ollama:" -ForegroundColor Cyan
 try {
-    # Execute the 'ollama list' command and capture the output.
-    $ollamaOutput = & "ollama" "list" 2>&1 | Out-String
+    # Build the docker exec command to run 'ollama list' inside the container.
+    $command = "docker"
+    $cmd = "ollama list"
+    $args = @("exec", $containerName, "sh", "-c", $cmd)
+
+    # Execute the command and capture the output.
+    $ollamaOutput = & $command @args 2>&1 | Out-String
 
     # Check if any output was returned.
     if ($ollamaOutput.Trim().Length -eq 0) {
