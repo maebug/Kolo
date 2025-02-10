@@ -1,0 +1,37 @@
+10. ConnectSSH
+Purpose:
+This section details how to access the Kolo container directly via SSH (and SFTP), allowing for advanced management, troubleshooting, or the installation of additional tools.
+
+Key Details:
+
+Overview:
+Direct SSH access gives you a terminal inside the Docker container, which can be helpful for:
+
+Running scripts manually.
+Installing extra software.
+Performing file operations.
+Debugging issues.
+SSH Commands:
+
+Using the provided PowerShell script:
+
+./connect.ps1
+
+Manual SSH connection:
+
+ssh root@localhost -p 2222
+
+Connection Credentials:
+
+Username: root
+Password: 123
+SFTP Access (for file transfers):
+
+Use an SFTP client like WinSCP.
+Connection Details:
+Host: localhost
+Port: 2222
+Username: root
+Password: 123
+What Happens:
+Once connected, you can navigate the container’s file system, edit scripts, manage configurations, or install additional packages as needed.

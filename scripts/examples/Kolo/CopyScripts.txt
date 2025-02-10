@@ -1,0 +1,21 @@
+9. CopyScripts
+Purpose:
+This command updates or copies the latest versions of scripts (and optionally configuration files) into the Kolo container. This is particularly useful if the scripts have been updated or if you’re setting up a new environment.
+
+Key Details:
+
+Overview:
+Keeping scripts up-to-date ensures that you benefit from any improvements or fixes. There are two related commands:
+
+Copying scripts:
+Updates the operational scripts used to manage the Kolo environment.
+Copying configurations:
+(Optional) Updates configuration files that may affect the behavior of Kolo and its integrated tools.
+Commands:
+
+Copy Scripts:
+./copy_scripts.ps1
+Copy Configurations (if needed):
+./copy_configs.ps1
+What Happens:
+These commands synchronize the latest script versions into your Docker container, ensuring you are running the most current setup without the need to rebuild the entire image.

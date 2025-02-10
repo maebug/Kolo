@@ -1,0 +1,18 @@
+2. RunContainer
+Purpose:
+This step launches the Docker container that runs the Kolo environment. The container is where you will execute further operations like training models, installing models, and more.
+
+Key Details:
+
+Initial vs. Subsequent Runs:
+
+First Time: The container must be created and started using a special script.
+Subsequent Runs: A simpler command is used to restart the already-created container.
+Commands:
+
+For the first-time run:
+./create_and_run_container.ps1
+For subsequent runs:
+./run_container.ps1
+What Happens:
+These commands initialize and start the containerized environment where Kolo’s scripts (for training, installation, etc.) are executed. Running the container ensures that your local system now has an isolated workspace with all the required dependencies.

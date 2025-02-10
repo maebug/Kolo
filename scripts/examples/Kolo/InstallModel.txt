@@ -1,0 +1,19 @@
+5. InstallModel
+Purpose:
+After fine-tuning, this step installs the trained model into the Kolo environment, making it available for testing through a local web interface.
+
+Key Details:
+
+Overview:
+Installation integrates your fine-tuned model into the Kolo system so that it can be served and interacted with via the web interface at localhost:8080.
+
+Commands:
+
+For a model trained with Unsloth:
+
+./install_model.ps1 "God" -Tool "unsloth" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+For a model trained with Torchtune:
+
+./install_model.ps1 "God" -Tool "torchtune" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+What Happens:
+The script registers the fine-tuned model with Kolo, allowing it to be served and subsequently tested via the web interface.

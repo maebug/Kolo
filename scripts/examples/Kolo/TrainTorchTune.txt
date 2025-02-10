@@ -1,0 +1,31 @@
+4. TrainTorchTune
+Purpose:
+This section explains how to fine-tune a model using Torchtune—a native PyTorch library that simplifies the LLM fine-tuning process.
+
+Key Details:
+
+Overview:
+Torchtune offers a different workflow for training models. It requires additional steps for authentication and permissions, particularly:
+
+A Hugging Face account and token.
+Permission from Meta to use their models (verify access on the Hugging Face website).
+Pre-requisites:
+
+Create a (Hugging Face)[https://huggingface.co/] account.
+Generate a Hugging Face token.
+Ensure you have the necessary permissions to use the chosen base model.
+Basic Command:
+
+bash
+Copy
+./train_model_torchtune.ps1 -OutputDir "GodOutput" -Quantization "Q4_K_M" -TrainData "data.json" -HfToken "your_token"
+Detailed Command (with all available parameters):
+
+bash
+Copy
+./train_model_torchtune.ps1 -HfToken "your_token" -Epochs 3 -LearningRate 1e-4 -TrainData "data.json" -BaseModel "Meta-llama/Llama-3.2-1B-Instruct" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -Seed 1337 -SchedulerType "cosine" -BatchSize 2 -OutputDir "GodOutput" -Quantization "Q4_K_M" -WeightDecay 0
+What Happens:
+The script fine-tunes your model using Torchtune while leveraging your Hugging Face token for authentication. Detailed parameters allow you to customize the training process, including aspects like learning rate, batch size, and quantization.
+
+Additional Resources:
+For more in-depth information on fine-tuning parameters, refer to the (Fine Tune Training Guide)[https://github.com/MaxHastings/Kolo/blob/main/FineTuningGuide.md].

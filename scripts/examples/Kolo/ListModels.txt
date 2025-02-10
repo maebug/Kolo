@@ -1,0 +1,13 @@
+6. ListModels
+Purpose:
+This command provides an overview of all the models that have been installed in your Kolo environment.
+
+Key Details:
+
+Overview:
+Quickly verify which models are currently active and available. This is useful for model management and to ensure that your installation process was successful.
+
+Command:
+./list_models.ps1
+What Happens:
+Running this script outputs a list of installed models, along with relevant details (such as model names and associated directories), making it easy to manage your fine-tuned models.

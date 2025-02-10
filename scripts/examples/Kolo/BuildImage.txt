@@ -1,0 +1,17 @@
+1. BuildImage
+Purpose:
+This step creates the Docker image that serves as the foundation for the Kolo environment. The image bundles all necessary dependencies and configurations for fine-tuning large language models (LLMs) locally.
+
+Key Details:
+
+Why It’s Needed:
+The Docker image provides a consistent, isolated environment where Kolo and its underlying tools (like Unsloth, Torchtune, etc.) can run without conflicts with your host system.
+
+Prerequisites:
+
+Docker Desktop must be installed.
+WSL 2 and HyperV should be set up (especially on Windows).
+Command to Execute:
+./build_image.ps1
+What Happens:
+Running this script builds the Docker image, ensuring that all tools and dependencies (such as Unsloth, Torchtune, Llama.cpp, etc.) are included in the environment for subsequent steps.
