@@ -1,0 +1,72 @@
+# config.yaml
+
+# Base directory to start looking for files (relative or absolute).
+base_dir: '../'
+
+# Directory where the QA outputs and debug files will be saved.
+output_dir: 'data/kolo/output'
+
+# The QA prompt template. The placeholder {files_content} will be replaced with the combined file content.
+qa_prompt_template: |
+  Generate a wide range of FAQ using the following content. Be specific and include as many relevant details as possible in both the question and answer.
+
+  --- Files Content ---
+
+  {files_content}
+
+  ---
+
+  --- Output ---
+
+  Q:
+  A:
+
+  Q:
+  A:
+
+  Q:
+  A:
+
+  ... (continue as needed)
+
+# Define the file groups, their associated files, and how many times each group should be processed.
+file_groups:
+  BuildImage:
+    iterations: 16
+    files: ['README.md', 'build_image.ps1', 'dockerfile', 'supervisord.conf']
+  RunContainer:
+    iterations: 4
+    files: ['README.md', 'create_and_run_container.ps1', 'run_container.ps1']
+  TrainUnsloth:
+    iterations: 16
+    files: ['README.md', 'train_model_unsloth.ps1', 'train.py']
+  TrainTorchTune:
+    iterations: 16
+    files:
+      [
+        'README.md',
+        'train_model_torchtune.ps1',
+        'merge_lora.py',
+        'convert_jsonl_to_json.py',
+      ]
+  InstallModel:
+    iterations: 4
+    files: ['README.md', 'install_model.ps1']
+  ListModels:
+    iterations: 4
+    files: ['README.md', 'list_models.ps1']
+  UninstallModel:
+    iterations: 4
+    files: ['README.md', 'uninstall_model.ps1']
+  DeleteModel:
+    iterations: 4
+    files: ['README.md', 'delete_model.ps1']
+  CopyScripts:
+    iterations: 4
+    files: ['README.md', 'copy_scripts.ps1']
+  ConnectSSH:
+    iterations: 4
+    files: ['README.md', 'connect.ps1']
+  FineTuningGuide:
+    iterations: 16
+    files: ['FineTuningGuide.md']

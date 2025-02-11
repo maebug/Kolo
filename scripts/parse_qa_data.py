@@ -1,7 +1,25 @@
 #!/usr/bin/env python3
+"""
+Usage:
+    python3 script.py --input_dir INPUT_DIRECTORY --output_file OUTPUT_FILE
+
+Description:
+    This script processes each text file in the specified input directory and extracts FAQ Q/A pairs
+    using three different patterns (Bold FAQ Format, Markdown Header FAQ Format, and Plain FAQ Format).
+    Each Q/A pair is then written as a JSON object (one per line) into the output file in JSONL format.
+
+Arguments:
+    --input_dir:   The directory containing text files to be processed.
+    --output_file: The path (including filename) of the output JSONL file.
+
+Example:
+    python3 script.py --input_dir data --output_file output/training_data.jsonl
+"""
+
 import os
 import re
 import json
+import argparse
 
 def extract_qa_pairs(text):
     qa_pairs = []
@@ -65,8 +83,23 @@ def extract_qa_pairs(text):
     return qa_pairs
 
 def main():
-    input_dir = "output"
-    output_file = "training_data.jsonl"
+    parser = argparse.ArgumentParser(
+        description="Extract FAQ Q/A pairs from text files and output them as JSONL."
+    )
+    parser.add_argument(
+        "--input_dir",
+        required=True,
+        help="Directory containing text files to process."
+    )
+    parser.add_argument(
+        "--output_file",
+        required=True,
+        help="Output file (JSONL format) to write the extracted Q/A pairs."
+    )
+    args = parser.parse_args()
+
+    input_dir = args.input_dir
+    output_file = args.output_file
     qa_messages = []
 
     # Process each file in the input directory.
