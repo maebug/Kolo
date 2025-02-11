@@ -4,12 +4,16 @@ Usage:
     python3 parse_qa_data.py --input_dir INPUT_DIRECTORY --output_file OUTPUT_FILE
 
 Description:
-    This script processes each text file in the specified input directory and extracts FAQ Q/A pairs
-    using three different patterns (Bold FAQ Format, Markdown Header FAQ Format, and Plain FAQ Format).
+    This script processes each text file in the specified input directory and extracts FAQ Q/A pairs.
+    It uses a state-machine style approach to handle many formatting variations including:
+      - Bold markers (e.g. **Q:** or **Q1:**) or Markdown header markers (e.g. #### Q1:)
+      - Optional digits after Q/A labels.
+      - Multiline answers (including bullet lists).
+      - Separator lines (e.g. ---) to delineate Q/A pairs.
     Each Q/A pair is then written as a JSON object (one per line) into the output file in JSONL format.
 
 Arguments:
-    --input_dir:   The directory containing text files to be processed.
+    --input_dir:   The directory containing text files to process.
     --output_file: The path (including filename) of the output JSONL file.
 
 Example:
@@ -23,66 +27,66 @@ import argparse
 
 def extract_qa_pairs(text):
     qa_pairs = []
+    current_question = None
+    current_answer_lines = []
 
-    # ----------------------------------------------------------
-    # Pattern 1: Bold FAQ Format
-    # ----------------------------------------------------------
-    # Example:
-    # **Q1: What is the purpose of TrainTorchTune?**
-    # **A1:** TrainTorchTune is designed to help users fine-tune a machine learning model...
-    #
-    # This pattern matches questions and answers wrapped in bold markers.
-    pattern_bold = re.compile(
-        r'\*\*Q(?:\d+)?\:\s*(?P<question>.+?)\*\*\s*\n+' 
-        r'(?:\*\*)?A(?:\d+)?\:\s*(?P<answer>.*?)(?=\n\s*(?:---|\*\*Q(?:\d+)?\:|#+\s*Q(?:\d+)?\:)|\Z)',
-        re.DOTALL | re.IGNORECASE
+    # Regex for question lines.
+    # Matches lines starting with optional "**" or Markdown headers, followed by "Q" (optionally with a digit),
+    # then a colon, then the question text.
+    question_pattern = re.compile(
+        r'^\s*(?:\*\*|#{1,}\s*)?Q(?:\d+)?\s*:\s*(.+?)(?:\*\*)?\s*$', 
+        re.IGNORECASE
+    )
+    
+    # Regex for answer lines.
+    # Matches lines starting with optional "**" or Markdown headers, followed by "A" (optionally with a digit),
+    # then a colon, then the answer text.
+    answer_pattern = re.compile(
+        r'^\s*(?:\*\*|#{1,}\s*)?A(?:\d+)?\s*:\s*(.+?)(?:\*\*)?\s*$', 
+        re.IGNORECASE
     )
 
-    # ----------------------------------------------------------
-    # Pattern 2: Markdown Header FAQ Format
-    # ----------------------------------------------------------
-    # Example:
-    # #### Q1: What is Kolo?
-    # **A1:** Kolo is a lightweight tool designed for fast and efficient fine-tuning...
-    #
-    # This pattern captures questions in Markdown header lines (one or more '#' symbols)
-    # and answers that may start with bold formatting.
-    pattern_header = re.compile(
-        r'^\s*#+\s*Q(?:\d+)?\:\s*(?P<question>.+?)\s*$\n+'  # Header question line
-        r'^(?:\*\*)?A(?:\d+)?\:\s*(?P<answer>.*?)(?=\n\s*(?:#+\s*Q(?:\d+)?\:|---)|\Z)',
-        re.DOTALL | re.IGNORECASE | re.MULTILINE
-    )
+    # Process the text line by line.
+    lines = text.splitlines()
 
-    # ----------------------------------------------------------
-    # Pattern 3: Plain FAQ Format
-    # ----------------------------------------------------------
-    # Example:
-    # Q1: What does the `-it -d` option mean in the Docker run command?
-    # A1: The `-it` option allows you to run the container interactively...
-    #
-    # This pattern matches plain Q/A lines, now allowing an optional digit after "A" as well,
-    # and stops capturing when it reaches a new question or a separator line.
-    pattern_plain = re.compile(
-        r'^Q(?:\d+)?\:\s*(?P<question>.+?)\s*$\n+'   # Question line starting with "Q:" (optional digit)
-        r'^A(?:\d+)?\:\s*(?P<answer>.*?)(?=\n^Q(?:\d+)?\:|\n\s*---|\Z)',
-        re.MULTILINE | re.DOTALL
-    )
+    for line in lines:
+        stripped = line.strip()
 
-    # Extract FAQ pairs using each pattern.
-    for m in pattern_bold.finditer(text):
-        question = m.group("question").strip()
-        answer = m.group("answer").strip()
-        qa_pairs.append((question, answer))
+        # If we hit a separator line, save the current Q/A pair (if any) and reset.
+        if stripped == '---':
+            if current_question is not None:
+                answer_text = "\n".join(current_answer_lines).strip()
+                qa_pairs.append((current_question, answer_text))
+                current_question = None
+                current_answer_lines = []
+            continue
 
-    for m in pattern_header.finditer(text):
-        question = m.group("question").strip()
-        answer = m.group("answer").strip()
-        qa_pairs.append((question, answer))
+        # Check if the line is a question line.
+        q_match = question_pattern.match(line)
+        if q_match:
+            # If a previous question is in progress, save its Q/A pair.
+            if current_question is not None:
+                answer_text = "\n".join(current_answer_lines).strip()
+                qa_pairs.append((current_question, answer_text))
+            current_question = q_match.group(1).strip()
+            current_answer_lines = []  # Reset answer accumulator.
+            continue
 
-    for m in pattern_plain.finditer(text):
-        question = m.group("question").strip()
-        answer = m.group("answer").strip()
-        qa_pairs.append((question, answer))
+        # Check if the line is an answer label line.
+        a_match = answer_pattern.match(line)
+        if a_match:
+            # Start the answer block with the text following the A label.
+            current_answer_lines.append(a_match.group(1).strip())
+            continue
+
+        # Otherwise, if we're currently processing a Q/A pair, treat the line as part of the answer.
+        if current_question is not None:
+            current_answer_lines.append(line)
+
+    # If there's a pending Q/A pair at the end of the file, add it.
+    if current_question is not None:
+        answer_text = "\n".join(current_answer_lines).strip()
+        qa_pairs.append((current_question, answer_text))
 
     return qa_pairs
 
