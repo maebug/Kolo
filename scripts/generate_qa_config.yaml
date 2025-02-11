@@ -8,7 +8,7 @@ output_dir: 'qa_generation_output'
 
 # The QA prompt template. The placeholder {files_content} will be replaced with the combined file content.
 qa_prompt_template: |
-  Generate a wide range of FAQ using the following content. Be specific and include as many relevant details as possible in both the question and answer.
+  Generate a comprehensive FAQ based on the provided file contents. Every question must explicitly reference the relevant file name(s) mentioned in the "Files Content" section. The answers should be detailed and provide as much context as possible.
 
   --- Files Content ---
 
@@ -31,42 +31,40 @@ qa_prompt_template: |
 
 # Define the file groups, their associated files, and how many times each group should be processed.
 file_groups:
-  BuildImage:
-    iterations: 32
-    files: ['README.md', 'build_image.ps1', 'dockerfile', 'supervisord.conf']
-  RunContainer:
-    iterations: 8
-    files: ['README.md', 'create_and_run_container.ps1', 'run_container.ps1']
-  TrainUnsloth:
-    iterations: 32
-    files: ['README.md', 'train_model_unsloth.ps1', 'train.py']
-  TrainTorchTune:
-    iterations: 32
-    files:
-      [
-        'README.md',
-        'train_model_torchtune.ps1',
-        'merge_lora.py',
-        'convert_jsonl_to_json.py',
-      ]
-  InstallModel:
-    iterations: 8
-    files: ['README.md', 'install_model.ps1']
-  ListModels:
-    iterations: 8
-    files: ['README.md', 'list_models.ps1']
   UninstallModel:
-    iterations: 8
-    files: ['README.md', 'uninstall_model.ps1']
+    iterations: 4
+    files: ['uninstall_model.ps1']
+  BuildImage:
+    iterations: 16
+    files: ['build_image.ps1', 'dockerfile', 'supervisord.conf']
+  RunContainer:
+    iterations: 4
+    files: ['create_and_run_container.ps1', 'run_container.ps1']
+  TrainUnsloth:
+    iterations: 16
+    files: ['train_model_unsloth.ps1', 'train.py']
+  TrainTorchTune:
+    iterations: 16
+    files:
+      ['train_model_torchtune.ps1', 'merge_lora.py', 'convert_jsonl_to_json.py']
+  InstallModel:
+    iterations: 4
+    files: ['install_model.ps1']
+  ListModels:
+    iterations: 4
+    files: ['list_models.ps1']
   DeleteModel:
-    iterations: 8
-    files: ['README.md', 'delete_model.ps1']
+    iterations: 4
+    files: ['delete_model.ps1']
   CopyScripts:
-    iterations: 8
-    files: ['README.md', 'copy_scripts.ps1']
+    iterations: 4
+    files: ['copy_scripts.ps1']
   ConnectSSH:
-    iterations: 8
-    files: ['README.md', 'connect.ps1']
+    iterations: 4
+    files: ['connect.ps1']
   FineTuningGuide:
-    iterations: 32
+    iterations: 16
     files: ['FineTuningGuide.md']
+  README:
+    iterations: 16
+    files: ['README.md']
