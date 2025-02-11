@@ -1,10 +1,10 @@
 # config.yaml
 
 # Base directory to start looking for files (relative or absolute).
-base_dir: '../'
+base_dir: 'qa_generation_input'
 
 # Directory where the QA outputs and debug files will be saved.
-output_dir: 'data/kolo/output'
+output_dir: 'qa_generation_output'
 
 # The QA prompt template. The placeholder {files_content} will be replaced with the combined file content.
 qa_prompt_template: |

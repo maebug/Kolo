@@ -10,7 +10,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
 
 # Install Node.js (v18.x) and npm from NodeSource
 RUN apt-get install -y nodejs && \
-        rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/*
 
 # Create the SSH daemon run directory.
 RUN mkdir /var/run/sshd
@@ -51,6 +51,9 @@ RUN pip install transformers
 
 # Upgrade Xformers
 RUN pip install xformers --upgrade
+
+# Install OpenAI
+RUN pip install openai
 
 # Create Open-webui env
 RUN /opt/conda/bin/conda create -y --name openwebui_env python=3.11

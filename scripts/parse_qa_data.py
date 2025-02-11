@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Usage:
-    python3 script.py --input_dir INPUT_DIRECTORY --output_file OUTPUT_FILE
+    python3 parse_qa_data.py --input_dir INPUT_DIRECTORY --output_file OUTPUT_FILE
 
 Description:
     This script processes each text file in the specified input directory and extracts FAQ Q/A pairs
@@ -13,7 +13,7 @@ Arguments:
     --output_file: The path (including filename) of the output JSONL file.
 
 Example:
-    python3 script.py --input_dir data --output_file output/training_data.jsonl
+    python3 parse_qa_data.py --input_dir data --output_file output/training_data.jsonl
 """
 
 import os
