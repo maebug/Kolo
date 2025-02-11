@@ -32,39 +32,54 @@ qa_prompt_template: |
 # Define the file groups, their associated files, and how many times each group should be processed.
 file_groups:
   UninstallModel:
-    iterations: 4
+    iterations: 8
     files: ['uninstall_model.ps1']
   BuildImage:
-    iterations: 16
+    iterations: 64
     files: ['build_image.ps1', 'dockerfile', 'supervisord.conf']
   RunContainer:
-    iterations: 4
+    iterations: 8
     files: ['create_and_run_container.ps1', 'run_container.ps1']
   TrainUnsloth:
-    iterations: 16
+    iterations: 32
     files: ['train_model_unsloth.ps1', 'train.py']
   TrainTorchTune:
-    iterations: 16
+    iterations: 32
     files:
       ['train_model_torchtune.ps1', 'merge_lora.py', 'convert_jsonl_to_json.py']
+  TrainingPSCommands:
+    iterations: 32
+    files: ['train_model_torchtune.ps1', 'train_model_unsloth.ps1']
   InstallModel:
-    iterations: 4
+    iterations: 8
     files: ['install_model.ps1']
   ListModels:
-    iterations: 4
+    iterations: 8
     files: ['list_models.ps1']
   DeleteModel:
-    iterations: 4
+    iterations: 8
     files: ['delete_model.ps1']
   CopyScripts:
-    iterations: 4
+    iterations: 8
     files: ['copy_scripts.ps1']
+  CopyConfigs:
+    iterations: 8
+    files: ['copy_configs.ps1']
   ConnectSSH:
-    iterations: 4
+    iterations: 8
     files: ['connect.ps1']
   FineTuningGuide:
-    iterations: 16
+    iterations: 64
     files: ['FineTuningGuide.md']
   README:
-    iterations: 16
+    iterations: 128
     files: ['README.md']
+  ModelPSCommands:
+    iterations: 16
+    files:
+      [
+        'install_model.ps1',
+        'uninstall_model.ps1',
+        'list_models.ps1',
+        'delete_model.ps1',
+      ]
