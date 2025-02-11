@@ -23,7 +23,7 @@ import argparse
 
 def extract_qa_pairs(text):
     qa_pairs = []
-    
+
     # ----------------------------------------------------------
     # Pattern 1: Bold FAQ Format
     # ----------------------------------------------------------
@@ -31,55 +31,59 @@ def extract_qa_pairs(text):
     # **Q1: What is the purpose of TrainTorchTune?**
     # **A1:** TrainTorchTune is designed to help users fine-tune a machine learning model...
     #
-    # This pattern now allows an optional digit after both Q and A.
+    # This pattern matches questions and answers wrapped in bold markers.
     pattern_bold = re.compile(
         r'\*\*Q(?:\d+)?\:\s*(?P<question>.+?)\*\*\s*\n+' 
         r'(?:\*\*)?A(?:\d+)?\:\s*(?P<answer>.*?)(?=\n\s*(?:---|\*\*Q(?:\d+)?\:|#+\s*Q(?:\d+)?\:)|\Z)',
         re.DOTALL | re.IGNORECASE
     )
-    
+
     # ----------------------------------------------------------
     # Pattern 2: Markdown Header FAQ Format
     # ----------------------------------------------------------
     # Example:
-    # ## Q: What is Unsloth?
-    # A: Unsloth is an open-source tool integrated into Kolo...
+    # #### Q1: What is Kolo?
+    # **A1:** Kolo is a lightweight tool designed for fast and efficient fine-tuning...
+    #
+    # This pattern captures questions in Markdown header lines (one or more '#' symbols)
+    # and answers that may start with bold formatting.
     pattern_header = re.compile(
-        r'^\s*#+\s*Q(?:\d+)?\:\s*(?P<question>.+?)\s*$\n+'   # Header question line (supports one or more '#' symbols)
-        r'^(?:\*\*)?A:(?:\*\*)?\s*(?P<answer>.*?)(?=\n\s*#+\s*Q(?:\d+)?\:|\Z)',
+        r'^\s*#+\s*Q(?:\d+)?\:\s*(?P<question>.+?)\s*$\n+'  # Header question line
+        r'^(?:\*\*)?A(?:\d+)?\:\s*(?P<answer>.*?)(?=\n\s*(?:#+\s*Q(?:\d+)?\:|---)|\Z)',
         re.DOTALL | re.IGNORECASE | re.MULTILINE
     )
-    
+
     # ----------------------------------------------------------
     # Pattern 3: Plain FAQ Format
     # ----------------------------------------------------------
     # Example:
-    # Q: What does the `-it -d` option mean in the Docker run command?
-    # A: The `-it` option allows you to run the container interactively...
+    # Q1: What does the `-it -d` option mean in the Docker run command?
+    # A1: The `-it` option allows you to run the container interactively...
+    #
+    # This pattern matches plain Q/A lines, now allowing an optional digit after "A" as well,
+    # and stops capturing when it reaches a new question or a separator line.
     pattern_plain = re.compile(
-        r'^Q(?:\d+)?\:\s*(?P<question>.+?)\s*$\n+'   # Question line starting with "Q:" (optional number)
-        r'^A:\s*(?P<answer>.*?)(?=\n^Q(?:\d+)?\:|\Z)',  # Answer until the next "Q:" or end-of-text
+        r'^Q(?:\d+)?\:\s*(?P<question>.+?)\s*$\n+'   # Question line starting with "Q:" (optional digit)
+        r'^A(?:\d+)?\:\s*(?P<answer>.*?)(?=\n^Q(?:\d+)?\:|\n\s*---|\Z)',
         re.MULTILINE | re.DOTALL
     )
-    
-    # Extract FAQ pairs using the Bold FAQ Format
+
+    # Extract FAQ pairs using each pattern.
     for m in pattern_bold.finditer(text):
         question = m.group("question").strip()
         answer = m.group("answer").strip()
         qa_pairs.append((question, answer))
-    
-    # Extract FAQ pairs using the Markdown Header FAQ Format
+
     for m in pattern_header.finditer(text):
         question = m.group("question").strip()
         answer = m.group("answer").strip()
         qa_pairs.append((question, answer))
-    
-    # Extract FAQ pairs using the Plain FAQ Format
+
     for m in pattern_plain.finditer(text):
         question = m.group("question").strip()
         answer = m.group("answer").strip()
         qa_pairs.append((question, answer))
-    
+
     return qa_pairs
 
 def main():
