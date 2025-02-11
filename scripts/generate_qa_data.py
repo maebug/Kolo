@@ -66,6 +66,16 @@ def process_file_group(group_name, file_list, base_dir, output_dir, qa_prompt_te
         print(f"No valid files found for group {group_name}. Skipping.")
         return
 
+    # Determine output file name and path.
+    safe_group_name = group_name.replace(" ", "_")
+    output_file_name = f"group_{safe_group_name}.txt"
+    output_file_path = os.path.join(output_dir, output_file_name)
+
+    # If the output file already exists, skip processing this group.
+    if os.path.exists(output_file_path):
+        print(f"Output file {output_file_path} already exists for group {group_name}. Skipping QA generation.")
+        return
+
     # Fill in the QA prompt template with the combined file content.
     qa_prompt = qa_prompt_template.format(files_content=combined_files)
 
@@ -81,9 +91,6 @@ def process_file_group(group_name, file_list, base_dir, output_dir, qa_prompt_te
     qa_text = qa_response.choices[0].message.content.strip()
 
     # Save the QA output.
-    safe_group_name = group_name.replace(" ", "_")
-    output_file_name = f"group_{safe_group_name}.txt"
-    output_file_path = os.path.join(output_dir, output_file_name)
     with open(output_file_path, 'w', encoding='utf-8') as out_f:
         out_f.write(qa_text)
 

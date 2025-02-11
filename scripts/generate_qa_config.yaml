@@ -32,16 +32,16 @@ qa_prompt_template: |
 # Define the file groups, their associated files, and how many times each group should be processed.
 file_groups:
   BuildImage:
-    iterations: 16
+    iterations: 32
     files: ['README.md', 'build_image.ps1', 'dockerfile', 'supervisord.conf']
   RunContainer:
-    iterations: 4
+    iterations: 8
     files: ['README.md', 'create_and_run_container.ps1', 'run_container.ps1']
   TrainUnsloth:
-    iterations: 16
+    iterations: 32
     files: ['README.md', 'train_model_unsloth.ps1', 'train.py']
   TrainTorchTune:
-    iterations: 16
+    iterations: 32
     files:
       [
         'README.md',
@@ -50,23 +50,23 @@ file_groups:
         'convert_jsonl_to_json.py',
       ]
   InstallModel:
-    iterations: 4
+    iterations: 8
     files: ['README.md', 'install_model.ps1']
   ListModels:
-    iterations: 4
+    iterations: 8
     files: ['README.md', 'list_models.ps1']
   UninstallModel:
-    iterations: 4
+    iterations: 8
     files: ['README.md', 'uninstall_model.ps1']
   DeleteModel:
-    iterations: 4
+    iterations: 8
     files: ['README.md', 'delete_model.ps1']
   CopyScripts:
-    iterations: 4
+    iterations: 8
     files: ['README.md', 'copy_scripts.ps1']
   ConnectSSH:
-    iterations: 4
+    iterations: 8
     files: ['README.md', 'connect.ps1']
   FineTuningGuide:
-    iterations: 16
+    iterations: 32
     files: ['FineTuningGuide.md']
