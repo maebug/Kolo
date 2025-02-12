@@ -4,11 +4,11 @@
 
 The **Kolo** project uses the following scripts and configuration file to generate and process QA data:
 
-1. Copy over all your subfolders, documents and files into the specified default directory `/var/kolo_data/qa_generation_input`.
+1. The following command will copy over all subfolders, documents and files into `/var/kolo_data/qa_generation_input`.
    ```bash
    ./copy_qa_input_generation.ps1 "directory"
    ```
-   Copy the entire Kolo project by running.
+   If you are testing for the first time. Try copying the entire Kolo project by running this command.
    ```bash
    ./copy_qa_input_generation.ps1 "../"
    ```
@@ -63,3 +63,7 @@ Defines multiple file groups with unique names. (e.g., `UninstallModel`, `BuildI
   Mostly used to specify what you want GPT to do with `{file_name}`.
 
 See [generate_qa_config.yaml](https://github.com/MaxHastings/Kolo/blob/main/scripts/generate_qa_config.yaml) for full config example.
+
+## Debugging
+
+If you run into issues, you can look at the debug folder inside kolo_container at `/var/kolo_data/qa_generation_output` using WinSCP.
