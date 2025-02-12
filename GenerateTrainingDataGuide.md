@@ -58,4 +58,4 @@ Defines multiple file groups with unique names. (e.g., `UninstallModel`, `BuildI
 - `individual`: The unique prompt you want to be sent for each file in the group.  
   Mostly used to specify what you want GPT to do with `{file_name}`.
 
-See `generate_qa_config.yaml` for full config example.
+See [generate_qa_config.yaml](https://github.com/MaxHastings/Kolo/blob/main/scripts/generate_qa_config.yaml) for full config example.
