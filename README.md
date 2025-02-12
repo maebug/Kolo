@@ -1,13 +1,13 @@
 # Kolo
 
-**Kolo** is a lightweight tool designed for **fast and efficient fine-tuning and testing of Large Language Models (LLMs)** on your local machine. It leverages cutting-edge tools to simplify the fine-tuning process, making it as quick and seamless as possible.
+**Kolo** is a lightweight tool designed for **fast and efficient data generation, fine-tuning and testing of Large Language Models (LLMs)** on your local machine. It leverages cutting-edge tools to simplify the fine-tuning process, making it as quick and seamless as possible.
 
 ## 🚀 Features
 
-- 🏗 **Lightweight**: Minimal dependencies, optimized for speed.
 - ⚡ **Runs Locally**: No need for cloud-based services; fine-tune models on your own machine.
-- 🛠 **Easy Setup**: Simple installation and execution with Docker.
-- 🔌 **Support for Popular Frameworks**: Integrates with major LLM toolkits.
+- 🛠 **Easy Setup**: Simple installation of all dependencies with Docker. No more wasting time setting up your own LLM development environment we already did it for you!
+- 📁 **Generate Training Data**: Generate synthetic QA training data using your text files quick and easy!
+- 🔌 **Support for Popular Frameworks**: Integrates with major LLM toolkits such as Unsloth, Torchtune, Llama.cpp, Ollama and Open WebUI.
 
 ## 🛠 Tools Used
 
@@ -20,11 +20,13 @@ Kolo is built using a powerful stack of LLM tools:
 - [Docker](https://www.docker.com/) – Containerized environment ensuring consistent, scalable deployments.
 - [Open WebUI](https://github.com/open-webui/open-webui) – Intuitive self-hosted web interface for LLM management.
 
-## System Requirements
+## Recommended System Requirements
 
 - Windows 10 OS or higher. Might work on Linux & Mac (Untested)
 - Nvidia GPU with CUDA 12.1 capability and 8GB+ of VRAM
 - 16GB+ System RAM
+
+May work on other systems, your results may vary. Let us know!
 
 ## Issues or Feedback
 
