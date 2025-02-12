@@ -1,0 +1,142 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "user_id", "title", "chat", "updated_at", "created_at"],
+    "properties": {
+      "id": { "type": "string", "format": "uuid" },
+      "user_id": { "type": "string", "format": "uuid" },
+      "title": { "type": "string" },
+      "chat": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "models",
+          "params",
+          "history",
+          "messages",
+          "tags",
+          "timestamp",
+          "files"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "models": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "params": { "type": "object" },
+          "history": {
+            "type": "object",
+            "required": ["messages", "currentId"],
+            "properties": {
+              "messages": {
+                "type": "object",
+                "patternProperties": {
+                  "^[0-9a-f-]+$": {
+                    "type": "object",
+                    "required": ["id", "role", "content", "timestamp"],
+                    "properties": {
+                      "id": { "type": "string", "format": "uuid" },
+                      "parentId": {
+                        "type": ["string", "null"],
+                        "format": "uuid"
+                      },
+                      "childrenIds": {
+                        "type": "array",
+                        "items": { "type": "string", "format": "uuid" }
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": ["user", "assistant"]
+                      },
+                      "content": { "type": "string" },
+                      "timestamp": { "type": "integer" },
+                      "model": { "type": "string" },
+                      "modelName": { "type": "string" },
+                      "modelIdx": { "type": "integer" },
+                      "userContext": { "type": ["string", "null"] },
+                      "lastSentence": { "type": "string" },
+                      "usage": {
+                        "type": "object",
+                        "properties": {
+                          "response_token/s": { "type": "number" },
+                          "prompt_token/s": { "type": "number" },
+                          "total_duration": { "type": "integer" },
+                          "load_duration": { "type": "integer" },
+                          "prompt_eval_count": { "type": "integer" },
+                          "prompt_eval_duration": { "type": "integer" },
+                          "eval_count": { "type": "integer" },
+                          "eval_duration": { "type": "integer" },
+                          "approximate_total": { "type": "string" }
+                        }
+                      },
+                      "done": { "type": "boolean" },
+                      "models": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              },
+              "currentId": { "type": "string", "format": "uuid" }
+            }
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "role", "content", "timestamp"],
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "parentId": { "type": ["string", "null"], "format": "uuid" },
+                "childrenIds": {
+                  "type": "array",
+                  "items": { "type": "string", "format": "uuid" }
+                },
+                "role": {
+                  "type": "string",
+                  "enum": ["user", "assistant"]
+                },
+                "content": { "type": "string" },
+                "timestamp": { "type": "integer" },
+                "models": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "timestamp": { "type": "integer" },
+          "files": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "updated_at": { "type": "integer" },
+      "created_at": { "type": "integer" },
+      "share_id": { "type": ["string", "null"] },
+      "archived": { "type": "boolean" },
+      "pinned": { "type": "boolean" },
+      "meta": {
+        "type": "object",
+        "properties": {
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "folder_id": { "type": ["string", "null"] }
+    }
+  }
+}

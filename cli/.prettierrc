@@ -1,0 +1,8 @@
+{
+  "jsxSingleQuote": true,
+  "semi": false,
+  "importOrderParserPlugins": ["typescript", "jsx", "decorators"],
+  "plugins": [
+    "@trivago/prettier-plugin-sort-imports"
+  ]
+}
