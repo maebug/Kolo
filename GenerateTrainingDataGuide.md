@@ -6,7 +6,7 @@ The **Kolo** project uses the following scripts and configuration file to genera
 
 1. Copy over all your subfolders, documents and files into the specified default directory `/var/kolo_data/qa_generation_input`.
    ```bash
-   ./copy_qa_input_generation.ps1 "{directory}"
+   ./copy_qa_input_generation.ps1 "directory"
    ```
 
 2. Modify the config file to specify file groups, custom prompts, and the number of iterations.  
@@ -22,7 +22,7 @@ The **Kolo** project uses the following scripts and configuration file to genera
 
 4. This will generate QA data using OpenAI's GPT-4o-mini. You must have a Open AI account and API key.
    ```bash
-   ./generate_qa_data.ps1 -OPENAI_API_KEY "{your key}"
+   ./generate_qa_data.ps1 -OPENAI_API_KEY "your key"
    ```
 
 5. After generating the QA prompts, this command converts the text files inside  
