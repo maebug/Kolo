@@ -23,7 +23,7 @@ allowed_file_groups = {}
 for group_name, group_config in file_groups_config.items():
     iterations = group_config.get("iterations", 1)  # Default to 1 if not specified.
     for i in range(1, iterations + 1):
-        key = f"{group_name}{i}"
+        key = f"{group_name}_{i}"
         allowed_file_groups[key] = group_config
 
 print("File Groups:")
@@ -50,6 +50,7 @@ def find_file_in_subdirectories(full_base_dir, file_relative_path):
 def process_file_group(group_name, group_config, full_base_dir, output_dir, header_prompt, footer_prompt):
     file_list = group_config.get("files", [])
     group_prompt = group_config.get("group_prompt", "")
+    individual_prompt = group_config.get("individual_prompt", "")
     combined_files = ""
     for rel_path in file_list:
         file_path = find_file_in_subdirectories(full_base_dir, rel_path)
@@ -58,7 +59,7 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
                 content = f.read()
             # Note both the original name and the location where the file was found.
             combined_files += (
-                f"Filename: {rel_path} (found at {file_path})\n{'-' * 20}\n{content}\n\n"
+                f"{individual_prompt.format(file_name=rel_path)}\n\nFilename: {rel_path} (found at {file_path})\n{'-' * 20}\n{content}\n\n"
             )
         else:
             print(f"Warning: {rel_path} not found in {full_base_dir} or its subdirectories.")
