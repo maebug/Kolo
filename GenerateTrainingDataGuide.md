@@ -1,4 +1,4 @@
-# Generate Training Data Guide
+# Generate Synthetic Training Data Guide
 
 ## Overview
 
@@ -37,7 +37,7 @@ The **Kolo** project uses the following scripts and configuration file to genera
 
 ---
 
-## Generate QA Config File Details
+## Config File Details
 
 This YAML configuration file controls various aspects of the QA generation process.
 
