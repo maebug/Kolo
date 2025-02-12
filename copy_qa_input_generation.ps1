@@ -24,8 +24,8 @@ param (
 )
 
 # Define the container name and destination path
-$containerName   = "kolo_container"
-$destinationPath = "/app/qa_generation_input"
+$containerName = "kolo_container"
+$destinationPath = "/var/kolo_data/qa_generation_input"
 
 # Verify the source directory exists
 if (-not (Test-Path $SourceDir)) {

@@ -9,6 +9,7 @@ with open(CONFIG_FILE, "r", encoding="utf-8") as f:
 
 # Read values from the config.
 base_dir = config.get("base_dir", "")
+full_base_dir = f"/var/kolo_data/{base_dir}"
 output_dir = config.get("output_dir", "output")
 qa_prompt_template = config.get("qa_prompt_template", "")
 file_groups_config = config.get("file_groups", {})
@@ -25,33 +26,33 @@ for group_name, group_config in file_groups_config.items():
         key = f"{group_name}{i}"
         allowed_file_groups[key] = file_list
 
-print("Allowed File Groups:")
-print(allowed_file_groups)
+print("File Groups:")
+print(file_groups_config.items())
 
 
-def find_file_in_subdirectories(base_dir, file_relative_path):
+def find_file_in_subdirectories(full_base_dir, file_relative_path):
     """
-    Attempts to find a file starting from base_dir:
-      1. First, check if the file exists at base_dir joined with the given relative path.
+    Attempts to find a file starting from full_base_dir:
+      1. First, check if the file exists at full_base_dir joined with the given relative path.
       2. If not found, search recursively through all subdirectories for a file matching the basename.
     Returns the full path if found; otherwise, returns None.
     """
-    possible_path = os.path.join(base_dir, file_relative_path)
+    possible_path = os.path.join(full_base_dir, file_relative_path)
     if os.path.exists(possible_path):
         return possible_path
 
     # Search all subdirectories for the file (by matching its basename).
     target = os.path.basename(file_relative_path)
-    for root, dirs, files in os.walk(base_dir):
+    for root, dirs, files in os.walk(full_base_dir):
         if target in files:
             return os.path.join(root, target)
     return None
 
 
-def process_file_group(group_name, file_list, base_dir, output_dir, qa_prompt_template):
+def process_file_group(group_name, file_list, full_base_dir, output_dir, qa_prompt_template):
     combined_files = ""
     for rel_path in file_list:
-        file_path = find_file_in_subdirectories(base_dir, rel_path)
+        file_path = find_file_in_subdirectories(full_base_dir, rel_path)
         if file_path and os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -60,7 +61,7 @@ def process_file_group(group_name, file_list, base_dir, output_dir, qa_prompt_te
                 f"Filename: {rel_path} (found at {file_path})\n{'-' * 20}\n{content}\n\n"
             )
         else:
-            print(f"Warning: {rel_path} not found in {base_dir} or its subdirectories.")
+            print(f"Warning: {rel_path} not found in {full_base_dir} or its subdirectories.")
 
     if not combined_files:
         print(f"No valid files found for group {group_name}. Skipping.")
@@ -69,7 +70,11 @@ def process_file_group(group_name, file_list, base_dir, output_dir, qa_prompt_te
     # Determine output file name and path.
     safe_group_name = group_name.replace(" ", "_")
     output_file_name = f"group_{safe_group_name}.txt"
-    output_file_path = os.path.join(output_dir, output_file_name)
+    full_output_dir = f"/var/kolo_data/{output_dir}"
+    output_file_path = os.path.join(full_output_dir, output_file_name)
+
+    # Create the necessary directories if they do not exist.
+    os.makedirs(full_output_dir, exist_ok=True)
 
     # If the output file already exists, skip processing this group.
     if os.path.exists(output_file_path):
@@ -111,7 +116,7 @@ def main():
     # Process each allowed file group from the configuration.
     for group_name, file_list in allowed_file_groups.items():
         print(f"\nProcessing group: {group_name}")
-        process_file_group(group_name, file_list, base_dir, output_dir, qa_prompt_template)
+        process_file_group(group_name, file_list, full_base_dir, output_dir, qa_prompt_template)
 
 
 if __name__ == "__main__":
