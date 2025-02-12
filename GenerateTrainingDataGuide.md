@@ -6,7 +6,7 @@ The **Kolo** project uses the following scripts and configuration file to genera
 
 1. Copy over all your subfolders, documents and files into the specified default directory `/var/kolo_data/qa_generation_input`.
    ```bash
-   ./copy_qa_input_generation.ps1 {directory}
+   ./copy_qa_input_generation.ps1 "{directory}"
    ```
 
 2. Modify the config file to specify file groups, custom prompts, and the number of iterations.  
