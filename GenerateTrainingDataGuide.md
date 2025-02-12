@@ -66,4 +66,4 @@ See [generate_qa_config.yaml](https://github.com/MaxHastings/Kolo/blob/main/scri
 
 ## Debugging
 
-If you run into issues, you can look at the debug folder inside kolo_container at `/var/kolo_data/qa_generation_output` using WinSCP.
+If you run into issues, you can look at the debug folder inside `kolo_container` at `/var/kolo_data/qa_generation_output` using WinSCP.
