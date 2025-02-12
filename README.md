@@ -1,6 +1,6 @@
 # Kolo
 
-**Kolo** is a lightweight tool designed for **fast and efficient data generation, fine-tuning and testing of Large Language Models (LLMs)** on your local machine. It leverages cutting-edge tools to simplify the fine-tuning process, making it as quick and seamless as possible.
+**Kolo** is a lightweight tool designed for **fast and efficient data generation, fine-tuning and testing of Large Language Models (LLMs)** on your local machine. It leverages cutting-edge tools to simplify the fine-tuning and data generation process, making it as quick and seamless as possible.
 
 ## 🚀 Features
 
