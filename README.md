@@ -66,6 +66,8 @@ For subsequent runs:
 ./copy_training_data.ps1 -f examples/God.jsonl -d data.jsonl
 ```
 
+Don't have training data? Check out our synthetic QA [data generation guide](GenerateTrainingDataGuide.md)!
+
 ### 5️⃣ Train Model
 
 #### Using Unsloth
