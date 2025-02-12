@@ -46,7 +46,7 @@ This YAML configuration file controls various aspects of the QA generation proce
 
 - `header_prompt`: Main prompt for instructions to generate QA data.
 - `footer_prompt`: Prompt that specifies the expected output format.  
-  **DO NOT CHANGE FOOTER PROMPT UNLESS YOU KNOW WHAT YOU ARE DOING! IF YOU DO YOU MAY BREAK STEP (4) CONVERSION.**
+  **DO NOT CHANGE FOOTER PROMPT UNLESS YOU KNOW WHAT YOU ARE DOING! IF YOU DO YOU MAY BREAK CONVERSION.**
 
 ### **File Groups:**
 
