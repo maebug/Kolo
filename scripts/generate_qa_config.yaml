@@ -6,16 +6,12 @@ base_dir: 'qa_generation_input'
 # Directory where the QA outputs and debug files will be saved.
 output_dir: 'qa_generation_output'
 
-# The QA prompt template. The placeholder {files_content} will be replaced with the combined file content.
-qa_prompt_template: |
+# Header prompt: Introduction and instructions.
+header_prompt: |
   Generate a comprehensive FAQ based on the provided file contents. Every question must explicitly reference the relevant file name(s) mentioned in the "Files Content" section. The answers should be detailed and provide as much context as possible.
 
-  --- Files Content ---
-
-  {files_content}
-
-  ---
-
+# Footer prompt: Output expectations.
+footer_prompt: |
   --- Output ---
 
   Q:
@@ -29,57 +25,102 @@ qa_prompt_template: |
 
   ... (continue as needed)
 
-# Define the file groups, their associated files, and how many times each group should be processed.
+# Define the file groups with their associated files, iterations, and each group's prompt.
 file_groups:
   UninstallModel:
     iterations: 8
     files: ['uninstall_model.ps1']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   BuildImage:
     iterations: 64
     files: ['build_image.ps1', 'dockerfile', 'supervisord.conf']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   RunContainer:
     iterations: 8
     files: ['create_and_run_container.ps1', 'run_container.ps1']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   TrainUnsloth:
     iterations: 32
     files: ['train_model_unsloth.ps1', 'train.py']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   TrainTorchTune:
     iterations: 32
     files:
-      ['train_model_torchtune.ps1', 'merge_lora.py', 'convert_jsonl_to_json.py']
+      - 'train_model_torchtune.ps1'
+      - 'merge_lora.py'
+      - 'convert_jsonl_to_json.py'
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   TrainingPSCommands:
     iterations: 32
     files: ['train_model_torchtune.ps1', 'train_model_unsloth.ps1']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   InstallModel:
     iterations: 8
     files: ['install_model.ps1']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   ListModels:
     iterations: 8
     files: ['list_models.ps1']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   DeleteModel:
     iterations: 8
     files: ['delete_model.ps1']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   CopyScripts:
     iterations: 8
     files: ['copy_scripts.ps1']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   CopyConfigs:
     iterations: 8
     files: ['copy_configs.ps1']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   ConnectSSH:
     iterations: 8
     files: ['connect.ps1']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   FineTuningGuide:
     iterations: 64
     files: ['FineTuningGuide.md']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   README:
     iterations: 128
     files: ['README.md']
+    group_prompt: |
+      --- Files Content ---
+      {files_content}
   ModelPSCommands:
     iterations: 16
     files:
-      [
-        'install_model.ps1',
-        'uninstall_model.ps1',
-        'list_models.ps1',
-        'delete_model.ps1',
-      ]
+      - 'install_model.ps1'
+      - 'uninstall_model.ps1'
+      - 'list_models.ps1'
+      - 'delete_model.ps1'
+    group_prompt: |
+      --- Files Content ---
+      {files_content}

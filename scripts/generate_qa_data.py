@@ -11,7 +11,8 @@ with open(CONFIG_FILE, "r", encoding="utf-8") as f:
 base_dir = config.get("base_dir", "")
 full_base_dir = f"/var/kolo_data/{base_dir}"
 output_dir = config.get("output_dir", "output")
-qa_prompt_template = config.get("qa_prompt_template", "")
+header_prompt = config.get("header_prompt", "")
+footer_prompt = config.get("footer_prompt", "")
 file_groups_config = config.get("file_groups", {})
 
 # Initialize the OpenAI client (ensure your OPENAI_API_KEY environment variable is set)
@@ -20,15 +21,13 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # Build allowed_file_groups with numeric suffixes for each group based on its own iterations.
 allowed_file_groups = {}
 for group_name, group_config in file_groups_config.items():
-    file_list = group_config.get("files", [])
     iterations = group_config.get("iterations", 1)  # Default to 1 if not specified.
     for i in range(1, iterations + 1):
         key = f"{group_name}{i}"
-        allowed_file_groups[key] = file_list
+        allowed_file_groups[key] = group_config
 
 print("File Groups:")
-print(file_groups_config.items())
-
+print(list(file_groups_config.items()))
 
 def find_file_in_subdirectories(full_base_dir, file_relative_path):
     """
@@ -48,8 +47,9 @@ def find_file_in_subdirectories(full_base_dir, file_relative_path):
             return os.path.join(root, target)
     return None
 
-
-def process_file_group(group_name, file_list, full_base_dir, output_dir, qa_prompt_template):
+def process_file_group(group_name, group_config, full_base_dir, output_dir, header_prompt, footer_prompt):
+    file_list = group_config.get("files", [])
+    group_prompt = group_config.get("group_prompt", "")
     combined_files = ""
     for rel_path in file_list:
         file_path = find_file_in_subdirectories(full_base_dir, rel_path)
@@ -81,8 +81,8 @@ def process_file_group(group_name, file_list, full_base_dir, output_dir, qa_prom
         print(f"Output file {output_file_path} already exists for group {group_name}. Skipping QA generation.")
         return
 
-    # Fill in the QA prompt template with the combined file content.
-    qa_prompt = qa_prompt_template.format(files_content=combined_files)
+    # Build the QA prompt using the new configuration structure.
+    qa_prompt = f"{header_prompt}\n\n{group_prompt.format(files_content=combined_files)}\n\n{footer_prompt}"
 
     try:
         qa_response = client.chat.completions.create(
@@ -100,7 +100,7 @@ def process_file_group(group_name, file_list, full_base_dir, output_dir, qa_prom
         out_f.write(qa_text)
 
     # Save debug information (the exact prompt sent) to a separate file.
-    debug_dir = os.path.join(output_dir, "debug")
+    debug_dir = os.path.join(full_output_dir, "debug")
     os.makedirs(debug_dir, exist_ok=True)
     debug_file_name = f"debug_group_{safe_group_name}.txt"
     debug_file_path = os.path.join(debug_dir, debug_file_name)
@@ -110,14 +110,11 @@ def process_file_group(group_name, file_list, full_base_dir, output_dir, qa_prom
     print(f"Processed group {group_name} -> {output_file_path}")
     print(f"Debug info saved to {debug_file_path}")
 
-
 def main():
-    os.makedirs(output_dir, exist_ok=True)
     # Process each allowed file group from the configuration.
-    for group_name, file_list in allowed_file_groups.items():
+    for group_name, group_config in allowed_file_groups.items():
         print(f"\nProcessing group: {group_name}")
-        process_file_group(group_name, file_list, full_base_dir, output_dir, qa_prompt_template)
-
+        process_file_group(group_name, group_config, full_base_dir, output_dir, header_prompt, footer_prompt)
 
 if __name__ == "__main__":
     main()
