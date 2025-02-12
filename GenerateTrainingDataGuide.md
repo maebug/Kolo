@@ -26,13 +26,13 @@ The **Kolo** project uses the following scripts and configuration file to genera
    ```
 
 5. After generating the QA prompts, this command converts the text files inside  
-   `/var/kolo_data/qa_generation_output` into training `data.jsonl` and `data.json` in `/app/`.
+   `/var/kolo_data/qa_generation_output` into training data: `data.jsonl` and `data.json` in `/app/`.
    ```bash
    convert_qa_output.ps1
    ```
 
-6. You are now ready to run `train_model_torchtune` or `train_model_unsloth`.  
-   Continue using the README guide.
+6. Your training data is now ready continue by training your LLM using `train_model_torchtune` or `train_model_unsloth`.  
+  Follow the README guide after this step.
 
 ---
 
