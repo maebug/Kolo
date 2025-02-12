@@ -28,7 +28,7 @@ The **Kolo** project uses the following scripts and configuration file to genera
    ./convert_qa_output.ps1
    ```
 
-7. Your training data is now ready continue by training your LLM using `train_model_torchtune` or `train_model_unsloth`.  
+7. Your training data is now ready continue by training your LLM using `./train_model_torchtune.ps1` or `./train_model_unsloth.ps1`.  
   Follow the README guide after this step.
 
 ---
