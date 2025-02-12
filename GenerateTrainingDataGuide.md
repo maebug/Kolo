@@ -4,9 +4,7 @@
 
 The **Kolo** project uses the following scripts and configuration file to generate and process QA data:
 
-Copy over all your documents and files.
-
-1. Copies all files and subfolders in the specified directory into `/var/kolo_data/qa_generation_input`.
+1. Copy over all your subfolders, documents and files into the specified default directory `/var/kolo_data/qa_generation_input`.
    ```bash
    ./copy_qa_input_generation.ps1 {directory}
    ```
@@ -16,19 +14,24 @@ Copy over all your documents and files.
    ```bash
    generate_qa_config.yaml
    ```
+3. Run the copy all scripts command. This will move the configuration file into Kolo.
 
-3. This will generate QA data using OpenAI's GPT-4o-mini. You must have a Open AI account and API key.
+   ```bash
+   ./copy_scripts.ps1
+   ```
+
+4. This will generate QA data using OpenAI's GPT-4o-mini. You must have a Open AI account and API key.
    ```bash
    ./generate_qa_data.ps1 -OPENAI_API_KEY {your key}
    ```
 
-4. After generating the QA prompts, this command converts the text files inside  
+5. After generating the QA prompts, this command converts the text files inside  
    `/var/kolo_data/qa_generation_output` into training `data.jsonl` and `data.json` in `/app/`.
    ```bash
    convert_qa_output.ps1
    ```
 
-5. You are now ready to run `train_model_torchtune` or `train_model_unsloth`.  
+6. You are now ready to run `train_model_torchtune` or `train_model_unsloth`.  
    Continue using the README guide.
 
 ---
