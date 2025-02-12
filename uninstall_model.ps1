@@ -1,5 +1,5 @@
 # Usage Example:
-# .\remove_model.ps1 "my_model_name"
+# .\uninstall_model.ps1 "my_model_name"
 
 param (
     [Parameter(Mandatory = $true, Position = 0)]
