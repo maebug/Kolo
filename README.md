@@ -120,21 +120,31 @@ Open your browser and navigate to [localhost:8080](http://localhost:8080/)
 
 ### Other Commands
 
+Uninstalls the Model from Ollama.
+
 ```bash
 ./uninstall_model.ps1 "God"
 ```
+
+Lists all models installed on Ollama and the training model directories for both torchtune and unsloth.
 
 ```bash
 ./list_models.ps1
 ```
 
+Deletes the entire training output folder.
+
 ```bash
 ./delete_model.ps1 "GodOutput" -Tool "unsloth|torchtune"
 ```
 
+Copies all the scripts and files inside `/scripts` into Kolo at `/app/`
+
 ```bash
 ./copy_scripts.ps1
 ```
+
+Copies all the torchtune config files inside `/torchtune` into Kolo at `/app/torchtune`
 
 ```bash
 ./copy_configs.ps1
