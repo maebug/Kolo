@@ -6,7 +6,7 @@ Usage:
 Description:
     This script processes each text file in the specified input directory and extracts FAQ Q/A pairs.
     It uses a state-machine style approach to handle many formatting variations including:
-      - Bold markers (e.g. **Q:** or **Q1:**) or Markdown header markers (e.g. #### Q1:)
+      - Bold markers (e.g. **Q:** or **Q1:**) or Markdown header markers (e.g. #### Q1: or ## 6.)
       - Optional digits after Q/A labels.
       - Multiline answers (including bullet lists).
       - Separator lines (e.g. ---) to delineate Q/A pairs.
@@ -30,19 +30,20 @@ def extract_qa_pairs(text):
     current_question = None
     current_answer_lines = []
 
-    # Regex for question lines.
-    # Matches lines starting with optional "**" or Markdown headers, followed by "Q" (optionally with a digit),
-    # then a colon, then the question text.
+    # Updated regex for question lines:
+    # Matches lines that start with an optional bold marker or markdown header,
+    # followed by either a Q-label (like "Q:" or "Q1:") or a numbered header (like "6." or "6:"),
+    # then captures the question text.
     question_pattern = re.compile(
-        r'^\s*(?:\*\*|#{1,}\s*)?Q(?:\d+)?\s*:\s*(.+?)(?:\*\*)?\s*$', 
+        r'^\s*(?:\*\*|#{1,}\s*)?(?:(?:Q(?:\d+)?\s*[:\.])|(?:\d+\s*[.:]))\s*(.+?)\s*(?:\*\*)?\s*$',
         re.IGNORECASE
     )
     
-    # Regex for answer lines.
-    # Matches lines starting with optional "**" or Markdown headers, followed by "A" (optionally with a digit),
-    # then a colon, then the answer text.
+    # Updated regex for answer label lines:
+    # Matches lines starting with an optional bullet ("- "), optional bold/markdown marker,
+    # followed by an A-label (like "A:" or "A1:") and captures the answer text.
     answer_pattern = re.compile(
-        r'^\s*(?:\*\*|#{1,}\s*)?A(?:\d+)?\s*:\s*(.+?)(?:\*\*)?\s*$', 
+        r'^\s*(?:-\s+)?(?:\*\*|#{1,}\s*)?A(?:\d+)?\s*[:\.]\s*(.+?)(?:\*\*)?\s*$',
         re.IGNORECASE
     )
 
