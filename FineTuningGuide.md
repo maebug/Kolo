@@ -47,7 +47,7 @@ Not every task necessitates the largest model available. Begin with a model that
 A crucial part of fine-tuning is finding the right balance between underfitting and overfitting:
 
 - **Overfitting:** Occurs when the model memorizes the training data too well. While it may perform perfectly on training examples, it often fails to generalize to new, unseen data.
-- **Underfitting:** Happens when the model does not learn enough from the training data, causing it to behave similarly to the pre-trained version without noticable improvements.
+- **Underfitting:** Happens when the model does not learn enough from the training data, causing it to behave similarly to the pre-trained version without noticeable improvements.
 
 **Adjustments:**
 
