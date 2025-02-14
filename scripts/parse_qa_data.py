@@ -109,7 +109,8 @@ def main():
 
     input_dir = args.input_dir
     output_file = args.output_file
-    qa_messages = []
+    rows = []
+    qa_count = 0
 
     # Process each file in the input directory.
     for filename in os.listdir(input_dir):
@@ -119,22 +120,24 @@ def main():
                 content = f.read()
             pairs = extract_qa_pairs(content)
             print(f"Found {len(pairs)} Q/A pair(s) in {file_path}")
+
+            # Create a single messages array for all Q/A pairs in the file.
+            messages = []
             for question, answer in pairs:
-                entry = {
-                    "messages": [
-                        {"role": "user", "content": question},
-                        {"role": "assistant", "content": answer}
-                    ]
-                }
-                qa_messages.append(entry)
+                messages.append({"role": "user", "content": question})
+                messages.append({"role": "assistant", "content": answer})
+                qa_count = qa_count + 1
+            
+            # Append the entire messages array as one entry.
+            rows.append({"messages": messages})
 
     # Write each entry as one JSON object per line.
     with open(output_file, "w", encoding="utf-8") as out_f:
-        for entry in qa_messages:
+        for entry in rows:
             json_line = json.dumps(entry)
             out_f.write(json_line + "\n")
 
-    print(f"Converted {len(qa_messages)} Q/A pair(s) to {output_file}")
+    print(f"Converted {qa_count} Q/A pair(s) into {len(rows)} rows saved to {output_file}")
 
 if __name__ == "__main__":
     main()
