@@ -59,7 +59,7 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
                 content = f.read()
             # Note both the original name and the location where the file was found.
             combined_files += (
-                f"{individual_prompt.format(file_name=rel_path)}\n\nFilename: {rel_path} \n{content}\n\n"
+                f"{individual_prompt.format(file_name=rel_path)}\n\n{content}\n\n"
             )
         else:
             print(f"Warning: {rel_path} not found in {full_base_dir} or its subdirectories.")

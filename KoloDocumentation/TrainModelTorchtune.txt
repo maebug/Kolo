@@ -1,0 +1,232 @@
+Below is an in‐depth explanation of each file, its purpose, and how the various parts work together.
+
+---
+
+## File: **train_model_torchtune.ps1**
+
+This PowerShell script is designed to orchestrate the process of fine-tuning a model with LoRA (Low-Rank Adaptation) using a tool called **torchtune** inside a Docker container. It handles everything from parameter logging and model downloading to training, merging, conversion, quantization, and even creating “model file” descriptors.
+
+### 1. **Parameter Definition and Logging**
+
+```powershell
+param (
+    [int]$Epochs,
+    [double]$LearningRate,
+    [string]$TrainData,
+    [string]$BaseModel = "Meta-llama/Llama-3.2-1B-Instruct",
+    [int]$LoraRank,
+    [int]$LoraAlpha,
+    [double]$LoraDropout,
+    [int]$MaxSeqLength,
+    [int]$WarmupSteps,
+    [int]$Seed,
+    [string]$SchedulerType,
+    [int]$BatchSize,
+    [string]$OutputDir,
+    [string]$Quantization = "Q4_K_M",
+    [double]$WeightDecay,
+    [switch]$UseCheckpoint,
+    [string]$HfToken
+)
+```
+
+- **Parameters:** The script accepts various parameters such as training epochs, learning rate, training data file, and the base model name.
+- **Defaults:** Some parameters have defaults (e.g., the BaseModel and Quantization type), while others are mandatory.
+- **Logging:** The script prints out the values of the parameters, which helps in debugging and verifying the configuration before execution.
+
+### 2. **Docker Container Verification**
+
+```powershell
+$ContainerName = "kolo_container"
+$containerRunning = docker ps --format "{{.Names}}" | Select-String -Pattern $ContainerName
+if (-not $containerRunning) {
+    Write-Host "Error: Container '$ContainerName' is not running." -ForegroundColor Red
+    exit 1
+}
+```
+
+- **Container Check:** It verifies that a Docker container named `kolo_container` is running. If not, the script exits with an error.
+- **Purpose:** This is crucial because all subsequent commands are executed inside this container.
+
+### 3. **Mapping BaseModel to Configuration Files**
+
+```powershell
+$configMap = @{
+    "Meta-llama/Llama-3.1-8B-Instruct" = "/app/torchtune/configs/llama3_1/8B_qlora_single_device.yaml"
+    "Meta-llama/Llama-3.2-3B-Instruct" = "/app/torchtune/configs/llama3_2/3B_qlora_single_device.yaml"
+    "Meta-llama/Llama-3.2-1B-Instruct" = "/app/torchtune/configs/llama3_2/1B_qlora_single_device.yaml"
+}
+```
+
+- **Purpose:** A hashtable maps specific BaseModel strings to their corresponding configuration file paths. This enables the script to select the proper configuration based on the model being used.
+- **Error Handling:** If the provided BaseModel isn’t in the mapping, the script throws an error.
+
+### 4. **Downloading the Base Model**
+
+```powershell
+if ($BaseModel) {
+    if (-not $HfToken) {
+        Write-Host "Error: Hugging Face token must be provided." -ForegroundColor Red
+        exit 1
+    }
+    $downloadCommand = "source /opt/conda/bin/activate kolo_env && tune download $BaseModel --ignore-patterns 'original/consolidated.00.pth' --hf-token '$HfToken'"
+    ...
+    docker exec -it $ContainerName /bin/bash -c $downloadCommand
+    ...
+}
+```
+
+- **Authentication:** Checks if a Hugging Face token is provided, which is required for downloading models.
+- **Command Construction:** The script builds a command that activates a Conda environment inside the container and uses the `tune` command-line tool to download the specified BaseModel. It also ignores some large files (as indicated by `--ignore-patterns`).
+- **Execution:** The command is executed inside the Docker container.
+
+### 5. **Building and Running the Torchtune Training Command**
+
+The script then builds a long command string step-by-step:
+
+```powershell
+$command = "source /opt/conda/bin/activate kolo_env && tune run lora_finetune_single_device --config $configValue"
+```
+
+- **Fixed Options:** Parameters like turning off dataset packing, enabling activation checkpointing, choosing the loss function, and optimizer settings are appended.
+- **Dynamic Options:** Parameters such as epochs, batch size, data file path, learning rate, LoRA-specific settings (rank, alpha, dropout), and warmup steps are added if provided. Defaults are used when parameters aren’t specified.
+- **Output Directory:** The output path is constructed (with a default fallback to `outputs`), and added to the command.
+- **Logging:** The complete command is printed out for visibility before being executed inside the container with `docker exec`.
+
+### 6. **Post-Training Steps**
+
+After the training command finishes, the script performs several post-run steps:
+
+#### a. **Merging Checkpoints**
+- **Finding the Latest Epoch Folder:**  
+  A command is built to list epoch directories, sort them, and pick the latest:
+  ```powershell
+  $findEpochCmd = "ls -d ${FullOutputDir}/epoch_* 2>/dev/null | sort -V | tail -n 1"
+  ```
+- **Merging:**  
+  A Python script (`merge_lora.py`) is then executed inside the container to merge the LoRA checkpoints into a unified model.
+
+#### b. **Conversion**
+- **Conversion to GGUF Format:**  
+  The script converts the merged model into a GGUF file using a Python conversion script (likely from llama.cpp). The command specifies output type (f16) and output file.
+
+#### c. **Quantization**
+- **Optional Quantization Step:**  
+  If the quantization parameter is provided, a quantization command is constructed and executed. This step produces a quantized version of the merged model.
+
+#### d. **Creating Model Files**
+- **Model File Creation:**  
+  The script creates simple text files (`Modelfile` and `Modelfile{Quantization}`) that describe which GGUF file to use (unquantized or quantized). This is done by echoing a simple descriptor into the files.
+
+### 7. **Error Handling Throughout**
+
+- **Try/Catch Blocks:**  
+  The script uses try/catch blocks and checks the success of each Docker command (`if ($?)`) to ensure that errors are caught and handled appropriately.
+- **Logging:**  
+  Informative messages are printed in various colors (red for errors, green for successes, yellow for key operations) to aid debugging.
+
+---
+
+## File: **merge_lora.py**
+
+This Python script is a relatively simple utility meant to merge a fine-tuned LoRA model with its base model weights. It is typically called after the training run completes.
+
+### 1. **Importing Libraries**
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import os
+import argparse
+```
+
+- **Transformers:**  
+  The script uses Hugging Face’s Transformers library to load the model and tokenizer.
+- **Other Imports:**  
+  `os` for file handling and `argparse` for command-line argument parsing.
+
+### 2. **Argument Parsing**
+
+```python
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--lora_model", type=str, required=True)
+    parser.add_argument("--merged_model", type=str, required=True)
+    return parser.parse_args()
+```
+
+- **Arguments:**  
+  Two required arguments are expected:
+  - `--lora_model`: The path to the fine-tuned LoRA model (which includes the updated adapter weights).
+  - `--merged_model`: The destination directory where the merged model will be saved.
+  
+### 3. **Renaming the Adapter Configuration**
+
+```python
+def rename_adapter_config(lora_model_path):
+    original_config_path = os.path.join(lora_model_path, "adapter_config.json")
+    new_config_path = os.path.join(lora_model_path, "adapter.config.invalidateCauseHuggingFaceABitch")
+    
+    if os.path.exists(original_config_path):
+        try:
+            os.rename(original_config_path, new_config_path)
+            print(f"Renamed '{original_config_path}' to '{new_config_path}'.")
+        except Exception as e:
+            print(f"Error renaming the adapter config file: {e}")
+    else:
+        print(f"No adapter_config.json found at '{original_config_path}'. Skipping rename.")
+```
+
+- **Purpose:**  
+  In some workflows, Hugging Face might treat an adapter configuration file in a special way. Renaming it prevents the Transformers library from misinterpreting the file during the model loading process.
+- **Error Handling:**  
+  The function handles the case when the file is not present and catches any exceptions that occur during renaming.
+
+### 4. **Main Merging Logic**
+
+```python
+def main():
+    args = get_args()
+
+    # Rename the adapter configuration file (if present).
+    rename_adapter_config(args.lora_model)
+
+    base_model = AutoModelForCausalLM.from_pretrained(
+        args.lora_model
+    )
+
+    tokenizer = AutoTokenizer.from_pretrained(args.lora_model)
+
+    merged_output = f"{args.merged_model}"
+    base_model.save_pretrained(merged_output)
+    tokenizer.save_pretrained(merged_output)
+    print(f"Model saved to {merged_output}")
+```
+
+- **Loading the Model:**  
+  The script loads the model and tokenizer from the `lora_model` directory. This step effectively “merges” the LoRA weights with the base model because the adapter weights become part of the loaded model.
+- **Saving the Merged Model:**  
+  The merged model and its tokenizer are saved to the specified output directory (`merged_model`).
+
+### 5. **Script Entry Point**
+
+```python
+if __name__ == "__main__":
+    main()
+```
+
+- **Execution:**  
+  This ensures that when the script is run directly (for example, via the Docker exec command in the PowerShell script), it calls the `main()` function.
+
+---
+
+## Summary
+
+- **train_model_torchtune.ps1:**  
+  - **Purpose:** Automates the process of downloading a base model, fine-tuning it with LoRA using torchtune inside a Docker container, and post-processing (merging, converting, quantizing).
+  - **Highlights:** Uses parameter mapping, Docker commands, dynamic command construction, and thorough error handling.
+  
+- **merge_lora.py:**  
+  - **Purpose:** Merges the LoRA adapter weights with the base model.
+  - **Highlights:** Renames a configuration file to avoid issues, loads the model and tokenizer from the fine-tuned checkpoint, and saves the merged model.
+
+Together, these scripts provide a complete pipeline—from downloading a pre-trained model, fine-tuning it with LoRA, to preparing final artifacts (both quantized and unquantized) for deployment or further use.

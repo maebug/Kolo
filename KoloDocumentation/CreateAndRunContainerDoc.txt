@@ -1,0 +1,108 @@
+Let's break down each script and explain what every part does in detail.
+
+---
+
+## Script: `create_and_run_container.ps1`
+
+This PowerShell script is designed to **create and start a new Docker container** based on a specific Docker image. Let’s walk through it line by line:
+
+1. **Error Handling**
+
+   ```powershell
+   # Stop script on error
+   $ErrorActionPreference = "Stop"
+   ```
+   
+   - **Purpose:** This line tells PowerShell to halt the script immediately if any error occurs. Instead of continuing execution, the script will stop, making it easier to catch and debug issues early.
+
+2. **Informational Output**
+
+   ```powershell
+   Write-Host "Running Docker container..."
+   ```
+   
+   - **Purpose:** Outputs the message "Running Docker container..." to the console, informing the user that the container startup process is beginning.
+
+3. **Creating a Docker Volume**
+
+   ```powershell
+   docker volume create kolo_volume
+   ```
+   
+   - **Purpose:** This command creates a Docker **volume** named `kolo_volume`.  
+   - **Why Use Volumes:** Volumes are persistent storage areas managed by Docker. They allow data to be stored outside the container’s writable layer so that the data persists even if the container is removed.
+   - **Context:** Here, the volume is likely intended to store data that the container will use or generate, ensuring that it isn’t lost between container runs.
+
+4. **Running the Docker Container**
+
+   ```powershell
+   docker run --gpus all -p 2222:22 -p 8080:8080 -v kolo_volume:/var/kolo_data -it -d --name kolo_container kolo
+   ```
+   
+   - **`docker run`:** This command creates and starts a new container.
+   
+   - **`--gpus all`:** Allocates **all available GPUs** on the host to the container. This is useful for applications that require GPU acceleration.
+   
+   - **Port Mapping:**
+     - **`-p 2222:22`:** Maps port **22** (typically used for SSH inside the container) to port **2222** on the host machine. This allows you to SSH into the container using the host’s port 2222.
+     - **`-p 8080:8080`:** Maps port **8080** from the container to the host. This is often used for web services.
+   
+   - **Volume Mapping:**
+     - **`-v kolo_volume:/var/kolo_data`:** Mounts the Docker volume `kolo_volume` into the container at the path `/var/kolo_data`. This means any data written to `/var/kolo_data` inside the container will be stored in the persistent volume.
+   
+   - **Interactive Terminal and Detached Mode:**
+     - **`-it`:** Combines two flags:
+       - **`-i` (interactive):** Keeps STDIN open even if not attached.
+       - **`-t` (tty):** Allocates a pseudo-TTY (terminal) for the container.
+     - **`-d`:** Runs the container in detached mode (in the background). The container will keep running without being tied to the terminal.
+   
+   - **Container Naming:**
+     - **`--name kolo_container`:** Names the container `kolo_container` so you can reference it easily with Docker commands.
+   
+   - **Image:**
+     - **`kolo`:** The name of the Docker image to use for creating the container. The script assumes that this image is either already available locally or can be pulled from a Docker registry.
+
+---
+
+## Script: `run_container.ps1`
+
+This script is much simpler and is used to **start an existing Docker container** that was previously created.
+
+1. **Error Handling**
+
+   ```powershell
+   # Stop script on error
+   $ErrorActionPreference = "Stop"
+   ```
+   
+   - **Purpose:** Just like in the first script, it ensures that if any error occurs, the script execution will stop immediately.
+
+2. **Starting the Container**
+
+   ```powershell
+   docker start kolo_container
+   ```
+   
+   - **Purpose:** This command starts the Docker container named `kolo_container`.  
+   - **Context:** This is useful if the container was previously created (and perhaps stopped) and you want to restart it without creating a new one.
+
+---
+
+## Summary
+
+- **`create_and_run_container.ps1`:**
+  - Stops on error.
+  - Informs the user that the container is starting.
+  - Creates a persistent volume (`kolo_volume`) for data storage.
+  - Runs a new Docker container using the `kolo` image with:
+    - GPU access,
+    - Port mappings (2222 for SSH and 8080 for web service),
+    - Volume mapping for persistent data storage,
+    - Interactive terminal setup in detached mode,
+    - A specified container name (`kolo_container`).
+
+- **`run_container.ps1`:**
+  - Stops on error.
+  - Simply starts the already created container named `kolo_container`.
+
+These scripts are designed to streamline the process of setting up and managing a Docker container, ensuring that the necessary resources (like GPU access and persistent storage) are properly configured.

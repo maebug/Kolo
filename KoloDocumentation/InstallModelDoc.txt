@@ -1,0 +1,134 @@
+This PowerShell script, `install_model.ps1`, automates the creation of an Ollama model by interfacing with a Docker container. Let’s break down its components step by step:
+
+---
+
+### 1. **Usage and Parameters**
+
+The initial commented-out usage examples:
+
+```powershell
+# Usage Example:
+# ./install_model.ps1 "God" -Tool "unsloth" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+# ./install_model.ps1 "God" -Tool "torchtune" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+```
+
+- **Purpose:** They demonstrate how to call the script from the command line, showing that it accepts four parameters:
+  - **ModelName:** A required positional parameter representing the name of the model.
+  - **Tool:** A required parameter that must be either `"torchtune"` or `"unsloth"`. This parameter indicates the source folder or tool being used.
+  - **OutputDir:** A required parameter that specifies the directory where output files are stored.
+  - **Quantization:** A required parameter representing the model file extension or format (e.g., `"Q4_K_M"`).
+
+---
+
+### 2. **Parameter Declaration**
+
+```powershell
+param (
+    [Parameter(Mandatory = $true, Position = 0)]
+    [string]$ModelName, # The name of the model to create
+
+    [Parameter(Mandatory = $true)]
+    [string]$OutputDir, # The path to the outputs folder
+
+    [Parameter(Mandatory = $true)]
+    [string]$Quantization, # The model file extension
+
+    [Parameter(Mandatory = $true)]
+    [ValidateSet("torchtune", "unsloth")]
+    [string]$Tool           # The tool source folder (must be either "torchtune" or "unsloth")
+)
+```
+
+- **Mandatory Parameters:** All four parameters are required, ensuring the script has all necessary data before proceeding.
+- **Positioning:** `$ModelName` is set to be the first positional parameter, meaning if you don't explicitly name it, the first argument is assumed to be the model name.
+- **Validation:** The `ValidateSet` attribute on `$Tool` ensures that only the allowed values (`"torchtune"` or `"unsloth"`) can be passed, preventing accidental misuse.
+
+---
+
+### 3. **Docker Container Check**
+
+```powershell
+# Define the container name
+$ContainerName = "kolo_container"
+
+# Check if the container is running
+$containerRunning = docker ps --format "{{.Names}}" | Select-String -Pattern "^$ContainerName$"
+
+if (-Not $containerRunning) {
+    Write-Host "Error: Container '$ContainerName' is not running." -ForegroundColor Red
+    exit 1
+}
+```
+
+- **Container Definition:** The script sets the container name to `"kolo_container"`.
+- **Checking Status:**
+  - It uses `docker ps --format "{{.Names}}"` to list the names of all running Docker containers.
+  - The output is piped to `Select-String` to check if the container name exactly matches `kolo_container`.
+- **Error Handling:** If the container is not found running:
+  - It outputs an error message in red.
+  - The script exits with code `1`, signaling an error to any calling process.
+
+---
+
+### 4. **Constructing the Model File Path**
+
+```powershell
+# Construct the full path to the model file using the chosen data source
+$BaseDir = "/var/kolo_data/$Tool"
+$ModelFilePath = "$BaseDir/$OutputDir/Modelfile$Quantization"
+```
+
+- **Base Directory:** The script builds a base directory path using the selected tool. For instance, if `$Tool` is `"unsloth"`, the base directory becomes `/var/kolo_data/unsloth`.
+- **Model File Path:** 
+  - It then appends the provided `$OutputDir` and constructs a filename that combines the literal `"Modelfile"` with the given `$Quantization` string.
+  - This creates the full path that points to the model file within the Docker container's file system.
+
+---
+
+### 5. **Executing the Ollama Command within the Container**
+
+```powershell
+try {
+    Write-Host "Creating Ollama model '$ModelName' using file '$ModelFilePath' inside container '$ContainerName'..."
+    docker exec -it $ContainerName ollama create $ModelName -f $ModelFilePath
+
+    if ($?) {
+        Write-Host "Ollama model '$ModelName' created successfully!" -ForegroundColor Green
+    }
+    else {
+        Write-Host "Failed to create Ollama model." -ForegroundColor Red
+    }
+}
+catch {
+    Write-Host "An error occurred: $_" -ForegroundColor Red
+}
+```
+
+- **Try-Catch Block:** This structure is used for error handling.
+  - **Try:** 
+    - A message is printed to indicate that the model creation process is starting.
+    - The script executes the command inside the running Docker container using `docker exec -it`. The command is:
+      ```
+      ollama create $ModelName -f $ModelFilePath
+      ```
+      which tells the Ollama tool (running inside the container) to create a new model with the specified name using the model file at the given path.
+  - **Conditional Check (`$?`):**
+    - After running the command, `$?` is checked to determine if the command was successful.
+    - If the command succeeds, it prints a success message in green.
+    - If it fails, a failure message is printed in red.
+- **Catch:** 
+  - Any exceptions thrown during the try block are caught, and a corresponding error message is printed.
+
+---
+
+### **Overall Workflow**
+
+1. **Parameter Validation:** Ensures all required inputs are provided and valid.
+2. **Docker Container Check:** Confirms that the container needed to execute the model creation command is running.
+3. **Path Construction:** Dynamically builds the file path to the model file based on the provided parameters.
+4. **Model Creation:** Executes the command within the Docker container to create the model and provides user feedback on success or failure.
+5. **Error Handling:** Robust error handling both for container availability and command execution.
+
+---
+
+This detailed explanation covers the purpose, functionality, and internal workings of the `install_model.ps1` script.

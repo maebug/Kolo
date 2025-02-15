@@ -1,3 +1,6 @@
+# Usage Example:
+# .\delete_model.ps1 "GodOutput" -Tool "unsloth|torchtune"
+
 param (
     [Parameter(Mandatory = $true, Position = 0)]
     [string]$DirFolder, # The subdirectory to remove under the tool folder

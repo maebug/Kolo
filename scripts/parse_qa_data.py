@@ -21,6 +21,7 @@ Example:
 """
 
 import os
+import random
 import re
 import json
 import argparse
@@ -121,15 +122,19 @@ def main():
             pairs = extract_qa_pairs(content)
             print(f"Found {len(pairs)} Q/A pair(s) in {file_path}")
 
+            # Shuffle the pairs to randomize their order.
+            random.shuffle(pairs)
+            
             # Create a single messages array for all Q/A pairs in the file.
             messages = []
             for question, answer in pairs:
                 messages.append({"role": "user", "content": question})
                 messages.append({"role": "assistant", "content": answer})
-                qa_count = qa_count + 1
+                qa_count += 1
             
             # Append the entire messages array as one entry.
             rows.append({"messages": messages})
+
 
     # Write each entry as one JSON object per line.
     with open(output_file, "w", encoding="utf-8") as out_f:

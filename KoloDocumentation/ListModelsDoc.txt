@@ -1,0 +1,149 @@
+This PowerShell script, named **"uninstall_model.ps1"**, is designed to inspect a Docker container for specific directories and list the models installed in two different ways. Let’s break down its structure and functionality step by step:
+
+---
+
+### 1. **Container and Directory Setup**
+
+```powershell
+# Define the container name
+$containerName = "kolo_container"
+
+# Define the target directories inside the container
+$targetDirectories = @(
+    "/var/kolo_data/torchtune",
+    "/var/kolo_data/unsloth"
+)
+```
+
+- **Container Name**: The script starts by setting a variable `$containerName` with the value `"kolo_container"`. This tells the script which Docker container to target when running subsequent commands.
+  
+- **Target Directories**: An array `$targetDirectories` is defined with two directory paths. These paths (`/var/kolo_data/torchtune` and `/var/kolo_data/unsloth`) are the locations inside the container where model folders are expected to reside.
+
+---
+
+### 2. **Iterating Over Target Directories**
+
+```powershell
+foreach ($dir in $targetDirectories) {
+    Write-Host "Model folders in $dir" -ForegroundColor Cyan
+```
+
+- **Iteration**: The script uses a `foreach` loop to process each directory path stored in `$targetDirectories`.
+- **User Feedback**: It prints out a message indicating which directory is being processed, using cyan-colored text for clarity.
+
+---
+
+### 3. **Listing Model Folders Within Each Directory**
+
+```powershell
+    # Build the command to allow shell globbing and suppress error messages if no folders are found.
+    $command = "docker"
+    $cmd = "ls -d $dir/*/ 2>/dev/null"  # ls will not print an error if no folder exists
+    $args = @("exec", $containerName, "sh", "-c", $cmd)
+```
+
+- **Command Building**: 
+  - `$command` is set to `"docker"`, indicating that the script will be invoking Docker commands.
+  - `$cmd` is built as `"ls -d $dir/*/ 2>/dev/null"`. This command:
+    - Uses `ls -d` to list only the directories (folders) within the specified path.
+    - The wildcard `*` allows shell globbing to match any folder inside `$dir`.
+    - `2>/dev/null` redirects error messages (for instance, if there are no matching folders) to `/dev/null` (i.e., suppresses them).
+
+- **Docker Execution Arguments**: The `$args` array contains:
+  - `"exec"`: Tells Docker to execute a command in a running container.
+  - `$containerName`: The target container.
+  - `"sh", "-c", $cmd`: Uses the shell to run the constructed command `$cmd`.
+
+---
+
+### 4. **Executing the Command and Handling Output**
+
+```powershell
+    try {
+        # Execute the command and capture the output.
+        $result = & $command @args 2>&1 | Out-String
+
+        # If the trimmed output is empty, no folders were found.
+        if ($result.Trim().Length -eq 0) {
+            Write-Host "No models found" -ForegroundColor Green
+        }
+        else {
+            Write-Host $result -ForegroundColor Green
+        }
+    }
+    catch {
+        Write-Host "An exception occurred while listing folders in $dir $_" -ForegroundColor Red
+    }
+```
+
+- **Try/Catch Block**: The script wraps the command execution in a `try` block to catch any errors.
+- **Command Execution**:
+  - The command is executed with `& $command @args`, which is PowerShell’s way of invoking a command with arguments.
+  - `2>&1` ensures that both standard output and standard error are captured.
+  - `Out-String` converts the output to a string format.
+- **Output Check**: 
+  - If the resulting string, after trimming whitespace, is empty, it means no model folders were found in that directory. It then prints `"No models found"` in green.
+  - Otherwise, it prints the output (list of folders) in green.
+- **Error Handling**: If an exception occurs during execution, it is caught and a red-colored error message is displayed.
+
+- **Separator**: After processing each directory, a yellow separator line (`"-------------------------------------"`) is printed for visual clarity.
+
+---
+
+### 5. **Listing Installed Models Using Ollama**
+
+```powershell
+# Now, list the installed models in Ollama using the 'ollama list' command inside the container.
+Write-Host "`nListing installed models in Ollama:" -ForegroundColor Cyan
+try {
+    # Build the docker exec command to run 'ollama list' inside the container.
+    $command = "docker"
+    $cmd = "ollama list"
+    $args = @("exec", $containerName, "sh", "-c", $cmd)
+
+    # Execute the command and capture the output.
+    $ollamaOutput = & $command @args 2>&1 | Out-String
+
+    # Check if any output was returned.
+    if ($ollamaOutput.Trim().Length -eq 0) {
+        Write-Host "No models installed or no output from ollama list." -ForegroundColor Green
+    }
+    else {
+        Write-Host $ollamaOutput -ForegroundColor Green
+    }
+}
+catch {
+    Write-Host "An exception occurred while listing installed models in Ollama: $_" -ForegroundColor Red
+}
+```
+
+- **Introduction Message**: A message is printed to indicate the start of listing installed models via Ollama.
+  
+- **Command Setup for Ollama**:
+  - Similar to before, `$command` is set to `"docker"`.
+  - `$cmd` is now `"ollama list"`, which is intended to list models managed by the Ollama service.
+  - `$args` is built similarly to the previous section, instructing Docker to execute this command within the target container.
+
+- **Execution and Output Handling**:
+  - The command is executed and its output is captured in `$ollamaOutput`.
+  - If the trimmed output is empty, it indicates that no models were installed or the command didn’t produce any output. A corresponding green message is printed.
+  - Otherwise, the actual output is printed in green.
+  
+- **Error Handling**: Again, a `try/catch` block ensures that if any errors occur during this command execution, they are caught and an error message in red is displayed.
+
+---
+
+### **Summary**
+
+- **Purpose**: The script is meant for administrative or troubleshooting purposes—specifically, to inspect a Docker container (`kolo_container`) for:
+  - The existence of model folders within two specific directories.
+  - The list of installed models managed by Ollama within that container.
+  
+- **Techniques Used**:
+  - **Docker Exec**: To run shell commands inside the container.
+  - **Shell Globbing**: To list directories matching a pattern.
+  - **Redirection of Errors**: Using `2>/dev/null` to suppress errors when no directories are found.
+  - **Try/Catch Blocks**: To handle any potential exceptions gracefully.
+  - **Colored Output**: Enhancing readability and clarity of the script's console output.
+
+By combining these elements, the script provides a clear and user-friendly way to verify the state of models in a container, making it easier for administrators to understand what is installed and to perform cleanup or further actions if necessary.

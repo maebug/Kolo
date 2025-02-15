@@ -25,131 +25,77 @@ footer_prompt: |
 # Define the file groups with their associated files, iterations, and each group's prompt.
 file_groups:
   UninstallModel:
-    iterations: 50
-    files: ['uninstall_model.ps1']
+    iterations: 20
+    files: ['UninstallModelDoc.txt']
     group_prompt: |
       {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
   DeleteModel:
-    iterations: 50
-    files: ['delete_model.ps1']
+    iterations: 20
+    files: ['DeleteModelDoc.txt']
     group_prompt: |
       {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
   ListModels:
-    iterations: 50
-    files: ['list_models.ps1']
+    iterations: 20
+    files: ['ListModelsDoc.txt']
     group_prompt: |
       {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
   Connect:
-    iterations: 50
-    files: ['connect.ps1']
+    iterations: 20
+    files: ['ConnectDoc.txt']
     group_prompt: |
       {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
-  UninstallScript:
-    iterations: 50
-    files: ['uninstall.ps1']
-    group_prompt: |
-      {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
   CopyTrainingData:
-    iterations: 50
-    files: ['copy_training_data.ps1']
+    iterations: 20
+    files: ['CopyTrainingDataDoc.txt']
     group_prompt: |
       {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
   CreateAndRunContainer:
-    iterations: 50
-    files: ['create_and_run_container.ps1']
+    iterations: 20
+    files: ['CreateAndRunContainerDoc.txt']
     group_prompt: |
       {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
-  RunContainer:
-    iterations: 50
-    files: ['run_container.ps1']
+  Build:
+    iterations: 60
+    files: ['BuildDoc.txt']
     group_prompt: |
       {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
-  BuildImage:
-    iterations: 50
-    files: ['build_image.ps1']
-    group_prompt: |
-      {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
-  Dockerfile:
-    iterations: 200
-    files: ['dockerfile']
-    group_prompt: |
-      {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
   TrainModelUnsloth:
-    iterations: 200
-    files: [train_model_unsloth.ps1]
+    iterations: 40
+    files: [TrainModelUnsloth.txt]
     group_prompt: |
       {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
   TrainModelTorchtune:
-    iterations: 200
-    files: [train_model_torchtune.ps1]
+    iterations: 40
+    files: [TrainModelTorchtune.txt1]
     group_prompt: |
       {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
   InstallModel:
-    iterations: 50
-    files: [install_model.ps1]
+    iterations: 20
+    files: [InstallModelDoc.txt]
     group_prompt: |
       {files_content}
-    individual_prompt: |
-      For each question and answer, include "{file_name}" explicitly to reference the file.
   ReadMe:
-    iterations: 300
-    files: [README.md]
+    iterations: 60
+    files: [ReadMeDoc.txt]
     group_prompt: |
       {files_content}
   FineTuningGuide:
-    iterations: 200
-    files: [FineTuningGuide.md]
+    iterations: 40
+    files: [FineTuningGuideDoc.txt]
     group_prompt: |
       {files_content}
   Supervisord:
-    iterations: 50
+    iterations: 20
     files: [supervisord.conf]
     group_prompt: |
       {files_content}
-  UnslothTrainPy:
-    iterations: 50
-    files: [train.py]
-    group_prompt: |
-      The "train.py" file is called by "train_model_unsloth.ps1"
-      {files_content}
-  MergeLoraTorchtune:
-    iterations: 50
-    files: [merge_lora.py]
-    group_prompt: |
-      The "merge_lora.py" file is called by "train_model_torchtune.ps1"
-      {files_content}
-  CopyConfigsTorchtune:
-    iterations: 50
-    files: [copy_configs.py]
+  CopyConfigs:
+    iterations: 20
+    files: [CopyConfigDoc.txt]
     group_prompt: |
       {files_content}
   ConvertJSONLtoJSON:
-    iterations: 50
-    files: [convert_jsonl_to_json.py]
+    iterations: 20
+    files: [ConvertJSONLtoJSONDoc.txt]
     group_prompt: |
-      The purpose of "convert_jsonl_to_json.py" is to convert the training "data.jsonl" file into "data.json" for "train_model_torchtune.ps1" to use.
       {files_content}

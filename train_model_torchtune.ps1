@@ -1,34 +1,3 @@
-<#
-.SYNOPSIS
-    Executes a torchtune LoRA/QLoRA finetuning run inside a Docker container,
-    merges the resulting model using merge_lora.py, converts the merged model to gguf format,
-    quantizes the gguf file, and then creates two model files in the same directory as the ggufs.
-    
-    Additionally, this script now downloads the specified BaseModel using a Hugging Face token,
-    and selects the appropriate configuration based on a mapping from BaseModel to configuration string.
-
-.DESCRIPTION
-    This script builds and runs a torchtune command for fine-tuning using a recipe.
-    It first downloads the BaseModel using:
-    
-        tune download <BaseModel> --ignore-patterns "original/consolidated.00.pth" --hf-token "<HfToken>"
-    
-    Then, it selects the configuration for the run based on the BaseModel mapping. For example, if
-    BaseModel is "Meta-llama/Llama-3.2-1B-Instruct", it uses the configuration "llama3_1/8B_qlora_single_device".
-    
-    After the finetuning completes, it identifies the epoch folder with the largest index,
-    runs a merge script (/app/merge_lora.py), converts the merged model to gguf format,
-    quantizes the gguf file, and creates model files accordingly.
-
-.PARAMETER BaseModel
-    The base model to be used. Default: "Meta-llama/Llama-3.2-1B-Instruct"
-
-.PARAMETER HfToken
-    Hugging Face Token used for downloading the BaseModel.
-
-... [other parameter help as in your original script] ...
-#>
-
 param (
     [int]$Epochs,
     [double]$LearningRate,

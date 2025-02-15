@@ -5,35 +5,40 @@
 The **Kolo** project uses the following scripts and configuration file to generate and process QA data:
 
 1. The following command will copy over all subfolders, documents and files into `/var/kolo_data/qa_generation_input`.
+
    ```bash
    ./copy_qa_input_generation.ps1 "directory"
    ```
-   If you are testing for the first time. Try copying the entire Kolo project by running this command.
+
+   If you are testing for the first time. Try copying the entire Kolo documentation folder by running this command.
+
    ```bash
-   ./copy_qa_input_generation.ps1 "../"
+   ./copy_qa_input_generation.ps1 "./KoloDocumentation"
    ```
 
-1. Modify the [config file](https://github.com/MaxHastings/Kolo/blob/main/scripts/generate_qa_config.yaml) to specify file groups, custom prompts, and the number of iterations.  If you are testing with Kolo project, leave the config file untouched.
-   
-4. Run the copy all scripts command. This will move the configuration file into Kolo.
+1. Modify the [config file](https://github.com/MaxHastings/Kolo/blob/main/scripts/generate_qa_config.yaml) to specify file groups, custom prompts, and the number of iterations. If you are testing with Kolo documentation, leave the config file untouched.
+
+1. Run the copy all scripts command. This will move the configuration file into Kolo.
 
    ```bash
    ./copy_scripts.ps1
    ```
 
-5. This will generate QA data using OpenAI's GPT-4o-mini. You must have a Open AI account and API key.
+1. This will generate QA data using OpenAI's GPT-4o-mini. You must have a Open AI account and API key.
+
    ```bash
    ./generate_qa_data.ps1 -OPENAI_API_KEY "your key"
    ```
 
-6. After generating the QA prompts, this command converts the text files inside  
+1. After generating the QA prompts, this command converts the text files inside  
    `/var/kolo_data/qa_generation_output` into training data: `data.jsonl` and `data.json` in `/app/`.
+
    ```bash
    ./convert_qa_output.ps1
    ```
 
-7. Your training data is now ready continue by training your LLM using `./train_model_torchtune.ps1` or `./train_model_unsloth.ps1`.  
-  Follow the README guide after this step.
+1. Your training data is now ready continue by training your LLM using `./train_model_torchtune.ps1` or `./train_model_unsloth.ps1`.  
+   Follow the README guide after this step.
 
 ---
 
