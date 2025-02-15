@@ -103,42 +103,60 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
     os.makedirs(debug_dir, exist_ok=True)
 
     # Build prompt to generate the list of questions.
+    # Note: if multiple files are in the group, the individual_prompt will be formatted using the last file's name.
     question_list_prompt = f"{header_prompt}\n\n{individual_prompt.format(file_name=rel_path)}\n\n{group_prompt.format(files_content=combined_files)}\n\n{footer_prompt}"
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": question_list_prompt}],
-        )
-    except Exception as e:
-        print(f"Error during QA call for group {group_name}: {e}")
-        return
-
-    question_list_text = response.choices[0].message.content.strip()
-
-    # Save the full question output in the questions folder.
+    
+    # Define file paths for storing questions and debug info.
     question_file_name = f"questions_{safe_group_name}.txt"
     question_file_path = os.path.join(questions_dir, question_file_name)
-    with open(question_file_path, 'w', encoding='utf-8') as q_f:
-        q_f.write(question_list_text)
-
-    # Save debug information (the exact prompt sent) to the debug folder.
     debug_file_name = f"debug_{safe_group_name}_questions.txt"
     debug_file_path = os.path.join(debug_dir, debug_file_name)
-    with open(debug_file_path, 'w', encoding='utf-8') as debug_f:
-        debug_f.write(question_list_prompt)
 
-    print(f"Processed group {group_name} -> Questions saved to {question_file_path}")
-    print(f"Debug info saved to {debug_file_path}")
+    # Check if the questions file already exists.
+    if os.path.exists(question_file_path):
+        with open(question_file_path, 'r', encoding='utf-8') as q_f:
+            question_list_text = q_f.read().strip()
+        print(f"Questions file already exists for group {group_name}. Skipping question generation.")
+    else:
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": question_list_prompt}],
+            )
+        except Exception as e:
+            print(f"Error during QA call for group {group_name}: {e}")
+            return
+
+        question_list_text = response.choices[0].message.content.strip()
+
+        # Save the full question output in the questions folder.
+        with open(question_file_path, 'w', encoding='utf-8') as q_f:
+            q_f.write(question_list_text)
+
+        # Save debug information (the exact prompt sent) to the debug folder.
+        with open(debug_file_path, 'w', encoding='utf-8') as debug_f:
+            debug_f.write(question_list_prompt)
+
+        print(f"Processed group {group_name} -> Questions saved to {question_file_path}")
+        print(f"Debug info saved to {debug_file_path}")
 
     # --- Process each question individually ---
-    # Use the new parser to extract only the numbered questions.
     questions = parse_questions(question_list_text)
     if not questions:
         print(f"No valid questions found in group {group_name} output.")
         return
 
     for idx, question in enumerate(questions, start=1):
+        answer_file_name = f"answer_{safe_group_name}_{idx}.txt"
+        answer_file_path = os.path.join(answers_dir, answer_file_name)
+        debug_answer_file_name = f"debug_{safe_group_name}_answer_{idx}.txt"
+        debug_answer_file_path = os.path.join(debug_dir, debug_answer_file_name)
+        
+        # Skip generating answer if it already exists.
+        if os.path.exists(answer_file_path):
+            print(f"Answer for question {idx} in group {group_name} already exists. Skipping.")
+            continue
+
         # Create a new prompt that includes the combined file contents and the individual question.
         individual_question_prompt = f"{combined_files}\n\n{question}"
         try:
@@ -151,14 +169,10 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
             continue
 
         answer_text = answer_response.choices[0].message.content.strip()
-        answer_file_name = f"answer_{safe_group_name}_{idx}.txt"
-        answer_file_path = os.path.join(answers_dir, answer_file_name)
         with open(answer_file_path, 'w', encoding='utf-8') as answer_f:
             answer_f.write(answer_text)
 
         # Save the individual prompt for debugging.
-        debug_answer_file_name = f"debug_{safe_group_name}_answer_{idx}.txt"
-        debug_answer_file_path = os.path.join(debug_dir, debug_answer_file_name)
         with open(debug_answer_file_path, 'w', encoding='utf-8') as debug_ans_f:
             debug_ans_f.write(individual_question_prompt)
 

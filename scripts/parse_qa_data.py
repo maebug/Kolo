@@ -31,20 +31,26 @@ def pair_questions_and_answers():
     Assumes the naming convention:
       - Questions: questions_<group>.txt
       - Answers: answer_<group>_<index>.txt
-    Returns a list of dictionaries with the conversation messages.
+    Returns a tuple of:
+      - a list of dictionaries with the conversation messages,
+      - a dictionary with counts of questions and answers per group.
     """
     qa_pairs = []
-    
+    group_stats = {}  # { group_name: {'questions': count, 'answers': count} }
+
     # Process each question file.
     for q_filename in os.listdir(QUESTIONS_DIR):
         if not q_filename.startswith("questions_") or not q_filename.endswith(".txt"):
             continue
-        
+
         # Extract group name from filename, e.g. "questions_group_foo.txt" => "group_foo"
         group_name = q_filename[len("questions_"):-len(".txt")]
         q_filepath = os.path.join(QUESTIONS_DIR, q_filename)
         questions = parse_questions_from_file(q_filepath)
-        
+
+        # Initialize stats for this group.
+        group_stats[group_name] = {'questions': len(questions), 'answers': 0}
+
         # For each question, look for a corresponding answer file.
         for idx, question in enumerate(questions, start=1):
             answer_filename = f"answer_{group_name}_{idx}.txt"
@@ -63,11 +69,12 @@ def pair_questions_and_answers():
                 ]
             }
             qa_pairs.append(qa_pair)
-    
-    return qa_pairs
+            group_stats[group_name]['answers'] += 1
+
+    return qa_pairs, group_stats
 
 def main():
-    qa_pairs = pair_questions_and_answers()
+    qa_pairs, group_stats = pair_questions_and_answers()
     
     if not qa_pairs:
         print("No QA pairs found.")
@@ -78,7 +85,17 @@ def main():
             json_line = json.dumps(pair, ensure_ascii=False)
             out_f.write(json_line + "\n")
     
-    print(f"QA pairs saved to {OUTPUT_FILE}")
-
+    # Print summary statistics.
+    total_questions = 0
+    total_answers = 0
+    print("Processing Summary:")
+    for group, stats in group_stats.items():
+        total_questions += stats['questions']
+        total_answers += stats['answers']
+        print(f"  Group '{group}': {stats['questions']} questions, {stats['answers']} answers processed.")
+    
+    print(f"Total: {total_questions} questions and {total_answers} answers processed.")
+    print(f"Total pairs saved to {OUTPUT_FILE}: {len(qa_pairs)}")
+    
 if __name__ == "__main__":
     main()
