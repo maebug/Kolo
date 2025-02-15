@@ -1,4 +1,5 @@
 import os
+import re
 import yaml
 from openai import OpenAI
 
@@ -47,6 +48,28 @@ def find_file_in_subdirectories(full_base_dir, file_relative_path):
             return os.path.join(root, target)
     return None
 
+def parse_questions(question_text):
+    """
+    Parses the GPT response containing questions. The expected format is:
+    
+    Some header text (possibly multiple lines)
+    1. First question?
+    2. Second question?
+    ...
+    
+    This function uses a regular expression to extract the question text.
+    Returns a list of question strings.
+    """
+    pattern = re.compile(r"^\s*\d+\.\s*(.+)$")
+    questions = []
+    for line in question_text.splitlines():
+        match = pattern.match(line)
+        if match:
+            question = match.group(1).strip()
+            if question:
+                questions.append(question)
+    return questions
+
 def process_file_group(group_name, group_config, full_base_dir, output_dir, header_prompt, footer_prompt):
     file_list = group_config.get("files", [])
     group_prompt = group_config.get("group_prompt", "")
@@ -57,10 +80,8 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
         if file_path and os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-            # Note both the original name and the location where the file was found.
-            combined_files += (
-                f"{individual_prompt.format(file_name=rel_path)}\n\n{content}\n\n"
-            )
+            # Include a header for each file.
+            combined_files += f"{content}\n\n"
         else:
             print(f"Warning: {rel_path} not found in {full_base_dir} or its subdirectories.")
 
@@ -68,20 +89,21 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
         print(f"No valid files found for group {group_name}. Skipping.")
         return
 
-    # Determine output file name and path.
+    # Prepare safe group name and base output paths.
     safe_group_name = group_name.replace(" ", "_")
-    full_output_dir = os.path.join("/var/kolo_data", output_dir)
-    os.makedirs(full_output_dir, exist_ok=True)
-    output_file_name = f"group_{safe_group_name}.txt"
-    output_file_path = os.path.join(full_output_dir, output_file_name)
+    base_output_path = os.path.join("/var/kolo_data", output_dir)
+    os.makedirs(base_output_path, exist_ok=True)
 
-    # If the output file already exists, skip processing this group.
-    if os.path.exists(output_file_path):
-        print(f"Output file {output_file_path} already exists for group {group_name}. Skipping QA generation.")
-        return
+    # Define subdirectories.
+    questions_dir = os.path.join(base_output_path, "questions")
+    answers_dir = os.path.join(base_output_path, "answers")
+    debug_dir = os.path.join(base_output_path, "debug")
+    os.makedirs(questions_dir, exist_ok=True)
+    os.makedirs(answers_dir, exist_ok=True)
+    os.makedirs(debug_dir, exist_ok=True)
 
     # Build prompt to generate the list of questions.
-    question_list_prompt = f"{header_prompt}\n\n{group_prompt.format(files_content=combined_files)}\n\n{footer_prompt}"
+    question_list_prompt = f"{header_prompt}\n\n{individual_prompt.format(file_name=rel_path)}\n\n{group_prompt.format(files_content=combined_files)}\n\n{footer_prompt}"
 
     try:
         response = client.chat.completions.create(
@@ -94,28 +116,27 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
 
     question_list_text = response.choices[0].message.content.strip()
 
-    # Save the QA output (list of questions).
-    with open(output_file_path, 'w', encoding='utf-8') as out_f:
-        out_f.write(question_list_text)
+    # Save the full question output in the questions folder.
+    question_file_name = f"questions_{safe_group_name}.txt"
+    question_file_path = os.path.join(questions_dir, question_file_name)
+    with open(question_file_path, 'w', encoding='utf-8') as q_f:
+        q_f.write(question_list_text)
 
-    # Save debug information (the exact prompt sent) to a separate file.
-    debug_dir = os.path.join(full_output_dir, "debug")
-    os.makedirs(debug_dir, exist_ok=True)
-    debug_file_name = f"debug_group_{safe_group_name}.txt"
+    # Save debug information (the exact prompt sent) to the debug folder.
+    debug_file_name = f"debug_{safe_group_name}_questions.txt"
     debug_file_path = os.path.join(debug_dir, debug_file_name)
     with open(debug_file_path, 'w', encoding='utf-8') as debug_f:
         debug_f.write(question_list_prompt)
 
-    print(f"Processed group {group_name} -> {output_file_path}")
+    print(f"Processed group {group_name} -> Questions saved to {question_file_path}")
     print(f"Debug info saved to {debug_file_path}")
 
-    # --- New Section: Process each question ---
-    # Parse the question list text into an array of questions.
-    questions = [line.strip() for line in question_list_text.splitlines() if line.strip()]
-
-    # Create an answers directory under the output directory.
-    answers_dir = os.path.join(full_output_dir, "answers")
-    os.makedirs(answers_dir, exist_ok=True)
+    # --- Process each question individually ---
+    # Use the new parser to extract only the numbered questions.
+    questions = parse_questions(question_list_text)
+    if not questions:
+        print(f"No valid questions found in group {group_name} output.")
+        return
 
     for idx, question in enumerate(questions, start=1):
         # Create a new prompt that includes the combined file contents and the individual question.
@@ -130,9 +151,17 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
             continue
 
         answer_text = answer_response.choices[0].message.content.strip()
-        answer_file_path = os.path.join(answers_dir, f"answer_{safe_group_name}_{idx}.txt")
+        answer_file_name = f"answer_{safe_group_name}_{idx}.txt"
+        answer_file_path = os.path.join(answers_dir, answer_file_name)
         with open(answer_file_path, 'w', encoding='utf-8') as answer_f:
             answer_f.write(answer_text)
+
+        # Save the individual prompt for debugging.
+        debug_answer_file_name = f"debug_{safe_group_name}_answer_{idx}.txt"
+        debug_answer_file_path = os.path.join(debug_dir, debug_answer_file_name)
+        with open(debug_answer_file_path, 'w', encoding='utf-8') as debug_ans_f:
+            debug_ans_f.write(individual_question_prompt)
+
         print(f"Saved answer for question {idx} in group {group_name} -> {answer_file_path}")
 
 def main():

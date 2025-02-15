@@ -23,10 +23,19 @@ footer_prompt: |
 # Define the file groups with their associated files, iterations, and each group's prompt.
 file_groups:
   UninstallModel:
-    iterations: 4
+    iterations: 2
     files: ['uninstall_model.ps1']
     group_prompt: |
       {files_content}
+    individual_prompt: |
+      Each question must include "{file_name}"
+  DeleteModel:
+    iterations: 2
+    files: ['delete_model.ps1']
+    group_prompt: |
+      {files_content}
+    individual_prompt: |
+      Each question must include "{file_name}"
   # BuildImage:
   #   iterations: 16
   #   files: ['build_image.ps1', 'dockerfile', 'supervisord.conf']
@@ -83,14 +92,6 @@ file_groups:
   #   files: ['list_models.ps1']
   #   group_prompt: |
   #     Details about how listing available models works and how to use.
-  #     {files_content}
-  #   individual_prompt: |
-  #     Each question must include "{file_name}"
-  # DeleteModel:
-  #   iterations: 4
-  #   files: ['delete_model.ps1']
-  #   group_prompt: |
-  #     Details about how deleting models works and how to use.
   #     {files_content}
   #   individual_prompt: |
   #     Each question must include "{file_name}"
