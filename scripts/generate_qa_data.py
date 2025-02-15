@@ -70,35 +70,33 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
 
     # Determine output file name and path.
     safe_group_name = group_name.replace(" ", "_")
-    output_file_name = f"group_{safe_group_name}.txt"
-    full_output_dir = f"/var/kolo_data/{output_dir}"
-    output_file_path = os.path.join(full_output_dir, output_file_name)
-
-    # Create the necessary directories if they do not exist.
+    full_output_dir = os.path.join("/var/kolo_data", output_dir)
     os.makedirs(full_output_dir, exist_ok=True)
+    output_file_name = f"group_{safe_group_name}.txt"
+    output_file_path = os.path.join(full_output_dir, output_file_name)
 
     # If the output file already exists, skip processing this group.
     if os.path.exists(output_file_path):
         print(f"Output file {output_file_path} already exists for group {group_name}. Skipping QA generation.")
         return
 
-    # Build the QA prompt using the new configuration structure.
-    qa_prompt = f"{header_prompt}\n\n{group_prompt.format(files_content=combined_files)}\n\n{footer_prompt}"
+    # Build prompt to generate the list of questions.
+    question_list_prompt = f"{header_prompt}\n\n{group_prompt.format(files_content=combined_files)}\n\n{footer_prompt}"
 
     try:
-        qa_response = client.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "user", "content": qa_prompt}],
+            messages=[{"role": "user", "content": question_list_prompt}],
         )
     except Exception as e:
         print(f"Error during QA call for group {group_name}: {e}")
         return
 
-    qa_text = qa_response.choices[0].message.content.strip()
+    question_list_text = response.choices[0].message.content.strip()
 
-    # Save the QA output.
+    # Save the QA output (list of questions).
     with open(output_file_path, 'w', encoding='utf-8') as out_f:
-        out_f.write(qa_text)
+        out_f.write(question_list_text)
 
     # Save debug information (the exact prompt sent) to a separate file.
     debug_dir = os.path.join(full_output_dir, "debug")
@@ -106,10 +104,36 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
     debug_file_name = f"debug_group_{safe_group_name}.txt"
     debug_file_path = os.path.join(debug_dir, debug_file_name)
     with open(debug_file_path, 'w', encoding='utf-8') as debug_f:
-        debug_f.write(qa_prompt)
+        debug_f.write(question_list_prompt)
 
     print(f"Processed group {group_name} -> {output_file_path}")
     print(f"Debug info saved to {debug_file_path}")
+
+    # --- New Section: Process each question ---
+    # Parse the question list text into an array of questions.
+    questions = [line.strip() for line in question_list_text.splitlines() if line.strip()]
+
+    # Create an answers directory under the output directory.
+    answers_dir = os.path.join(full_output_dir, "answers")
+    os.makedirs(answers_dir, exist_ok=True)
+
+    for idx, question in enumerate(questions, start=1):
+        # Create a new prompt that includes the combined file contents and the individual question.
+        individual_question_prompt = f"{combined_files}\n\n{question}"
+        try:
+            answer_response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": individual_question_prompt}],
+            )
+        except Exception as e:
+            print(f"Error during answer call for question {idx} in group {group_name}: {e}")
+            continue
+
+        answer_text = answer_response.choices[0].message.content.strip()
+        answer_file_path = os.path.join(answers_dir, f"answer_{safe_group_name}_{idx}.txt")
+        with open(answer_file_path, 'w', encoding='utf-8') as answer_f:
+            answer_f.write(answer_text)
+        print(f"Saved answer for question {idx} in group {group_name} -> {answer_file_path}")
 
 def main():
     # Process each allowed file group from the configuration.

@@ -4,98 +4,141 @@ base_dir: 'qa_generation_input'
 # Directory where the QA outputs and debug files will be saved.
 output_dir: 'qa_generation_output'
 
+# Header prompt: Introduction and instructions.
 header_prompt: |
-  Analyze the file contents below and generate a detailed, diverse, and well-structured Question & Answer list.
+  Generate a list of questions that someone might ask about this content.
 
 # Footer prompt: Output expectations.
 footer_prompt: |
   --- Output ---
 
-  Q:
-  A:
+  1.
 
-  Q:
-  A:
+  2.
 
-  Q:
-  A:
+  3.
 
-  continue...
+  ... (continue as needed)
 
 # Define the file groups with their associated files, iterations, and each group's prompt.
 file_groups:
   UninstallModel:
-    iterations: 20
-    files: ['UninstallModelDoc.txt']
+    iterations: 4
+    files: ['uninstall_model.ps1']
     group_prompt: |
       {files_content}
-  DeleteModel:
-    iterations: 20
-    files: ['DeleteModelDoc.txt']
-    group_prompt: |
-      {files_content}
-  ListModels:
-    iterations: 20
-    files: ['ListModelsDoc.txt']
-    group_prompt: |
-      {files_content}
-  Connect:
-    iterations: 20
-    files: ['ConnectDoc.txt']
-    group_prompt: |
-      {files_content}
-  CopyTrainingData:
-    iterations: 20
-    files: ['CopyTrainingDataDoc.txt']
-    group_prompt: |
-      {files_content}
-  CreateAndRunContainer:
-    iterations: 20
-    files: ['CreateAndRunContainerDoc.txt']
-    group_prompt: |
-      {files_content}
-  Build:
-    iterations: 60
-    files: ['BuildDoc.txt']
-    group_prompt: |
-      {files_content}
-  TrainModelUnsloth:
-    iterations: 40
-    files: [TrainModelUnsloth.txt]
-    group_prompt: |
-      {files_content}
-  TrainModelTorchtune:
-    iterations: 40
-    files: [TrainModelTorchtune.txt1]
-    group_prompt: |
-      {files_content}
-  InstallModel:
-    iterations: 20
-    files: [InstallModelDoc.txt]
-    group_prompt: |
-      {files_content}
-  ReadMe:
-    iterations: 60
-    files: [ReadMeDoc.txt]
-    group_prompt: |
-      {files_content}
-  FineTuningGuide:
-    iterations: 40
-    files: [FineTuningGuideDoc.txt]
-    group_prompt: |
-      {files_content}
-  Supervisord:
-    iterations: 20
-    files: [supervisord.conf]
-    group_prompt: |
-      {files_content}
-  CopyConfigs:
-    iterations: 20
-    files: [CopyConfigDoc.txt]
-    group_prompt: |
-      {files_content}
-  ConvertJSONLtoJSON:
-    iterations: 20
-    files: [ConvertJSONLtoJSONDoc.txt]
-    group_prompt: |
-      {files_content}
+  # BuildImage:
+  #   iterations: 16
+  #   files: ['build_image.ps1', 'dockerfile', 'supervisord.conf']
+  #   group_prompt: |
+  #     Details about the dependencies and interactions.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
+  # RunContainer:
+  #   iterations: 4
+  #   files: ['create_and_run_container.ps1', 'run_container.ps1']
+  #   group_prompt: |
+  #     Details about creating and running containers.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
+  # TrainUnsloth:
+  #   iterations: 16
+  #   files: ['train_model_unsloth.ps1', 'train.py']
+  #   group_prompt: |
+  #     Details about the training process using the Unsloth approach.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
+  # TrainTorchTune:
+  #   iterations: 16
+  #   files:
+  #     - 'train_model_torchtune.ps1'
+  #     - 'merge_lora.py'
+  #     - 'convert_jsonl_to_json.py'
+  #   group_prompt: |
+  #     Details about the training process with TorchTune and its related scripts.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
+  # TrainingPSCommands:
+  #   iterations: 16
+  #   files: ['train_model_torchtune.ps1', 'train_model_unsloth.ps1']
+  #   group_prompt: |
+  #     Details about the differences between torchtune and unsloth for training.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
+  # InstallModel:
+  #   iterations: 4
+  #   files: ['install_model.ps1']
+  #   group_prompt: |
+  #     Details about the installation of models and Ollama.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
+  # ListModels:
+  #   iterations: 4
+  #   files: ['list_models.ps1']
+  #   group_prompt: |
+  #     Details about how listing available models works and how to use.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
+  # DeleteModel:
+  #   iterations: 4
+  #   files: ['delete_model.ps1']
+  #   group_prompt: |
+  #     Details about how deleting models works and how to use.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
+  # CopyScripts:
+  #   iterations: 4
+  #   files: ['copy_scripts.ps1']
+  #   group_prompt: |
+  #     Details about how copying scripts works and how to use.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
+  # CopyConfigs:
+  #   iterations: 4
+  #   files: ['copy_configs.ps1']
+  #   group_prompt: |
+  #     Details about how copy configs works and how to use.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
+  # ConnectSSH:
+  #   iterations: 4
+  #   files: ['connect.ps1']
+  #   group_prompt: |
+  #     Details about establishing SSH connections with kolo_container.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
+  # FineTuningGuide:
+  #   iterations: 16
+  #   files: ['FineTuningGuide.md']
+  #   group_prompt: |
+  #     Details about fine-tuning tips and guidelines.
+  #     {files_content}
+  # README:
+  #   iterations: 32
+  #   files: ['README.md']
+  #   group_prompt: |
+  #     Details about the project overview and usage instructions.
+  #     {files_content}
+  # ModelPSCommands:
+  #   iterations: 8
+  #   files:
+  #     - 'install_model.ps1'
+  #     - 'uninstall_model.ps1'
+  #     - 'list_models.ps1'
+  #     - 'delete_model.ps1'
+  #   group_prompt: |
+  #     Details about the various model-related PowerShell commands.
+  #     {files_content}
+  #   individual_prompt: |
+  #     Each question must include "{file_name}"
