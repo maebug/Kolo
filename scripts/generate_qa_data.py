@@ -74,14 +74,17 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
     file_list = group_config.get("files", [])
     group_prompt = group_config.get("group_prompt", "")
     individual_prompt = group_config.get("individual_prompt", "")
+    combined_files_with_prompts = ""
     combined_files = ""
     for rel_path in file_list:
         file_path = find_file_in_subdirectories(full_base_dir, rel_path)
         if file_path and os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-            # Include a header for each file.
-            combined_files += f"{content}\n\n"
+            # For the first GPT call, include the individual prompt (with file name) in front.
+            combined_files_with_prompts += f"{individual_prompt.format(file_name=rel_path)}\n\nFile: {rel_path}\n\n{content}\n\n"
+            # For the second GPT call, prepend the file name before the content.
+            combined_files += f"File: {rel_path}\n\n{content}\n\n"
         else:
             print(f"Warning: {rel_path} not found in {full_base_dir} or its subdirectories.")
 
@@ -103,8 +106,7 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
     os.makedirs(debug_dir, exist_ok=True)
 
     # Build prompt to generate the list of questions.
-    # Note: if multiple files are in the group, the individual_prompt will be formatted using the last file's name.
-    question_list_prompt = f"{header_prompt}\n\n{individual_prompt.format(file_name=rel_path)}\n\n{group_prompt.format(files_content=combined_files)}\n\n{footer_prompt}"
+    question_list_prompt = f"{header_prompt}\n\n{combined_files_with_prompts}\n\n{footer_prompt}"
     
     # Define file paths for storing questions and debug info.
     question_file_name = f"questions_{safe_group_name}.txt"
@@ -157,7 +159,7 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
             print(f"Answer for question {idx} in group {group_name} already exists. Skipping.")
             continue
 
-        # Create a new prompt that includes the combined file contents and the individual question.
+        # Create a new prompt that includes only the file contents (with file names) and the individual question.
         individual_question_prompt = f"{combined_files}\n\n{question}"
         try:
             answer_response = client.chat.completions.create(
