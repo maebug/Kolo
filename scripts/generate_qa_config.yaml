@@ -4,98 +4,118 @@ base_dir: 'qa_generation_input'
 # Directory where the QA outputs and debug files will be saved.
 output_dir: 'qa_generation_output'
 
+# Header prompt: Introduction and instructions.
 header_prompt: |
-  Analyze the file contents below and generate a detailed, diverse, and well-structured Question & Answer list.
+  Generate a list of questions that someone might ask about this content.
 
 # Footer prompt: Output expectations.
 footer_prompt: |
   --- Output ---
 
-  Q:
-  A:
+  1.
 
-  Q:
-  A:
+  2.
 
-  Q:
-  A:
+  3.
 
-  continue...
+  ... (continue as needed)
 
 # Define the file groups with their associated files, iterations, and each group's prompt.
 file_groups:
+  BuildImage:
+    iterations: 15
+    files: ['build_image.ps1', 'dockerfile', 'supervisord.conf']
+    group_prompt: |
+      {files_content}
+    individual_prompt: |
+      Each question must include "{file_name}"
   UninstallModel:
-    iterations: 20
-    files: ['UninstallModelDoc.txt']
+    iterations: 5
+    files: ['uninstall_model.ps1']
     group_prompt: |
       {files_content}
+    individual_prompt: |
+      Each question must include "{file_name}"
   DeleteModel:
-    iterations: 20
-    files: ['DeleteModelDoc.txt']
+    iterations: 5
+    files: ['delete_model.ps1']
     group_prompt: |
       {files_content}
-  ListModels:
-    iterations: 20
-    files: ['ListModelsDoc.txt']
+    individual_prompt: |
+      Each question must include "{file_name}"
+  RunContainer:
+    iterations: 5
+    files: ['create_and_run_container.ps1', 'run_container.ps1']
     group_prompt: |
       {files_content}
-  Connect:
-    iterations: 20
-    files: ['ConnectDoc.txt']
+    individual_prompt: |
+      Each question must include "{file_name}"
+  TrainUnsloth:
+    iterations: 15
+    files: ['train_model_unsloth.ps1', 'train.py']
     group_prompt: |
       {files_content}
-  CopyTrainingData:
-    iterations: 20
-    files: ['CopyTrainingDataDoc.txt']
+    individual_prompt: |
+      Each question must include "{file_name}"
+  TrainTorchTune:
+    iterations: 15
+    files:
+      - 'train_model_torchtune.ps1'
+      - 'merge_lora.py'
+      - 'convert_jsonl_to_json.py'
     group_prompt: |
       {files_content}
-  CreateAndRunContainer:
-    iterations: 20
-    files: ['CreateAndRunContainerDoc.txt']
+    individual_prompt: |
+      Each question must include "{file_name}"
+  TrainingPSCommands:
+    iterations: 15
+    files: ['train_model_torchtune.ps1', 'train_model_unsloth.ps1']
     group_prompt: |
       {files_content}
-  Build:
-    iterations: 60
-    files: ['BuildDoc.txt']
-    group_prompt: |
-      {files_content}
-  TrainModelUnsloth:
-    iterations: 40
-    files: [TrainModelUnsloth.txt]
-    group_prompt: |
-      {files_content}
-  TrainModelTorchtune:
-    iterations: 40
-    files: [TrainModelTorchtune.txt1]
-    group_prompt: |
-      {files_content}
+    individual_prompt: |
+      Each question must include "{file_name}"
   InstallModel:
-    iterations: 20
-    files: [InstallModelDoc.txt]
+    iterations: 5
+    files: ['install_model.ps1']
     group_prompt: |
       {files_content}
-  ReadMe:
-    iterations: 60
-    files: [ReadMeDoc.txt]
+    individual_prompt: |
+      Each question must include "{file_name}"
+  ListModels:
+    iterations: 5
+    files: ['list_models.ps1']
     group_prompt: |
       {files_content}
-  FineTuningGuide:
-    iterations: 40
-    files: [FineTuningGuideDoc.txt]
+    individual_prompt: |
+      Each question must include "{file_name}"
+  CopyScripts:
+    iterations: 5
+    files: ['copy_scripts.ps1']
     group_prompt: |
       {files_content}
-  Supervisord:
-    iterations: 20
-    files: [supervisord.conf]
-    group_prompt: |
-      {files_content}
+    individual_prompt: |
+      Each question must include "{file_name}"
   CopyConfigs:
-    iterations: 20
-    files: [CopyConfigDoc.txt]
+    iterations: 5
+    files: ['copy_configs.ps1']
     group_prompt: |
       {files_content}
-  ConvertJSONLtoJSON:
-    iterations: 20
-    files: [ConvertJSONLtoJSONDoc.txt]
+    individual_prompt: |
+      Each question must include "{file_name}"
+  ConnectSSH:
+    iterations: 5
+    files: ['connect.ps1']
+    group_prompt: |
+      {files_content}
+    individual_prompt: |
+      Each question must include "{file_name}"
+  FineTuningGuide:
+    iterations: 15
+    files: ['FineTuningGuide.md']
+    group_prompt: |
+      {files_content}
+  README:
+    iterations: 15
+    files: ['README.md']
     group_prompt: |
       {files_content}
