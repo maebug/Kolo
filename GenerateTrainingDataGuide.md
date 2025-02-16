@@ -10,13 +10,13 @@ The **Kolo** project uses the following scripts and configuration file to genera
    ./copy_qa_input_generation.ps1 "directory"
    ```
 
-   If you are testing for the first time. Try copying the entire Kolo documentation folder by running this command.
+   If you are testing for the first time. Try copying the entire Kolo project by running this command.
 
    ```bash
-   ./copy_qa_input_generation.ps1 "./KoloDocumentation"
+   ./copy_qa_input_generation.ps1 "../"
    ```
 
-1. Modify the [config file](https://github.com/MaxHastings/Kolo/blob/main/scripts/generate_qa_config.yaml) to specify file groups, custom prompts, and the number of iterations. If you are testing with Kolo documentation, leave the config file untouched.
+1. Modify the [config file](https://github.com/MaxHastings/Kolo/blob/main/scripts/generate_qa_config.yaml) to specify file groups, custom prompts, and the number of iterations. If you are testing with Kolo project, leave the config file untouched.
 
 1. Run the copy all scripts command. This will move the configuration file into Kolo.
 
