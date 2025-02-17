@@ -1,47 +1,69 @@
 import os
 import re
 import yaml
+import argparse
+import json
+import requests
 from openai import OpenAI
 
-# Load configuration from YAML.
-CONFIG_FILE = "generate_qa_config.yaml"
-with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-    config = yaml.safe_load(f)
+# --- Helper Function to Call the API ---
 
-# Read values from the config.
-base_dir = config.get("base_dir", "")
-full_base_dir = f"/var/kolo_data/{base_dir}"
-output_dir = config.get("output_dir", "output")
-header_prompt = config.get("header_prompt", "")
-footer_prompt = config.get("footer_prompt", "")
-file_groups_config = config.get("file_groups", {})
+def call_api(provider, model, prompt, ollama_config=None):
+    """
+    Calls the appropriate API (OpenAI or Ollama) using the selected model and prompt.
+    For OpenAI, uses the provided API key.
+    For Ollama, makes an HTTP request to the local or cloud endpoint.
+    """
+    if provider == "openai":
+        # Use the OpenAI client.
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"OpenAI API error: {e}")
+            return None
 
-# Initialize the OpenAI client (ensure your OPENAI_API_KEY environment variable is set)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    elif provider == "ollama":
 
-# Build allowed_file_groups with numeric suffixes for each group based on its own iterations.
-allowed_file_groups = {}
-for group_name, group_config in file_groups_config.items():
-    iterations = group_config.get("iterations", 1)  # Default to 1 if not specified.
-    for i in range(1, iterations + 1):
-        key = f"{group_name}_{i}"
-        allowed_file_groups[key] = group_config
+        url = ollama_config.get("url")
+        
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "stream": False,  # Disable streaming responses.
+            "options": {}  # Include any additional options if needed.
+        }
+        try:
+            response = requests.post(url, json=payload)
+            response.raise_for_status()
+            result = response.json()
+            # Use the "response" key, as non-streaming returns a single JSON with "response"
+            return result.get("response", "").strip()
+        except Exception as e:
+            print(f"Ollama API error: {e}")
+            return None
 
-print("File Groups:")
-print(list(file_groups_config.items()))
+
+    else:
+        print("Unknown provider specified.")
+        return None
+
+# --- Utility Functions ---
 
 def find_file_in_subdirectories(full_base_dir, file_relative_path):
     """
     Attempts to find a file starting from full_base_dir:
-      1. First, check if the file exists at full_base_dir joined with the given relative path.
-      2. If not found, search recursively through all subdirectories for a file matching the basename.
+      1. Check if the file exists at full_base_dir joined with the given relative path.
+      2. If not, search recursively through subdirectories for a file matching the basename.
     Returns the full path if found; otherwise, returns None.
     """
     possible_path = os.path.join(full_base_dir, file_relative_path)
     if os.path.exists(possible_path):
         return possible_path
 
-    # Search all subdirectories for the file (by matching its basename).
     target = os.path.basename(file_relative_path)
     for root, dirs, files in os.walk(full_base_dir):
         if target in files:
@@ -50,14 +72,8 @@ def find_file_in_subdirectories(full_base_dir, file_relative_path):
 
 def parse_questions(question_text):
     """
-    Parses the GPT response containing questions. The expected format is:
-    
-    Some header text (possibly multiple lines)
-    1. First question?
-    2. Second question?
-    ...
-    
-    This function uses a regular expression to extract the question text.
+    Parses GPT response containing questions.
+    Expected format: numbered questions (one per line).
     Returns a list of question strings.
     """
     pattern = re.compile(r"^\s*\d+\.\s*(.+)$")
@@ -70,10 +86,20 @@ def parse_questions(question_text):
                 questions.append(question)
     return questions
 
-def process_file_group(group_name, group_config, full_base_dir, output_dir, header_prompt, footer_prompt):
+# --- Main Processing Function ---
+
+def process_file_group(group_name, group_config, full_base_dir, base_output_path,
+                         header_prompt, footer_prompt, default_individual_prompt,
+                         default_group_prompt, default_answer_prompt,
+                         provider, openai_models, ollama_config):
     file_list = group_config.get("files", [])
-    group_prompt = group_config.get("group_prompt", "")
-    individual_prompt = group_config.get("individual_prompt", "")
+    group_prompts = group_config.get("prompts", {})
+
+    # Retrieve prompts for this file group, falling back to defaults.
+    group_prompt_template = group_prompts.get("group", default_group_prompt)
+    individual_prompt_template = group_prompts.get("individual", default_individual_prompt)
+    answer_prompt_template = group_prompts.get("answer", default_answer_prompt)
+
     combined_files_with_prompts = ""
     combined_files = ""
     for rel_path in file_list:
@@ -81,9 +107,9 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
         if file_path and os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-            # For the first GPT call, include the individual prompt (with file name) in front.
-            combined_files_with_prompts += f"{individual_prompt.format(file_name=rel_path)}\n\nFile: {rel_path}\n\n{content}\n\n"
-            # For the second GPT call, prepend the file name before the content.
+            # Build prompt for question generation.
+            combined_files_with_prompts += f"{individual_prompt_template.format(file_name=rel_path)}\n\nFile: {rel_path}\n\n{content}\n\n"
+            # Build combined file content for answer generation.
             combined_files += f"File: {rel_path}\n\n{content}\n\n"
         else:
             print(f"Warning: {rel_path} not found in {full_base_dir} or its subdirectories.")
@@ -92,99 +118,145 @@ def process_file_group(group_name, group_config, full_base_dir, output_dir, head
         print(f"No valid files found for group {group_name}. Skipping.")
         return
 
-    # Prepare safe group name and base output paths.
+    # Prepare output directories.
     safe_group_name = group_name.replace(" ", "_")
-    base_output_path = os.path.join("/var/kolo_data", output_dir)
-    os.makedirs(base_output_path, exist_ok=True)
-
-    # Define subdirectories.
-    questions_dir = os.path.join(base_output_path, "questions")
-    answers_dir = os.path.join(base_output_path, "answers")
-    debug_dir = os.path.join(base_output_path, "debug")
+    base_group_output = os.path.join(base_output_path, "qa_generation_output")
+    os.makedirs(base_group_output, exist_ok=True)
+    questions_dir = os.path.join(base_group_output, "questions")
+    answers_dir = os.path.join(base_group_output, "answers")
+    debug_dir = os.path.join(base_group_output, "debug")
     os.makedirs(questions_dir, exist_ok=True)
     os.makedirs(answers_dir, exist_ok=True)
     os.makedirs(debug_dir, exist_ok=True)
 
-    # Build prompt to generate the list of questions.
-    question_list_prompt = f"{header_prompt}\n\n{combined_files_with_prompts}\n\n{footer_prompt}"
+    # Build prompt for generating questions.
+    files_content = combined_files_with_prompts  
+    question_list_prompt = f"{header_prompt}\n\n{files_content}\n\n{footer_prompt}"
     
-    # Define file paths for storing questions and debug info.
     question_file_name = f"questions_{safe_group_name}.txt"
     question_file_path = os.path.join(questions_dir, question_file_name)
     debug_file_name = f"debug_{safe_group_name}_questions.txt"
     debug_file_path = os.path.join(debug_dir, debug_file_name)
 
-    # Check if the questions file already exists.
+    # Determine which model to use for question generation.
+    if provider == "openai":
+        question_model = openai_models.get("question_model")
+    else:  # provider == "ollama"
+        question_model = ollama_config.get("question_model")
+
+    # Generate questions if they don't already exist.
     if os.path.exists(question_file_path):
         with open(question_file_path, 'r', encoding='utf-8') as q_f:
             question_list_text = q_f.read().strip()
         print(f"Questions file already exists for group {group_name}. Skipping question generation.")
     else:
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": question_list_prompt}],
-            )
-        except Exception as e:
-            print(f"Error during QA call for group {group_name}: {e}")
+        question_list_text = call_api(provider, question_model, question_list_prompt, ollama_config=ollama_config)
+        if not question_list_text:
+            print(f"Failed to generate questions for group {group_name}.")
             return
-
-        question_list_text = response.choices[0].message.content.strip()
-
-        # Save the full question output in the questions folder.
         with open(question_file_path, 'w', encoding='utf-8') as q_f:
             q_f.write(question_list_text)
-
-        # Save debug information (the exact prompt sent) to the debug folder.
         with open(debug_file_path, 'w', encoding='utf-8') as debug_f:
             debug_f.write(question_list_prompt)
-
         print(f"Processed group {group_name} -> Questions saved to {question_file_path}")
         print(f"Debug info saved to {debug_file_path}")
 
-    # --- Process each question individually ---
+    # Parse questions.
     questions = parse_questions(question_list_text)
     if not questions:
         print(f"No valid questions found in group {group_name} output.")
         return
 
+    # Process each question to generate an answer.
     for idx, question in enumerate(questions, start=1):
         answer_file_name = f"answer_{safe_group_name}_{idx}.txt"
         answer_file_path = os.path.join(answers_dir, answer_file_name)
         debug_answer_file_name = f"debug_{safe_group_name}_answer_{idx}.txt"
         debug_answer_file_path = os.path.join(debug_dir, debug_answer_file_name)
         
-        # Skip generating answer if it already exists.
         if os.path.exists(answer_file_path):
             print(f"Answer for question {idx} in group {group_name} already exists. Skipping.")
             continue
 
-        # Create a new prompt that includes only the file contents (with file names) and the individual question.
-        individual_question_prompt = f"{combined_files}\n\n{question}"
-        try:
-            answer_response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": individual_question_prompt}],
-            )
-        except Exception as e:
-            print(f"Error during answer call for question {idx} in group {group_name}: {e}")
+        # Build the prompt for answer generation.
+        individual_answer_prompt = f"{combined_files}\n\n{answer_prompt_template.format(file_name='[customizable]')}\n\n{question}"
+        
+        # Determine which model to use for answer generation.
+        if provider == "openai":
+            answer_model = openai_models.get("answer_model")
+        else:  # provider == "ollama"
+            answer_model = ollama_config.get("answer_model")
+
+        answer_text = call_api(provider, answer_model, individual_answer_prompt, ollama_config=ollama_config)
+        if not answer_text:
+            print(f"Failed to generate answer for question {idx} in group {group_name}.")
             continue
 
-        answer_text = answer_response.choices[0].message.content.strip()
         with open(answer_file_path, 'w', encoding='utf-8') as answer_f:
             answer_f.write(answer_text)
-
-        # Save the individual prompt for debugging.
         with open(debug_answer_file_path, 'w', encoding='utf-8') as debug_ans_f:
-            debug_ans_f.write(individual_question_prompt)
-
+            debug_ans_f.write(individual_answer_prompt)
         print(f"Saved answer for question {idx} in group {group_name} -> {answer_file_path}")
 
-def main():
-    # Process each allowed file group from the configuration.
-    for group_name, group_config in allowed_file_groups.items():
-        print(f"\nProcessing group: {group_name}")
-        process_file_group(group_name, group_config, full_base_dir, output_dir, header_prompt, footer_prompt)
+# --- Main Script ---
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Generate QA data for LLM fine-tuning.")
+    parser.add_argument("--config", default="generate_qa_config.yaml", help="Path to configuration YAML file")
+    args = parser.parse_args()
+
+    # Load configuration.
+    with open(args.config, "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+
+    # Global settings.
+    global_config = config.get("global", {})
+    base_dir = global_config.get("base_dir", "")
+    output_dir = global_config.get("output_dir", "output")
+    output_base_path = global_config.get("output_base_path", "/var/kolo_data")
+    full_base_dir = os.path.join(output_base_path, base_dir)
+
+    provider = global_config.get("provider", "openai")
+    openai_models = global_config.get("openai", {})
+    ollama_config = global_config.get("ollama", {})
+
+    # Load prompt templates.
+    prompts_config = config.get("prompts", {})
+    header_prompt = prompts_config.get("header", "")
+    footer_prompt = prompts_config.get("footer", "")
+    default_individual_prompt = prompts_config.get("default_individual", "")
+    default_group_prompt = prompts_config.get("default_group", "")
+    default_answer_prompt = prompts_config.get("default_answer", "Based on the content provided, answer the following question in detail.")
+
+    # File groups.
+    file_groups_config = config.get("file_groups", {})
+
+    # Initialize OpenAI client if provider is OpenAI.
+    if provider == "openai":
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    # Build allowed file groups with numeric suffixes.
+    allowed_file_groups = {}
+    for group_name, group_config in file_groups_config.items():
+        iterations = group_config.get("iterations", 1)
+        for i in range(1, iterations + 1):
+            key = f"{group_name}_{i}"
+            allowed_file_groups[key] = group_config
+
+    # Process each file group.
+    for group_name, group_config in allowed_file_groups.items():
+        print(f"\nProcessing group: {group_name}")
+        process_file_group(
+            group_name=group_name,
+            group_config=group_config,
+            full_base_dir=full_base_dir,
+            base_output_path=output_base_path,
+            header_prompt=header_prompt,
+            footer_prompt=footer_prompt,
+            default_individual_prompt=default_individual_prompt,
+            default_group_prompt=default_group_prompt,
+            default_answer_prompt=default_answer_prompt,
+            provider=provider,
+            openai_models=openai_models,
+            ollama_config=ollama_config,
+        )
