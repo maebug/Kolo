@@ -2,15 +2,16 @@
 .SYNOPSIS
     Runs the generate_qa_data.py script inside the kolo_container Docker container.
 .DESCRIPTION
-    This script accepts an OpenAI API key as a parameter and sets it as an environment variable
+    This script optionally accepts an OpenAI API key as a parameter and sets it as an environment variable
     inside the container before executing the generate_qa_data.py script.
 .EXAMPLE
     .\generate_qa_data.ps1 -OpenAI_API_KEY "your_api_key_here"
+    .\generate_qa_data.ps1
 #>
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, HelpMessage = "Provide your OpenAI API Key.")]
+    [Parameter(Mandatory = $false, HelpMessage = "Provide your OpenAI API Key (optional).")]
     [string]$OpenAI_API_KEY
 )
 
@@ -26,9 +27,12 @@ if (-Not $containerRunning) {
 }
 
 # Build the command string to execute inside the container.
-# The command first sets the OPENAI_API_KEY environment variable, activates the conda environment,
-# and then runs the Python script.
-$command = "export OPENAI_API_KEY='$OpenAI_API_KEY'; source /opt/conda/bin/activate kolo_env && python /app/generate_qa_data.py"
+if ($OpenAI_API_KEY) {
+    $command = "export OPENAI_API_KEY='$OpenAI_API_KEY'; source /opt/conda/bin/activate kolo_env && python /app/generate_qa_data.py"
+}
+else {
+    $command = "source /opt/conda/bin/activate kolo_env && python /app/generate_qa_data.py"
+}
 
 # Execute the Python script inside the container
 try {
