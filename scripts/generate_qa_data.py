@@ -11,7 +11,7 @@ def call_api(provider, model, prompt, global_ollama_url=None):
     """
     Calls the appropriate API (OpenAI or Ollama) using the selected model and prompt.
     For OpenAI, uses the provided API key.
-    For Ollama use global_ollama_url.
+    For Ollama, uses global_ollama_url.
     """
     if provider == "openai":
         try:
@@ -79,10 +79,10 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
     file_list = group_config.get("files", [])
     group_prompts = group_config.get("prompts", {})
 
-    # Use defaults if not overridden
-    group_prompt_template = group_prompts.get("group", default_group_prompt)
-    individual_prompt_template = group_prompts.get("individual", default_individual_prompt)
-    answer_prompt_template = group_prompts.get("answer", default_answer_prompt)
+    # Use new prompt keys with defaults if not overridden in group config.
+    group_prompt_template = group_prompts.get("question_group_content", default_group_prompt)
+    individual_prompt_template = group_prompts.get("question_file_header", default_individual_prompt)
+    answer_prompt_template = group_prompts.get("answer_header", default_answer_prompt)
 
     combined_files_with_prompts = ""
     combined_files = ""
@@ -200,11 +200,11 @@ if __name__ == "__main__":
 
     # Prompt templates.
     prompts_config = config.get("prompts", {})
-    header_prompt = prompts_config.get("header", "")
-    footer_prompt = prompts_config.get("footer", "")
-    default_individual_prompt = prompts_config.get("individual", "")
-    default_group_prompt = prompts_config.get("group", "")
-    default_answer_prompt = prompts_config.get("answer", "Based on the content provided, answer the following question in detail.")
+    header_prompt = prompts_config.get("question_header", "")
+    footer_prompt = prompts_config.get("question_footer", "")
+    default_individual_prompt = prompts_config.get("question_file_header", "")
+    default_group_prompt = prompts_config.get("question_group_content", "")
+    default_answer_prompt = prompts_config.get("answer_header", "Based on the content provided, answer the following question in detail.")
 
     # File groups.
     file_groups_config = config.get("file_groups", {})

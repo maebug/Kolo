@@ -14,15 +14,15 @@ providers:
     # Note: The URL defined here (if any) will be ignored in favor of the global ollama_url.
 
 prompts:
-  header: 'Generate a list of questions that cover the full contents of the file.'
-  footer: |
+  question_header: 'Generate a list of questions that cover the full contents of the file.'
+  question_footer: |
     --- Output ---
     1.
     2.
     3.
-  individual: 'Each question must include "{file_name}"'
-  group: '{files_content}'
-  answer: 'Based on the file content provided, answer the following question in detail.'
+  question_file_header: 'Each question must include "{file_name}"'
+  question_group_content: '{files_content}'
+  answer_header: 'Based on the file content provided, answer the following question in detail.'
 
 file_groups:
   BuildImage:
