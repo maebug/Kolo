@@ -6,10 +6,10 @@ global:
 
 providers:
   question:
-    provider: ollama
+    provider: ollama #Use "ollama" or "openai"
     model: llama3.1
   answer:
-    provider: ollama
+    provider: ollama #Use "ollama" or "openai"
     model: llama3.1
 
 prompts:
