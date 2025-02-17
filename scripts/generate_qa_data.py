@@ -56,16 +56,13 @@ def find_file_in_subdirectories(full_base_dir, file_relative_path):
             return os.path.join(root, target)
     return None
 
+import re
+
 def parse_questions(question_text):
-    pattern = re.compile(r"^\s*\d+\.\s*(.+)$")
-    questions = []
-    for line in question_text.splitlines():
-        match = pattern.match(line)
-        if match:
-            question = match.group(1).strip()
-            if question:
-                questions.append(question)
-    return questions
+    # Split the text into sentences using punctuation as delimiters.
+    sentences = re.split(r'(?<=[.?!])\s+', question_text)
+    # Return only those sentences that end with a question mark.
+    return [sentence.strip() for sentence in sentences if sentence.strip().endswith('?')]
 
 # --- Main Processing Function ---
 def process_file_group(group_name, group_config, full_base_dir, base_output_path,
