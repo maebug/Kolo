@@ -24,14 +24,6 @@ prompts:
   group: '{files_content}'
   answer: 'Based on the file content provided, answer the following question in detail.'
 
-naming:
-  question:
-    group_header: 'question_file_group_header_{group_name}.txt'
-    file_header: 'question_file_header_{group_name}.txt'
-  answer:
-    group_header: 'answer_file_group_header_{group_name}_{idx}.txt'
-    file_header: 'answer_file_header_{group_name}_{idx}.txt'
-
 file_groups:
   BuildImage:
     iterations: 15

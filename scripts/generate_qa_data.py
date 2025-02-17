@@ -75,7 +75,7 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
                          header_prompt, footer_prompt, default_individual_prompt,
                          default_group_prompt, default_answer_prompt,
                          question_provider_config, answer_provider_config,
-                         naming_config, global_ollama_url):
+                         global_ollama_url):
     file_list = group_config.get("files", [])
     group_prompts = group_config.get("prompts", {})
 
@@ -113,9 +113,9 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
     files_content = combined_files_with_prompts  
     question_list_prompt = f"{header_prompt}\n\n{files_content}\n\n{footer_prompt}"
 
-    # Use naming conventions from config.
-    question_group_filename = naming_config["question"]["group_header"].format(group_name=group_name)
-    question_debug_filename = naming_config["question"]["file_header"].format(group_name=group_name)
+    # Hard-coded file naming conventions.
+    question_group_filename = f"questions_{group_name}.txt"
+    question_debug_filename = f"debug_{group_name}_questions.txt"
     question_file_path = os.path.join(questions_dir, question_group_filename)
     question_debug_path = os.path.join(debug_dir, question_debug_filename)
 
@@ -149,8 +149,8 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
 
     # Process each question to generate an answer.
     for idx, question in enumerate(questions, start=1):
-        answer_filename = naming_config["answer"]["file_header"].format(group_name=group_name, idx=idx)
-        answer_debug_filename = naming_config["answer"]["group_header"].format(group_name=group_name, idx=idx)
+        answer_filename = f"answer_{group_name}_{idx}.txt"
+        answer_debug_filename = f"debug_{group_name}_answer_{idx}.txt"
         answer_file_path = os.path.join(answers_dir, answer_filename)
         answer_debug_path = os.path.join(debug_dir, answer_debug_filename)
         
@@ -206,9 +206,6 @@ if __name__ == "__main__":
     default_group_prompt = prompts_config.get("group", "")
     default_answer_prompt = prompts_config.get("answer", "Based on the content provided, answer the following question in detail.")
 
-    # Naming conventions.
-    naming_config = config.get("naming", {})
-
     # File groups.
     file_groups_config = config.get("file_groups", {})
 
@@ -240,6 +237,5 @@ if __name__ == "__main__":
             default_answer_prompt=default_answer_prompt,
             question_provider_config=question_provider_config,
             answer_provider_config=answer_provider_config,
-            naming_config=naming_config,
             global_ollama_url=global_ollama_url
         )
