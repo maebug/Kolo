@@ -2,7 +2,6 @@ import os
 import re
 import yaml
 import argparse
-import json
 import requests
 from openai import OpenAI
 

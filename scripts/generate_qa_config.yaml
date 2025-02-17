@@ -1,17 +1,14 @@
 global:
-  # Directories (relative or absolute)
   base_dir: 'qa_generation_input'
   output_dir: 'qa_generation_output'
   output_base_path: '/var/kolo_data'
 
-  # Provider settings: choose "openai" for cloud or "ollama" for local/cloud Ollama.
-  provider: 'ollama' # Options: "openai" or "ollama"
+  # Provider settings: choose "openai" or "ollama"
+  provider: 'ollama'
   openai:
-    # Models for each API call when using OpenAI.
     question_model: 'gpt-4o-mini'
     answer_model: 'gpt-4o-mini'
   ollama:
-    # For Ollama, define type ("local" or "cloud") and the models for each call.
     url: 'http://localhost:11434/api/generate'
     question_model: 'llama3.1'
     answer_model: 'llama3.1'
