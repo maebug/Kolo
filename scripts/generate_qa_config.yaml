@@ -6,11 +6,11 @@ global:
 
 providers:
   question:
-    provider: ollama #Use "ollama" or "openai"
-    model: llama3.1
+    provider: openai #Use "ollama" or "openai"
+    model: gpt-4o-mini
   answer:
-    provider: ollama #Use "ollama" or "openai"
-    model: llama3.1
+    provider: openai #Use "ollama" or "openai"
+    model: gpt-4o-mini
 
 prompts:
   question_prompt_header: 'Generate a list of questions that cover the full contents of the file.'
@@ -24,6 +24,12 @@ prompts:
   answer_prompt_header: 'Based on the file content provided, answer the following question in detail.'
 
 file_groups:
+  TrainTorchTune:
+    iterations: 15
+    files:
+      - train_model_torchtune.ps1
+      - merge_lora.py
+      - convert_jsonl_to_json.py
   BuildImage:
     iterations: 15
     files:
@@ -48,12 +54,6 @@ file_groups:
     files:
       - train_model_unsloth.ps1
       - train.py
-  TrainTorchTune:
-    iterations: 15
-    files:
-      - train_model_torchtune.ps1
-      - merge_lora.py
-      - convert_jsonl_to_json.py
   TrainingPSCommands:
     iterations: 15
     files:
