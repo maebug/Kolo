@@ -7,11 +7,11 @@ from openai import OpenAI
 
 # --- Helper Function to Call the API ---
 
-def call_api(provider, model, prompt, provider_config=None):
+def call_api(provider, model, prompt, global_ollama_url=None):
     """
     Calls the appropriate API (OpenAI or Ollama) using the selected model and prompt.
     For OpenAI, uses the provided API key.
-    For Ollama, makes an HTTP request to the local or cloud endpoint.
+    For Ollama use global_ollama_url.
     """
     if provider == "openai":
         try:
@@ -25,11 +25,11 @@ def call_api(provider, model, prompt, provider_config=None):
             return None
 
     elif provider == "ollama":
-        url = provider_config.get("url")
+        url = global_ollama_url
         payload = {
             "model": model,
             "prompt": prompt,
-            "stream": False,  # Disable streaming responses.
+            "stream": False,
             "options": {}
         }
         try:
@@ -75,7 +75,7 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
                          header_prompt, footer_prompt, default_individual_prompt,
                          default_group_prompt, default_answer_prompt,
                          question_provider_config, answer_provider_config,
-                         naming_config):
+                         naming_config, global_ollama_url):
     file_list = group_config.get("files", [])
     group_prompts = group_config.get("prompts", {})
 
@@ -113,7 +113,7 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
     files_content = combined_files_with_prompts  
     question_list_prompt = f"{header_prompt}\n\n{files_content}\n\n{footer_prompt}"
 
-    # Use naming conventions from config
+    # Use naming conventions from config.
     question_group_filename = naming_config["question"]["group_header"].format(group_name=group_name)
     question_debug_filename = naming_config["question"]["file_header"].format(group_name=group_name)
     question_file_path = os.path.join(questions_dir, question_group_filename)
@@ -129,7 +129,7 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
             question_provider_config["provider"],
             question_provider_config["model"],
             question_list_prompt,
-            provider_config=question_provider_config
+            global_ollama_url=global_ollama_url
         )
         if not question_list_text:
             print(f"Failed to generate questions for group {group_name}.")
@@ -164,7 +164,7 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
             answer_provider_config["provider"],
             answer_provider_config["model"],
             individual_answer_prompt,
-            provider_config=answer_provider_config
+            global_ollama_url=global_ollama_url
         )
         if not answer_text:
             print(f"Failed to generate answer for question {idx} in group {group_name}.")
@@ -192,6 +192,7 @@ if __name__ == "__main__":
     output_dir = global_config.get("output_dir", "output")
     output_base_path = global_config.get("output_base_path", "/var/kolo_data")
     full_base_dir = os.path.join(output_base_path, base_dir)
+    global_ollama_url = global_config.get("ollama_url", "http://localhost:11434/api/generate")
 
     # Provider settings.
     question_provider_config = config.get("providers", {}).get("question", {})
@@ -212,7 +213,8 @@ if __name__ == "__main__":
     file_groups_config = config.get("file_groups", {})
 
     # Initialize OpenAI client if needed.
-    if question_provider_config.get("provider") == "openai" or answer_provider_config.get("provider") == "openai":
+    if (question_provider_config.get("provider") == "openai" or 
+        answer_provider_config.get("provider") == "openai"):
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     # Expand file groups by iterations.
@@ -238,5 +240,6 @@ if __name__ == "__main__":
             default_answer_prompt=default_answer_prompt,
             question_provider_config=question_provider_config,
             answer_provider_config=answer_provider_config,
-            naming_config=naming_config
+            naming_config=naming_config,
+            global_ollama_url=global_ollama_url
         )
