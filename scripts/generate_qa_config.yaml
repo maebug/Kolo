@@ -18,7 +18,7 @@ global:
 
 prompts:
   header: |
-    Generate a list of questions that someone might ask about this content.
+    Generate a list of questions that will cover the full contents of the file.
   footer: |
     --- Output ---
 
@@ -30,7 +30,7 @@ prompts:
     ... (continue as needed)
   default_individual: 'Each question must include "{file_name}"'
   default_group: '{files_content}'
-  default_answer: 'Based on the content provided, answer the following question in detail.'
+  default_answer: 'Based on the file content provided, answer the following question in detail.'
 
 file_groups:
   BuildImage:
