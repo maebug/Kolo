@@ -6,7 +6,6 @@ import requests
 from openai import OpenAI
 
 # --- Helper Function to Call the API ---
-
 def call_api(provider, model, prompt, global_ollama_url=None):
     """
     Calls the appropriate API (OpenAI or Ollama) using the selected model and prompt.
@@ -46,7 +45,6 @@ def call_api(provider, model, prompt, global_ollama_url=None):
         return None
 
 # --- Utility Functions ---
-
 def find_file_in_subdirectories(full_base_dir, file_relative_path):
     possible_path = os.path.join(full_base_dir, file_relative_path)
     if os.path.exists(possible_path):
@@ -70,7 +68,6 @@ def parse_questions(question_text):
     return questions
 
 # --- Main Processing Function ---
-
 def process_file_group(group_name, group_config, full_base_dir, base_output_path,
                          header_prompt, footer_prompt, default_individual_prompt,
                          default_group_prompt, default_answer_prompt,
@@ -80,9 +77,9 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
     group_prompts = group_config.get("prompts", {})
 
     # Use new prompt keys with defaults if not overridden in group config.
-    group_prompt_template = group_prompts.get("question_group_content", default_group_prompt)
-    individual_prompt_template = group_prompts.get("question_file_header", default_individual_prompt)
-    answer_prompt_template = group_prompts.get("answer_header", default_answer_prompt)
+    group_prompt_template = group_prompts.get("group_question_prompt", default_group_prompt)
+    individual_prompt_template = group_prompts.get("individual_question_prompt", default_individual_prompt)
+    answer_prompt_template = group_prompts.get("answer_prompt_header", default_answer_prompt)
 
     combined_files_with_prompts = ""
     combined_files = ""
@@ -100,20 +97,19 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
         print(f"No valid files found for group {group_name}. Skipping.")
         return
 
-    # Prepare output directories.
-    base_group_output = os.path.join(base_output_path, "qa_generation_output")
-    questions_dir = os.path.join(base_group_output, "questions")
-    answers_dir = os.path.join(base_group_output, "answers")
-    debug_dir = os.path.join(base_group_output, "debug")
+    # Build prompt for generating questions.
+    files_content = combined_files_with_prompts  
+    # Optionally, you could integrate group_prompt_template if needed.
+    question_list_prompt = f"{header_prompt}\n\n{files_content}\n\n{footer_prompt}"
+
+    # Define output directories and file names.
+    questions_dir = os.path.join(base_output_path, "qa_generation_output", "questions")
+    answers_dir = os.path.join(base_output_path, "qa_generation_output", "answers")
+    debug_dir = os.path.join(base_output_path, "qa_generation_output", "debug")
     os.makedirs(questions_dir, exist_ok=True)
     os.makedirs(answers_dir, exist_ok=True)
     os.makedirs(debug_dir, exist_ok=True)
 
-    # Build prompt for generating questions.
-    files_content = combined_files_with_prompts  
-    question_list_prompt = f"{header_prompt}\n\n{files_content}\n\n{footer_prompt}"
-
-    # Hard-coded file naming conventions.
     question_group_filename = f"questions_{group_name}.txt"
     question_debug_filename = f"debug_{group_name}_questions.txt"
     question_file_path = os.path.join(questions_dir, question_group_filename)
@@ -177,7 +173,6 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
         print(f"Saved answer for question {idx} in group {group_name} -> {answer_file_path}")
 
 # --- Main Script ---
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate QA data for LLM fine-tuning.")
     parser.add_argument("--config", default="generate_qa_config.yaml", help="Path to configuration YAML file")
@@ -200,11 +195,11 @@ if __name__ == "__main__":
 
     # Prompt templates.
     prompts_config = config.get("prompts", {})
-    header_prompt = prompts_config.get("question_header", "")
-    footer_prompt = prompts_config.get("question_footer", "")
-    default_individual_prompt = prompts_config.get("question_file_header", "")
-    default_group_prompt = prompts_config.get("question_group_content", "")
-    default_answer_prompt = prompts_config.get("answer_header", "Based on the content provided, answer the following question in detail.")
+    header_prompt = prompts_config.get("question_prompt_header", "")
+    footer_prompt = prompts_config.get("question_prompt_footer", "")
+    default_individual_prompt = prompts_config.get("individual_question_prompt", "")
+    default_group_prompt = prompts_config.get("group_question_prompt", "")
+    default_answer_prompt = prompts_config.get("answer_prompt_header", "Based on the content provided, answer the following question in detail.")
 
     # File groups.
     file_groups_config = config.get("file_groups", {})
