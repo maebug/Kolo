@@ -3,6 +3,7 @@ import re
 import yaml
 import argparse
 import requests
+import hashlib
 from openai import OpenAI
 
 # --- Helper Function to Call the API ---
@@ -56,8 +57,6 @@ def find_file_in_subdirectories(full_base_dir, file_relative_path):
             return os.path.join(root, target)
     return None
 
-import re
-
 def parse_questions(question_text):
     """
     Extracts question sentences from the provided text.
@@ -72,6 +71,9 @@ def parse_questions(question_text):
     pattern = r'(?m)^[\s*\d\.\-\+]*\**\s*(.+?\?)'
     questions = re.findall(pattern, question_text, flags=re.DOTALL)
     return [q.strip() for q in questions if q.strip()]
+
+def get_hash(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 # --- Main Processing Function ---
 def process_file_group(group_name, group_config, full_base_dir, base_output_path,
@@ -127,7 +129,7 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
     if os.path.exists(question_file_path):
         with open(question_file_path, 'r', encoding='utf-8') as q_f:
             question_list_text = q_f.read().strip()
-        print(f"Questions file already exists for group {group_name}. Skipping question generation.")
+        print(f"Questions file already exists for group {group_name}. Using existing questions.")
     else:
         question_list_text = call_api(
             question_provider_config["provider"],
@@ -151,15 +153,40 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
         print(f"No valid questions found in group {group_name} output.")
         return
 
-    # Process each question to generate an answer.
+     # Process each question to generate an answer.
     for idx, question in enumerate(questions, start=1):
         answer_filename = f"answer_{group_name}_{idx}.txt"
         answer_debug_filename = f"debug_{group_name}_answer_{idx}.txt"
+        meta_filename = f"answer_{group_name}_{idx}.meta"
         answer_file_path = os.path.join(answers_dir, answer_filename)
         answer_debug_path = os.path.join(debug_dir, answer_debug_filename)
-        
+        meta_file_path = os.path.join(answers_dir, meta_filename)
+
+        # Compute hash of the current question.
+        current_hash = get_hash(question)
+
+        # Determine if the answer should be (re)generated.
+        regenerate = True
         if os.path.exists(answer_file_path):
-            print(f"Answer for question {idx} in group {group_name} already exists. Skipping.")
+            if os.path.exists(meta_file_path):
+                with open(meta_file_path, 'r', encoding='utf-8') as meta_f:
+                    stored_hash = meta_f.read().strip()
+                if stored_hash == current_hash:
+                    print(f"Answer for question {idx} in group {group_name} is up-to-date. Skipping.")
+                    regenerate = False
+                else:
+                    print(f"Question {idx} in group {group_name} has changed. Regenerating answer.")
+            else:
+                # No meta file exists; assume the answer is valid and create a meta file.
+                with open(meta_file_path, 'w', encoding='utf-8') as meta_f:
+                    meta_f.write(current_hash)
+                print(f"Meta file created for existing answer {idx} in group {group_name}. Skipping regeneration.")
+                regenerate = False
+
+        if not os.path.exists(answer_file_path):
+            print(f"Answer file for question {idx} in group {group_name} not found. Generating answer.")
+
+        if not regenerate:
             continue
 
         individual_answer_prompt = f"{combined_files}\n\n{answer_prompt_template.format(file_name='[customizable]')}\n\n{question}"
@@ -178,6 +205,8 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
             answer_f.write(answer_text)
         with open(answer_debug_path, 'w', encoding='utf-8') as debug_ans_f:
             debug_ans_f.write(individual_answer_prompt)
+        with open(meta_file_path, 'w', encoding='utf-8') as meta_f:
+            meta_f.write(current_hash)
         print(f"Saved answer for question {idx} in group {group_name} -> {answer_file_path}")
 
 # --- Main Script ---
