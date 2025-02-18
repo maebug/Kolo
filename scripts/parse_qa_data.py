@@ -10,18 +10,16 @@ OUTPUT_FILE = "/app/data.jsonl"
 
 def parse_questions_from_file(filepath):
     """
-    Reads a question file and extracts questions that are numbered.
-    Returns a list of question strings.
+    Reads the entire file content and splits it into sentences using punctuation as delimiters.
+    Returns only the sentences that end with a question mark.
     """
-    pattern = re.compile(r"^\s*\d+\.\s*(.+)$")
-    questions = []
     with open(filepath, 'r', encoding='utf-8') as f:
-        for line in f:
-            match = pattern.match(line)
-            if match:
-                question = match.group(1).strip()
-                if question:
-                    questions.append(question)
+        question_text = f.read()
+    
+    # Split the text into sentences using punctuation as delimiters.
+    sentences = re.split(r'(?<=[.?!])\s+', question_text)
+    # Return only those sentences that end with a question mark.
+    questions = [sentence.strip() for sentence in sentences if sentence.strip().endswith('?')]
     return questions
 
 def pair_questions_and_answers():
