@@ -37,6 +37,12 @@ The **Kolo** project uses the following scripts and configuration file to genera
    ./convert_qa_output.ps1
    ```
 
+   Note: On subsequent generations, ensure you delete the existing qa_generation_output folder by executing:
+
+   ```bash
+   ./delete_qa_generation_output.ps1
+   ```
+
 1. Your training data is now ready; continue by training your LLM using `./train_model_torchtune.ps1` or `./train_model_unsloth.ps1`.  
    Follow the README guide after this step.
 
