@@ -56,11 +56,22 @@ def find_file_in_subdirectories(full_base_dir, file_relative_path):
             return os.path.join(root, target)
     return None
 
+import re
+
 def parse_questions(question_text):
-    # Split the text into sentences using punctuation as delimiters.
-    sentences = re.split(r'(?<=[.?!])\s+', question_text)
-    # Return only those sentences that end with a question mark.
-    return [sentence.strip() for sentence in sentences if sentence.strip().endswith('?')]
+    """
+    Extracts question sentences from the provided text.
+    The regex pattern handles optional numbering, bullet points, or markdown markers,
+    and captures multi-line questions ending with a question mark.
+    """
+    # Regex explanation:
+    # - (?m) activates multiline mode so that ^ matches the start of any line.
+    # - ^[\s*\d\.\-\+]*\**\s* consumes any leading spaces, numbers, bullets, or markdown markers.
+    # - (.+?\?) non-greedily captures the question text until the first '?'.
+    # - re.DOTALL makes '.' match newline characters, allowing multi-line questions.
+    pattern = r'(?m)^[\s*\d\.\-\+]*\**\s*(.+?\?)'
+    questions = re.findall(pattern, question_text, flags=re.DOTALL)
+    return [q.strip() for q in questions if q.strip()]
 
 # --- Main Processing Function ---
 def process_file_group(group_name, group_config, full_base_dir, base_output_path,

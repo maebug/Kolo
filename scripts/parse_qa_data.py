@@ -8,18 +8,26 @@ QUESTIONS_DIR = os.path.join(BASE_OUTPUT_DIR, "questions")
 ANSWERS_DIR = os.path.join(BASE_OUTPUT_DIR, "answers")
 OUTPUT_FILE = "/app/data.jsonl"
 
+import re
+
 def parse_questions_from_file(filepath):
     """
-    Reads the entire file content and splits it into sentences using punctuation as delimiters.
-    Returns only the sentences that end with a question mark.
+    Reads file content and extracts question texts from a wide range of formats.
+    It uses a flexible regex that captures any block of text ending with a '?'.
     """
     with open(filepath, 'r', encoding='utf-8') as f:
-        question_text = f.read()
+        text = f.read()
     
-    # Split the text into sentences using punctuation as delimiters.
-    sentences = re.split(r'(?<=[.?!])\s+', question_text)
-    # Return only those sentences that end with a question mark.
-    questions = [sentence.strip() for sentence in sentences if sentence.strip().endswith('?')]
+    # Regex explanation:
+    # - The pattern looks at the start of a line (using MULTILINE mode) and allows for optional markers
+    #   like numbers, dashes, or markdown symbols.
+    # - It then captures a block of text non-greedily up to the first '?' it finds.
+    # - DOTALL mode lets the '.' match newline characters so multi-line questions are handled.
+    pattern = r'(?m)^[\s*\d\.\-\+]*\**\s*(.+?\?)'
+    questions = re.findall(pattern, text, flags=re.DOTALL)
+    
+    # Clean up whitespace
+    questions = [q.strip() for q in questions if q.strip()]
     return questions
 
 def pair_questions_and_answers():
