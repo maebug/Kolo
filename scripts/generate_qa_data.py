@@ -184,7 +184,7 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
                 regenerate = False
 
         if not os.path.exists(answer_file_path):
-            print(f"Answer file for question {idx} in group {group_name} not found. Generating answer.")
+            print(f"Generating answer for question {idx} in group {group_name}.")
 
         if not regenerate:
             continue
