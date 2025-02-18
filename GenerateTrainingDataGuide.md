@@ -24,7 +24,7 @@ The **Kolo** project uses the following scripts and configuration file to genera
    ./copy_scripts.ps1
    ```
 
-1. This will generate QA data using OpenAI's GPT-4o-mini. IN the config file yo can choose whether to use `openai` or `ollama` and which model to use. By default we use `openai` and the model `gpt-4o-mini`. If using OpenAI you must pass in your API key when running the generating script.
+1. This will generate QA data using the LLM provider and model you choose. In the config file you can choose whether to use `openai` or `ollama` and the specified model name. By default we use `openai` and the model `gpt-4o-mini`. When using the OpenAI provider you must pass in your API key when running the generating script.
 
    ```bash
    ./generate_qa_data.ps1 -OPENAI_API_KEY "your key"
