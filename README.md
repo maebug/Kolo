@@ -98,6 +98,12 @@ All available parameters
 ./train_model_torchtune.ps1 -HfToken "your_token" -Epochs 3 -LearningRate 1e-4 -TrainData "data.json" -BaseModel "Meta-llama/Llama-3.2-1B-Instruct" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -Seed 1337 -SchedulerType "cosine" -BatchSize 2 -OutputDir "GodOutput" -Quantization "Q4_K_M" -WeightDecay 0
 ```
 
+Note: If re-training with the same OutputDir, delete the existing directory first:
+
+```bash
+./delete_model.ps1 "GodOutput" -Tool "unsloth|torchtune"
+```
+
 For more information about fine tuning parameters please refer to the [Fine Tune Training Guide](https://github.com/MaxHastings/Kolo/blob/main/FineTuningGuide.md).
 
 ### 6️⃣ Install Model
@@ -130,12 +136,6 @@ Lists all models installed on Ollama and the training model directories for both
 
 ```bash
 ./list_models.ps1
-```
-
-Deletes the entire training output folder.
-
-```bash
-./delete_model.ps1 "GodOutput" -Tool "unsloth|torchtune"
 ```
 
 Copies all the scripts and files inside `/scripts` into Kolo at `/app/`
