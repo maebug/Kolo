@@ -66,15 +66,32 @@ Define the API providers for generating both questions and answers. Each provide
 - **`model`**: The model to be used (e.g., `gpt-4o-mini`).  
 
 ## Prompts
-All prompts are now organized under a single prompts section. They control the instructions provided to the LLM during QA generation.
+All prompts that control the instructions provided to the LLM during QA generation.
 
-Question Prompts
 - **`question_prompt_header`**: The main header prompt instructing the LLM on how to generate a list of questions.
 - **`question_prompt_footer`**: Defines the expected output format for questions.
 NOTE: Changing this may break the conversion script.
 - **`individual_question_prompt`**: A prompt that is used for each file in a group. Typically includes a `{file_name}` placeholder to refer to the specific file.
 - **`group_question_prompt`**: A prompt that includes the `{files_content}` variable. You can place additional information around the file content if needed.
 - **`answer_prompt_header`**: The prompt header instructing the LLM how to generate an answer based on each question.
+
+### Overall Prompt Structure
+
+This is what is sent to the LLM provider for question and answer generation. You can look at `/var/kolo_data/qa_generation_output/debug` folder to see exactly what is sent to the LLM provider during generation.
+
+#### Question Prompt
+```
+<question_prompt_header>
+<group_question_prompt (which includes for each file: <individual_question_prompt> + file content)
+<question_prompt_footer>
+```
+
+#### Answer Prompt
+```
+<Combined_file_content>
+<Answer_prompt_header>
+<Question>
+```
 
 See [generate_qa_config.yaml](https://github.com/MaxHastings/Kolo/blob/main/scripts/generate_qa_config.yaml) for a full config example.
 
