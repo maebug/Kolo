@@ -44,7 +44,7 @@ The **Kolo** project uses the following scripts and configuration file to genera
 
 # Config File Details
 
-This YAML configuration file controls various aspects of the QA generation process. The new format now groups settings into distinct sections: **global settings, providers, prompts, and file groups**.
+This YAML configuration file controls various aspects of the QA generation process.
 
 ## Global Settings
 
