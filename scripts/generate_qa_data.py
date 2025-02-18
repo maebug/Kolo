@@ -4,16 +4,43 @@ import yaml
 import argparse
 import requests
 import hashlib
-from openai import OpenAI
+import logging
+from pathlib import Path
+from typing import Optional, List, Dict, Any
 
-# --- Helper Function to Call the API ---
-def call_api(provider, model, prompt, global_ollama_url=None):
+# Initialize logging.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger(__name__)
+
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+    logger.warning("OpenAI package not installed; openai provider will not work.")
+
+
+# --- Helper Functions ---
+def call_api(
+    provider: str,
+    model: str,
+    prompt: str,
+    global_ollama_url: Optional[str] = None,
+    client: Optional[Any] = None
+) -> Optional[str]:
     """
     Calls the appropriate API (OpenAI or Ollama) using the selected model and prompt.
+    
     For OpenAI, uses the provided API key.
     For Ollama, uses global_ollama_url.
     """
-    if provider == "openai":
+    if provider.lower() == "openai":
+        if client is None:
+            logger.error("OpenAI client is not initialized.")
+            return None
         try:
             response = client.chat.completions.create(
                 model=model,
@@ -21,11 +48,13 @@ def call_api(provider, model, prompt, global_ollama_url=None):
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"OpenAI API error: {e}")
+            logger.error(f"OpenAI API error: {e}")
             return None
 
-    elif provider == "ollama":
-        url = global_ollama_url
+    elif provider.lower() == "ollama":
+        if not global_ollama_url:
+            logger.error("Global Ollama URL is not provided.")
+            return None
         payload = {
             "model": model,
             "prompt": prompt,
@@ -33,58 +62,84 @@ def call_api(provider, model, prompt, global_ollama_url=None):
             "options": {}
         }
         try:
-            response = requests.post(url, json=payload)
+            response = requests.post(global_ollama_url, json=payload)
             response.raise_for_status()
             result = response.json()
             return result.get("response", "").strip()
         except Exception as e:
-            print(f"Ollama API error: {e}")
+            logger.error(f"Ollama API error: {e}")
             return None
 
     else:
-        print("Unknown provider specified.")
+        logger.error("Unknown provider specified.")
         return None
 
-# --- Utility Functions ---
-def find_file_in_subdirectories(full_base_dir, file_relative_path):
-    possible_path = os.path.join(full_base_dir, file_relative_path)
-    if os.path.exists(possible_path):
+
+def find_file_in_subdirectories(base_dir: Path, relative_path: str) -> Optional[Path]:
+    """
+    Attempts to locate a file by its relative path in base_dir or its subdirectories.
+    """
+    possible_path = base_dir / relative_path
+    if possible_path.exists():
         return possible_path
 
-    target = os.path.basename(file_relative_path)
-    for root, dirs, files in os.walk(full_base_dir):
-        if target in files:
-            return os.path.join(root, target)
+    target = Path(relative_path).name
+    for path in base_dir.rglob(target):
+        if path.is_file():
+            return path
     return None
 
-def parse_questions(question_text):
+
+def parse_questions(question_text: str) -> List[str]:
     """
-    Extracts question sentences from the provided text.
-    The regex pattern handles optional numbering, bullet points, or markdown markers,
+    Extracts question sentences from the provided text using a regex pattern.
+    
+    The pattern handles optional numbering, bullet points, or markdown markers,
     and captures multi-line questions ending with a question mark.
     """
-    # Regex explanation:
-    # - (?m) activates multiline mode so that ^ matches the start of any line.
-    # - ^[\s*\d\.\-\+]*\**\s* consumes any leading spaces, numbers, bullets, or markdown markers.
-    # - (.+?\?) non-greedily captures the question text until the first '?'.
-    # - re.DOTALL makes '.' match newline characters, allowing multi-line questions.
     pattern = r'(?m)^[\s*\d\.\-\+]*\**\s*(.+?\?)'
     questions = re.findall(pattern, question_text, flags=re.DOTALL)
     return [q.strip() for q in questions if q.strip()]
 
-def get_hash(text):
+
+def get_hash(text: str) -> str:
+    """Returns the SHA-256 hash of the given text."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
+
+def write_text_to_file(file_path: Path, text: str) -> None:
+    """Writes text to a file ensuring the parent directory exists."""
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_text(text, encoding="utf-8")
+
+
+def read_text_from_file(file_path: Path) -> str:
+    """Reads and returns text from a file."""
+    return file_path.read_text(encoding="utf-8")
+
+
 # --- Main Processing Function ---
-def process_file_group(group_name, group_config, full_base_dir, base_output_path,
-                         header_prompt, footer_prompt, default_individual_prompt,
-                         default_group_prompt, default_answer_prompt,
-                         question_provider_config, answer_provider_config,
-                         global_ollama_url):
-    file_list = group_config.get("files", [])
+def process_file_group(
+    group_name: str,
+    group_config: Dict[str, Any],
+    full_base_dir: Path,
+    base_output_path: Path,
+    header_prompt: str,
+    footer_prompt: str,
+    default_individual_prompt: str,
+    default_group_prompt: str,
+    default_answer_prompt: str,
+    question_provider_config: Dict[str, Any],
+    answer_provider_config: Dict[str, Any],
+    global_ollama_url: Optional[str],
+    openai_client: Optional[Any] = None
+) -> None:
+    """
+    Processes a group of files to generate questions and answers using LLM providers.
+    """
+    file_list: List[str] = group_config.get("files", [])
     group_prompts = group_config.get("prompts", {})
 
-    # Use prompt templates from group config if available, otherwise fall back to defaults.
     individual_prompt_template = group_prompts.get("individual_question_prompt", default_individual_prompt)
     group_prompt_template = group_prompts.get("group_question_prompt", default_group_prompt)
     answer_prompt_template = group_prompts.get("answer_prompt_header", default_answer_prompt)
@@ -93,137 +148,140 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
     combined_files = ""
     for rel_path in file_list:
         file_path = find_file_in_subdirectories(full_base_dir, rel_path)
-        if file_path and os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            combined_files_with_prompts += f"{individual_prompt_template.format(file_name=rel_path)}\n\nFile: {rel_path}\n\n{content}\n\n"
+        if file_path and file_path.exists():
+            content = file_path.read_text(encoding="utf-8")
+            combined_files_with_prompts += (
+                f"{individual_prompt_template.format(file_name=rel_path)}\n\n"
+                f"File: {rel_path}\n\n{content}\n\n"
+            )
             combined_files += f"File: {rel_path}\n\n{content}\n\n"
         else:
-            print(f"Warning: {rel_path} not found in {full_base_dir} or its subdirectories.")
+            logger.warning(f"{rel_path} not found in {full_base_dir} or its subdirectories.")
 
     if not combined_files:
-        print(f"No valid files found for group {group_name}. Skipping.")
+        logger.warning(f"No valid files found for group {group_name}. Skipping.")
         return
 
-    # Build prompt for generating questions using the group question prompt template.
+    # Build prompt for generating questions.
     question_list_prompt = (
         f"{header_prompt}\n\n"
         f"{group_prompt_template.format(files_content=combined_files_with_prompts)}\n\n"
         f"{footer_prompt}"
     )
 
-    # Define output directories and file names.
-    questions_dir = os.path.join(base_output_path, "qa_generation_output", "questions")
-    answers_dir = os.path.join(base_output_path, "qa_generation_output", "answers")
-    debug_dir = os.path.join(base_output_path, "qa_generation_output", "debug")
-    os.makedirs(questions_dir, exist_ok=True)
-    os.makedirs(answers_dir, exist_ok=True)
-    os.makedirs(debug_dir, exist_ok=True)
+    # Define directories.
+    output_dir = base_output_path / "qa_generation_output"
+    questions_dir = output_dir / "questions"
+    answers_dir = output_dir / "answers"
+    debug_dir = output_dir / "debug"
+    questions_dir.mkdir(parents=True, exist_ok=True)
+    answers_dir.mkdir(parents=True, exist_ok=True)
+    debug_dir.mkdir(parents=True, exist_ok=True)
 
-    question_group_filename = f"questions_{group_name}.txt"
-    question_debug_filename = f"debug_{group_name}_questions.txt"
-    question_file_path = os.path.join(questions_dir, question_group_filename)
-    question_debug_path = os.path.join(debug_dir, question_debug_filename)
+    question_file_path = questions_dir / f"questions_{group_name}.txt"
+    question_debug_path = debug_dir / f"debug_{group_name}_questions.txt"
 
     # Generate questions if they don't already exist.
-    if os.path.exists(question_file_path):
-        with open(question_file_path, 'r', encoding='utf-8') as q_f:
-            question_list_text = q_f.read().strip()
-        print(f"Questions file already exists for group {group_name}. Using existing questions.")
+    if question_file_path.exists():
+        question_list_text = read_text_from_file(question_file_path).strip()
+        logger.info(f"Questions file already exists for group {group_name}. Using existing questions.")
     else:
         question_list_text = call_api(
-            question_provider_config["provider"],
-            question_provider_config["model"],
-            question_list_prompt,
-            global_ollama_url=global_ollama_url
+            provider=question_provider_config["provider"],
+            model=question_provider_config["model"],
+            prompt=question_list_prompt,
+            global_ollama_url=global_ollama_url,
+            client=openai_client,
         )
         if not question_list_text:
-            print(f"Failed to generate questions for group {group_name}.")
+            logger.error(f"Failed to generate questions for group {group_name}.")
             return
-        with open(question_file_path, 'w', encoding='utf-8') as q_f:
-            q_f.write(question_list_text)
-        with open(question_debug_path, 'w', encoding='utf-8') as debug_f:
-            debug_f.write(question_list_prompt)
-        print(f"Processed group {group_name} -> Questions saved to {question_file_path}")
-        print(f"Debug info saved to {question_debug_path}")
+        write_text_to_file(question_file_path, question_list_text)
+        write_text_to_file(question_debug_path, question_list_prompt)
+        logger.info(f"Processed group {group_name} -> Questions saved to {question_file_path}")
+        logger.info(f"Debug info saved to {question_debug_path}")
 
     # Parse questions.
     questions = parse_questions(question_list_text)
     if not questions:
-        print(f"No valid questions found in group {group_name} output.")
+        logger.error(f"No valid questions found in group {group_name} output.")
         return
 
-     # Process each question to generate an answer.
+    # Process each question to generate an answer.
     for idx, question in enumerate(questions, start=1):
         answer_filename = f"answer_{group_name}_{idx}.txt"
         answer_debug_filename = f"debug_{group_name}_answer_{idx}.txt"
         meta_filename = f"answer_{group_name}_{idx}.meta"
-        answer_file_path = os.path.join(answers_dir, answer_filename)
-        answer_debug_path = os.path.join(debug_dir, answer_debug_filename)
-        meta_file_path = os.path.join(answers_dir, meta_filename)
 
-        # Compute hash of the current question.
+        answer_file_path = answers_dir / answer_filename
+        answer_debug_path = debug_dir / answer_debug_filename
+        meta_file_path = answers_dir / meta_filename
+
         current_hash = get_hash(question)
-
-        # Determine if the answer should be (re)generated.
         regenerate = True
-        if os.path.exists(answer_file_path):
-            if os.path.exists(meta_file_path):
-                with open(meta_file_path, 'r', encoding='utf-8') as meta_f:
-                    stored_hash = meta_f.read().strip()
+
+        if answer_file_path.exists():
+            if meta_file_path.exists():
+                stored_hash = read_text_from_file(meta_file_path).strip()
                 if stored_hash == current_hash:
-                    print(f"Answer for question {idx} in group {group_name} is up-to-date. Skipping.")
+                    logger.info(f"Answer for question {idx} in group {group_name} is up-to-date. Skipping.")
                     regenerate = False
                 else:
-                    print(f"Question {idx} in group {group_name} has changed. Regenerating answer.")
+                    logger.info(f"Question {idx} in group {group_name} has changed. Regenerating answer.")
             else:
-                # No meta file exists; assume the answer is valid and create a meta file.
-                with open(meta_file_path, 'w', encoding='utf-8') as meta_f:
-                    meta_f.write(current_hash)
-                print(f"Meta file created for existing answer {idx} in group {group_name}. Skipping regeneration.")
+                # Create meta file if missing.
+                write_text_to_file(meta_file_path, current_hash)
+                logger.info(f"Meta file created for existing answer {idx} in group {group_name}. Skipping regeneration.")
                 regenerate = False
 
-        if not os.path.exists(answer_file_path):
-            print(f"Generating answer for question {idx} in group {group_name}.")
+        if not answer_file_path.exists():
+            logger.info(f"Generating answer for question {idx} in group {group_name}.")
 
         if not regenerate:
             continue
 
-        individual_answer_prompt = f"{combined_files}\n\n{answer_prompt_template.format(file_name='[customizable]')}\n\n{question}"
+        individual_answer_prompt = (
+            f"{combined_files}\n\n"
+            f"{answer_prompt_template.format(file_name='[customizable]')}\n\n"
+            f"{question}"
+        )
 
         answer_text = call_api(
-            answer_provider_config["provider"],
-            answer_provider_config["model"],
-            individual_answer_prompt,
-            global_ollama_url=global_ollama_url
+            provider=answer_provider_config["provider"],
+            model=answer_provider_config["model"],
+            prompt=individual_answer_prompt,
+            global_ollama_url=global_ollama_url,
+            client=openai_client,
         )
         if not answer_text:
-            print(f"Failed to generate answer for question {idx} in group {group_name}.")
+            logger.error(f"Failed to generate answer for question {idx} in group {group_name}.")
             continue
 
-        with open(answer_file_path, 'w', encoding='utf-8') as answer_f:
-            answer_f.write(answer_text)
-        with open(answer_debug_path, 'w', encoding='utf-8') as debug_ans_f:
-            debug_ans_f.write(individual_answer_prompt)
-        with open(meta_file_path, 'w', encoding='utf-8') as meta_f:
-            meta_f.write(current_hash)
-        print(f"Saved answer for question {idx} in group {group_name} -> {answer_file_path}")
+        write_text_to_file(answer_file_path, answer_text)
+        write_text_to_file(answer_debug_path, individual_answer_prompt)
+        write_text_to_file(meta_file_path, current_hash)
+        logger.info(f"Saved answer for question {idx} in group {group_name} -> {answer_file_path}")
+
 
 # --- Main Script ---
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser(description="Generate QA data for LLM fine-tuning.")
     parser.add_argument("--config", default="generate_qa_config.yaml", help="Path to configuration YAML file")
     args = parser.parse_args()
 
-    with open(args.config, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
+    config_path = Path(args.config)
+    if not config_path.exists():
+        logger.error(f"Configuration file not found: {config_path}")
+        return
+
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
 
     # Global settings.
     global_config = config.get("global", {})
     base_dir = global_config.get("base_dir", "")
     output_dir = global_config.get("output_dir", "output")
-    output_base_path = global_config.get("output_base_path", "/var/kolo_data")
-    full_base_dir = os.path.join(output_base_path, base_dir)
+    output_base_path = Path(global_config.get("output_base_path", "/var/kolo_data"))
+    full_base_dir = output_base_path / base_dir
     global_ollama_url = global_config.get("ollama_url", "http://localhost:11434/api/generate")
 
     # Provider settings.
@@ -245,9 +303,17 @@ if __name__ == "__main__":
     file_groups_config = config.get("file_groups", {})
 
     # Initialize OpenAI client if needed.
-    if (question_provider_config.get("provider") == "openai" or 
-        answer_provider_config.get("provider") == "openai"):
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    openai_client = None
+    if (question_provider_config.get("provider", "").lower() == "openai" or 
+        answer_provider_config.get("provider", "").lower() == "openai"):
+        if OpenAI is None:
+            logger.error("OpenAI client cannot be initialized because the package is missing.")
+        else:
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                logger.error("OPENAI_API_KEY environment variable not set.")
+            else:
+                openai_client = OpenAI(api_key=api_key)
 
     # Expand file groups by iterations.
     allowed_file_groups = {}
@@ -259,7 +325,7 @@ if __name__ == "__main__":
 
     # Process each file group.
     for group_name, group_config in allowed_file_groups.items():
-        print(f"\nProcessing group: {group_name}")
+        logger.info(f"\nProcessing group: {group_name}")
         process_file_group(
             group_name=group_name,
             group_config=group_config,
@@ -272,5 +338,10 @@ if __name__ == "__main__":
             default_answer_prompt=default_answer_prompt,
             question_provider_config=question_provider_config,
             answer_provider_config=answer_provider_config,
-            global_ollama_url=global_ollama_url
+            global_ollama_url=global_ollama_url,
+            openai_client=openai_client
         )
+
+
+if __name__ == "__main__":
+    main()
