@@ -62,7 +62,7 @@ This YAML configuration file controls various aspects of the QA generation proce
 
 Define the API providers for generating both questions and answers. Each provider block specifies:
 
-- **`provider`**: The service to use (e.g., OpenAI or Ollama).  
+- **`provider`**: The service to use (e.g., `openai` or `ollama`).  
 - **`model`**: The model to be used (e.g., `gpt-4o-mini`).  
 
 ## Prompts
