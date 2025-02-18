@@ -42,10 +42,22 @@ Ensure [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) is install
 
 Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed.
 
-### 2️⃣ Build the Image
+### 2️⃣ Build the Image  
+
+You can either build the image locally or download the pre-built Docker image.
+
+#### 🔹 Option 1: Build Locally  
+Run the following command to build the image using the provided PowerShell script:  
 
 ```bash
 ./build_image.ps1
+```
+
+#### 🔹 Option 2: Download the Pre-Built Image
+If you prefer to use a pre-built image, you can pull it from Docker Hub:
+
+```bash
+docker pull maxwell10206/kolo:latest
 ```
 
 ### 3️⃣ Run the Container
