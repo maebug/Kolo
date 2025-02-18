@@ -56,8 +56,6 @@ def find_file_in_subdirectories(full_base_dir, file_relative_path):
             return os.path.join(root, target)
     return None
 
-import re
-
 def parse_questions(question_text):
     # Split the text into sentences using punctuation as delimiters.
     sentences = re.split(r'(?<=[.?!])\s+', question_text)
@@ -73,9 +71,9 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
     file_list = group_config.get("files", [])
     group_prompts = group_config.get("prompts", {})
 
-    # Use new prompt keys with defaults if not overridden in group config.
-    group_prompt_template = group_prompts.get("group_question_prompt", default_group_prompt)
+    # Use prompt templates from group config if available, otherwise fall back to defaults.
     individual_prompt_template = group_prompts.get("individual_question_prompt", default_individual_prompt)
+    group_prompt_template = group_prompts.get("group_question_prompt", default_group_prompt)
     answer_prompt_template = group_prompts.get("answer_prompt_header", default_answer_prompt)
 
     combined_files_with_prompts = ""
@@ -94,10 +92,12 @@ def process_file_group(group_name, group_config, full_base_dir, base_output_path
         print(f"No valid files found for group {group_name}. Skipping.")
         return
 
-    # Build prompt for generating questions.
-    files_content = combined_files_with_prompts  
-    # Optionally, you could integrate group_prompt_template if needed.
-    question_list_prompt = f"{header_prompt}\n\n{files_content}\n\n{footer_prompt}"
+    # Build prompt for generating questions using the group question prompt template.
+    question_list_prompt = (
+        f"{header_prompt}\n\n"
+        f"{group_prompt_template.format(files_content=combined_files_with_prompts)}\n\n"
+        f"{footer_prompt}"
+    )
 
     # Define output directories and file names.
     questions_dir = os.path.join(base_output_path, "qa_generation_output", "questions")
@@ -195,8 +195,11 @@ if __name__ == "__main__":
     header_prompt = prompts_config.get("question_prompt_header", "")
     footer_prompt = prompts_config.get("question_prompt_footer", "")
     default_individual_prompt = prompts_config.get("individual_question_prompt", "")
-    default_group_prompt = prompts_config.get("group_question_prompt", "")
-    default_answer_prompt = prompts_config.get("answer_prompt_header", "Based on the content provided, answer the following question in detail.")
+    default_group_prompt = prompts_config.get("group_question_prompt", "{files_content}")
+    default_answer_prompt = prompts_config.get(
+        "answer_prompt_header",
+        "Based on the file content provided, answer the following question in detail."
+    )
 
     # File groups.
     file_groups_config = config.get("file_groups", {})
