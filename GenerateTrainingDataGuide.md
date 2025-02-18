@@ -70,7 +70,7 @@ All prompts that control the instructions provided to the LLM during QA generati
 
 - **`question_prompt_header`**: The main header prompt instructing the LLM on how to generate a list of questions.
 - **`question_prompt_footer`**: Defines the expected output format for questions.
-NOTE: Changing this may break the conversion script.
+NOTE: Changing the output format may break the conversion script.
 - **`individual_question_prompt`**: A prompt that is used for each file in a group. Typically includes a `{file_name}` placeholder to refer to the specific file.
 - **`group_question_prompt`**: A prompt that includes the `{files_content}` variable. You can place additional information around the file content if needed.
 - **`answer_prompt_header`**: The prompt header instructing the LLM how to generate an answer based on each question.
