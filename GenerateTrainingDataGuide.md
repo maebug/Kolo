@@ -24,51 +24,60 @@ The **Kolo** project uses the following scripts and configuration file to genera
    ./copy_scripts.ps1
    ```
 
-1. This will generate QA data using OpenAI's GPT-4o-mini. You must have a Open AI account and API key.
+1. This will generate QA data using OpenAI's GPT-4o-mini. IN the config file yo can choose whether to use `openai` or `ollama` and which model to use. By default we use `openai` and the model `gpt-4o-mini`. If using OpenAI you must pass in your API key when running the generating script.
 
    ```bash
    ./generate_qa_data.ps1 -OPENAI_API_KEY "your key"
    ```
 
-1. After generating the QA prompts, this command converts the text files inside  
+1. After generating the QA prompts, this command converts the question and answer text files inside  
    `/var/kolo_data/qa_generation_output` into training data: `data.jsonl` and `data.json` in `/app/`.
 
    ```bash
    ./convert_qa_output.ps1
    ```
 
-1. Your training data is now ready continue by training your LLM using `./train_model_torchtune.ps1` or `./train_model_unsloth.ps1`.  
+1. Your training data is now ready; continue by training your LLM using `./train_model_torchtune.ps1` or `./train_model_unsloth.ps1`.  
    Follow the README guide after this step.
 
 ---
 
-## Config File Details
+# Config File Details
 
-This YAML configuration file controls various aspects of the QA generation process.
+This YAML configuration file controls various aspects of the QA generation process. The new format now groups settings into distinct sections: **global settings, providers, prompts, and file groups**.
 
-### **Directories:**
+## Global Settings
 
-- `base_dir`: Location of the QA generation input files.
-- `output_dir`: Directory where QA generation output and debug files are saved.
+### Directories & Paths
 
-### **Prompts:**
+- **`base_dir`**: Location of the QA generation input files.  
+- **`output_dir`**: Directory where QA generation output and debug files are saved.  
+- **`output_base_path`**: The base path for output files (e.g., `/var/kolo_data`).  
 
-- `header_prompt`: Main prompt for instructions to generate QA data.
-- `footer_prompt`: Prompt that specifies the expected output format.  
-  **DO NOT CHANGE FOOTER PROMPT UNLESS YOU KNOW WHAT YOU ARE DOING! IF YOU DO YOU MAY BREAK CONVERSION.**
+### Service Endpoints
 
-### **File Groups:**
+- **`ollama_url`**: URL endpoint for the Ollama API (if used).  
 
-Defines multiple file groups with unique names. (e.g., `UninstallModel`, `BuildImage`, etc.):
+## Providers
 
-- `iterations`: The number of times you want GPT to generate QA data for the group.
-- `files`: The list of files you want to be sent to GPT for QA generation.
-- `group_prompt`: The unique prompt you want to be sent along with the group.
-- `individual`: The unique prompt you want to be sent for each file in the group.  
-  Mostly used to specify what you want GPT to do with `{file_name}`.
+Define the API providers for generating both questions and answers. Each provider block specifies:
 
-See [generate_qa_config.yaml](https://github.com/MaxHastings/Kolo/blob/main/scripts/generate_qa_config.yaml) for full config example.
+- **`provider`**: The service to use (e.g., OpenAI or Ollama).  
+- **`model`**: The model to be used (e.g., `gpt-4o-mini`).  
+
+## Prompts
+All prompts are now organized under a single prompts section. They control the instructions provided to the LLM during QA generation.
+
+Question Prompts
+- **`question_prompt_header`**: The main header prompt instructing the LLM on how to generate a list of questions.
+- **`question_prompt_footer`**: Defines the expected output format for questions.
+NOTE: Changing this may break the conversion script.
+- **`individual_question_prompt`**: A prompt that is used for each file in a group. Typically includes a `{file_name}` placeholder to refer to the specific file.
+- **`group_question_prompt`**: A prompt that includes the `{files_content}` variable. You can place additional information around the file content if needed.
+- **`answer_prompt_header`**: The prompt header instructing the LLM how to generate an answer based on each question.
+
+See [generate_qa_config.yaml](https://github.com/MaxHastings/Kolo/blob/main/scripts/generate_qa_config.yaml) for a full config example.
 
 ## Debugging
 
-If you run into issues, you can look at the debug folder inside `kolo_container` at `/var/kolo_data/qa_generation_output` using WinSCP.
+If you run into issues, you can look at the debug folder inside `kolo_container` at `/var/kolo_data/qa_generation_output` using WinSCP. The debug text files will show you exactly what is being sent to the LLM during generation.
