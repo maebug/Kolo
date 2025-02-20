@@ -290,7 +290,7 @@ def process_file_group(
         logger.info(f"[Group: {group_name}] Saved answer for question {idx} -> {answer_file_path}")
 
     # Use ThreadPoolExecutor to process answers concurrently.
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=16) as executor:
         futures = [
             executor.submit(process_question, idx, question)
             for idx, question in enumerate(questions, start=1)
