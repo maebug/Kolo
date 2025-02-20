@@ -255,6 +255,9 @@ def process_file_group(
         if not regenerate:
             continue
 
+        # --- Log the question being processed ---
+        logger.info(f"[Group: {group_name}] Generating answer for question {idx}: {question}")
+
         # --- Randomize file order for answer generation ---
         file_list_for_answers = file_list.copy()
         random.shuffle(file_list_for_answers)
