@@ -10,24 +10,29 @@ OUTPUT_FILE = "/app/data.jsonl"
 
 import re
 
-def parse_questions_from_file(filepath):
+def parse_questions_from_file(filepath: str) -> List[str]:
     """
     Reads file content and extracts question texts from a wide range of formats.
-    It uses a flexible regex that captures any block of text ending with a '?'.
+    Processes the file line by line, removing numbering, bullet symbols, and markdown formatting,
+    and only returns lines containing a '?'.
     """
     with open(filepath, 'r', encoding='utf-8') as f:
         text = f.read()
+
+    questions = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        
+        # Remove leading numbering or bullet symbols (like "1.", "-", "+", or "*")
+        cleaned = re.sub(r'^[\d\.\-\+\*]+\s*', '', stripped)
+        # Remove extra asterisks used for markdown formatting
+        cleaned = re.sub(r'\*+', '', cleaned).strip()
+        
+        if '?' in cleaned:
+            questions.append(cleaned)
     
-    # Regex explanation:
-    # - The pattern looks at the start of a line (using MULTILINE mode) and allows for optional markers
-    #   like numbers, dashes, or markdown symbols.
-    # - It then captures a block of text non-greedily up to the first '?' it finds.
-    # - DOTALL mode lets the '.' match newline characters so multi-line questions are handled.
-    pattern = r'(?m)^[\s*\d\.\-\+]*\**\s*(.+?\?)'
-    questions = re.findall(pattern, text, flags=re.DOTALL)
-    
-    # Clean up whitespace
-    questions = [q.strip() for q in questions if q.strip()]
     return questions
 
 def pair_questions_and_answers():

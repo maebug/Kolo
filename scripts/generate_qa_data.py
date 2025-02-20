@@ -86,12 +86,20 @@ def find_file_in_subdirectories(base_dir: Path, relative_path: str) -> Optional[
     return None
 
 def parse_questions(question_text: str) -> List[str]:
-    """
-    Extracts question sentences from the provided text using a regex pattern.
-    """
-    pattern = r'(?m)^[\s*\d\.\-\+]*\**\s*(.+?\?)'
-    questions = re.findall(pattern, question_text, flags=re.DOTALL)
-    return [q.strip() for q in questions if q.strip()]
+    questions = []
+    for line in question_text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        # Remove leading numbering or bullets (like "1.", "-", "+", or "*")
+        cleaned = re.sub(r'^[\d\.\-\+\*]+\s*', '', stripped)
+        # Remove extra asterisks used for formatting
+        cleaned = re.sub(r'\*+', '', cleaned).strip()
+        # Check if this looks like a question
+        if '?' in cleaned:
+            questions.append(cleaned)
+    return questions
 
 def get_hash(text: str) -> str:
     """Returns the SHA-256 hash of the given text."""
