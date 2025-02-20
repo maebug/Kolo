@@ -289,13 +289,12 @@ def process_file_group(
         write_text_to_file(meta_file_path, current_hash)
         logger.info(f"[Group: {group_name}] Saved answer for question {idx} -> {answer_file_path}")
 
-    # Use ThreadPoolExecutor to process answers concurrently.
+    # Process each question concurrently.
     with ThreadPoolExecutor(max_workers=16) as executor:
         futures = [
             executor.submit(process_question, idx, question)
             for idx, question in enumerate(questions, start=1)
         ]
-        # Wait for all threads to complete.
         for future in as_completed(futures):
             future.result()
 
@@ -362,25 +361,29 @@ def main() -> None:
     total_groups = len(allowed_file_groups)
     logger.info(f"Starting processing of {total_groups} file groups.")
 
-    # Process each file group.
-    for i, (group_name, group_config) in enumerate(allowed_file_groups.items(), start=1):
-        logger.info(f"\nProcessing group {group_name} ({i}/{total_groups})")
-        process_file_group(
-            group_name=group_name,
-            group_config=group_config,
-            full_base_dir=full_base_dir,
-            base_output_path=output_base_path,
-            header_prompt=header_prompt,
-            footer_prompt=footer_prompt,
-            default_individual_prompt=default_individual_prompt,
-            default_group_prompt=default_group_prompt,
-            default_answer_prompt=default_answer_prompt,
-            question_provider_config=question_provider_config,
-            answer_provider_config=answer_provider_config,
-            global_ollama_url=global_ollama_url,
-            openai_client=openai_client
-        )
-        logger.info(f"Completed processing for group {group_name}.")
+    # Process each file group concurrently.
+    with ThreadPoolExecutor(max_workers=4) as executor:  # Adjust max_workers based on your system.
+        futures = [
+            executor.submit(
+                process_file_group,
+                group_name=group_name,
+                group_config=group_config,
+                full_base_dir=full_base_dir,
+                base_output_path=output_base_path,
+                header_prompt=header_prompt,
+                footer_prompt=footer_prompt,
+                default_individual_prompt=default_individual_prompt,
+                default_group_prompt=default_group_prompt,
+                default_answer_prompt=default_answer_prompt,
+                question_provider_config=question_provider_config,
+                answer_provider_config=answer_provider_config,
+                global_ollama_url=global_ollama_url,
+                openai_client=openai_client
+            )
+            for group_name, group_config in allowed_file_groups.items()
+        ]
+        for future in as_completed(futures):
+            future.result()
 
     logger.info("All file groups have been processed.")
 
