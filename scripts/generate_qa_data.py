@@ -200,7 +200,7 @@ def process_file_group(
     # Generate questions if they don't already exist.
     if question_file_path.exists():
         question_list_text = read_text_from_file(question_file_path).strip()
-        logger.info(f"Questions file already exists for group {group_name}. Using existing questions.")
+        logger.info(f"[Group: {group_name}] Questions file already exists. Using existing questions.")
     else:
         question_list_text = call_api(
             provider=question_provider_config["provider"],
@@ -210,21 +210,26 @@ def process_file_group(
             client=openai_client,
         )
         if not question_list_text:
-            logger.error(f"Failed to generate questions for group {group_name}.")
+            logger.error(f"[Group: {group_name}] Failed to generate questions.")
             return
         write_text_to_file(question_file_path, question_list_text)
         write_text_to_file(question_debug_path, question_list_prompt)
-        logger.info(f"Processed group {group_name} -> Questions saved to {question_file_path}")
-        logger.info(f"Debug info saved to {question_debug_path}")
+        logger.info(f"[Group: {group_name}] Questions saved to {question_file_path}")
+        logger.info(f"[Group: {group_name}] Debug info saved to {question_debug_path}")
 
     # Parse questions.
     questions = parse_questions(question_list_text)
     if not questions:
-        logger.error(f"No valid questions found in group {group_name} output.")
+        logger.error(f"[Group: {group_name}] No valid questions found in output.")
         return
+
+    total_questions = len(questions)
+    logger.info(f"[Group: {group_name}] Found {total_questions} questions. Beginning answer generation...")
 
     # Process each question to generate an answer.
     for idx, question in enumerate(questions, start=1):
+        logger.info(f"[Group: {group_name}] Processing question {idx}/{total_questions}: {question}")
+
         answer_filename = f"answer_{group_name}_{idx}.txt"
         answer_debug_filename = f"debug_{group_name}_answer_{idx}.txt"
         meta_filename = f"answer_{group_name}_{idx}.meta"
@@ -240,23 +245,20 @@ def process_file_group(
             if meta_file_path.exists():
                 stored_hash = read_text_from_file(meta_file_path).strip()
                 if stored_hash == current_hash:
-                    logger.info(f"Answer for question {idx} in group {group_name} is up-to-date. Skipping.")
+                    logger.info(f"[Group: {group_name}] Answer {idx} is up-to-date. Skipping regeneration.")
                     regenerate = False
                 else:
-                    logger.info(f"Question {idx} in group {group_name} has changed. Regenerating answer.")
+                    logger.info(f"[Group: {group_name}] Question {idx} has changed. Regenerating answer.")
             else:
                 write_text_to_file(meta_file_path, current_hash)
-                logger.info(f"Meta file created for existing answer {idx} in group {group_name}. Skipping regeneration.")
+                logger.info(f"[Group: {group_name}] Meta file created for answer {idx}. Skipping regeneration.")
                 regenerate = False
 
         if not answer_file_path.exists():
-            logger.info(f"Generating answer for question {idx} in group {group_name}.")
+            logger.info(f"[Group: {group_name}] Generating answer for question {idx}.")
 
         if not regenerate:
             continue
-
-        # --- Log the question being processed ---
-        logger.info(f"[Group: {group_name}] Generating answer for question {idx}: {question}")
 
         # --- Randomize file order for answer generation ---
         file_list_for_answers = file_list.copy()
@@ -278,13 +280,13 @@ def process_file_group(
             client=openai_client,
         )
         if not answer_text:
-            logger.error(f"Failed to generate answer for question {idx} in group {group_name}.")
+            logger.error(f"[Group: {group_name}] Failed to generate answer for question {idx}.")
             continue
 
         write_text_to_file(answer_file_path, answer_text)
         write_text_to_file(answer_debug_path, individual_answer_prompt)
         write_text_to_file(meta_file_path, current_hash)
-        logger.info(f"Saved answer for question {idx} in group {group_name} -> {answer_file_path}")
+        logger.info(f"[Group: {group_name}] Saved answer for question {idx} -> {answer_file_path}")
 
 # --- Main Script ---
 def main() -> None:
@@ -346,9 +348,12 @@ def main() -> None:
             key = f"{group_name}_{i}"
             allowed_file_groups[key] = group_config
 
+    total_groups = len(allowed_file_groups)
+    logger.info(f"Starting processing of {total_groups} file groups.")
+
     # Process each file group.
-    for group_name, group_config in allowed_file_groups.items():
-        logger.info(f"\nProcessing group: {group_name}")
+    for i, (group_name, group_config) in enumerate(allowed_file_groups.items(), start=1):
+        logger.info(f"\nProcessing group {group_name} ({i}/{total_groups})")
         process_file_group(
             group_name=group_name,
             group_config=group_config,
@@ -364,6 +369,9 @@ def main() -> None:
             global_ollama_url=global_ollama_url,
             openai_client=openai_client
         )
+        logger.info(f"Completed processing for group {group_name}.")
+
+    logger.info("All file groups have been processed.")
 
 if __name__ == "__main__":
     main()
