@@ -1,6 +1,7 @@
 import os
 import json
 import re
+from typing import List
 
 # Adjust these paths as needed.
 BASE_OUTPUT_DIR = "/var/kolo_data/qa_generation_output"
