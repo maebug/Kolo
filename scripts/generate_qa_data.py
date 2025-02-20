@@ -5,6 +5,7 @@ import argparse
 import requests
 import hashlib
 import logging
+import random
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
@@ -22,7 +23,6 @@ except ImportError:
     OpenAI = None
     logger.warning("OpenAI package not installed; openai provider will not work.")
 
-
 # --- Helper Functions ---
 def call_api(
     provider: str,
@@ -33,9 +33,6 @@ def call_api(
 ) -> Optional[str]:
     """
     Calls the appropriate API (OpenAI or Ollama) using the selected model and prompt.
-    
-    For OpenAI, uses the provided API key.
-    For Ollama, uses global_ollama_url.
     """
     if provider.lower() == "openai":
         if client is None:
@@ -74,7 +71,6 @@ def call_api(
         logger.error("Unknown provider specified.")
         return None
 
-
 def find_file_in_subdirectories(base_dir: Path, relative_path: str) -> Optional[Path]:
     """
     Attempts to locate a file by its relative path in base_dir or its subdirectories.
@@ -89,34 +85,55 @@ def find_file_in_subdirectories(base_dir: Path, relative_path: str) -> Optional[
             return path
     return None
 
-
 def parse_questions(question_text: str) -> List[str]:
     """
     Extracts question sentences from the provided text using a regex pattern.
-    
-    The pattern handles optional numbering, bullet points, or markdown markers,
-    and captures multi-line questions ending with a question mark.
     """
     pattern = r'(?m)^[\s*\d\.\-\+]*\**\s*(.+?\?)'
     questions = re.findall(pattern, question_text, flags=re.DOTALL)
     return [q.strip() for q in questions if q.strip()]
 
-
 def get_hash(text: str) -> str:
     """Returns the SHA-256 hash of the given text."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
 
 def write_text_to_file(file_path: Path, text: str) -> None:
     """Writes text to a file ensuring the parent directory exists."""
     file_path.parent.mkdir(parents=True, exist_ok=True)
     file_path.write_text(text, encoding="utf-8")
 
-
 def read_text_from_file(file_path: Path) -> str:
     """Reads and returns text from a file."""
     return file_path.read_text(encoding="utf-8")
 
+def build_files_prompt(file_list: List[str], base_dir: Path, template: str) -> str:
+    """
+    Build a combined prompt string for question generation by iterating over a list of files
+    using the provided individual prompt template.
+    """
+    combined = ""
+    for rel_path in file_list:
+        file_path = find_file_in_subdirectories(base_dir, rel_path)
+        if file_path and file_path.exists():
+            content = file_path.read_text(encoding="utf-8")
+            combined += f"{template.format(file_name=rel_path)}\n\n{content}\n\n"
+        else:
+            logger.warning(f"{rel_path} not found in {base_dir} or its subdirectories.")
+    return combined
+
+def build_files_content(file_list: List[str], base_dir: Path) -> str:
+    """
+    Build a combined content string for answer generation by iterating over a list of files.
+    """
+    combined = ""
+    for rel_path in file_list:
+        file_path = find_file_in_subdirectories(base_dir, rel_path)
+        if file_path and file_path.exists():
+            content = file_path.read_text(encoding="utf-8")
+            combined += f"File: {rel_path}\n\n{content}\n\n"
+        else:
+            logger.warning(f"{rel_path} not found in {base_dir} or its subdirectories.")
+    return combined
 
 # --- Main Processing Function ---
 def process_file_group(
@@ -140,29 +157,20 @@ def process_file_group(
     file_list: List[str] = group_config.get("files", [])
     group_prompts = group_config.get("prompts", {})
 
+    # Use the individual prompt template from config.
     individual_prompt_template = group_prompts.get("individual_question_prompt", default_individual_prompt)
     group_prompt_template = group_prompts.get("group_question_prompt", default_group_prompt)
     answer_prompt_template = group_prompts.get("answer_prompt_header", default_answer_prompt)
 
-    combined_files_with_prompts = ""
-    combined_files = ""
-    for rel_path in file_list:
-        file_path = find_file_in_subdirectories(full_base_dir, rel_path)
-        if file_path and file_path.exists():
-            content = file_path.read_text(encoding="utf-8")
-            combined_files_with_prompts += (
-                f"{individual_prompt_template.format(file_name=rel_path)}\n\n"
-                f"File: {rel_path}\n\n{content}\n\n"
-            )
-            combined_files += f"File: {rel_path}\n\n{content}\n\n"
-        else:
-            logger.warning(f"{rel_path} not found in {full_base_dir} or its subdirectories.")
+    # --- Randomize file order for question generation ---
+    file_list_for_questions = file_list.copy()
+    random.shuffle(file_list_for_questions)
+    logger.info(f"[Group: {group_name}] File order for question generation: {file_list_for_questions}")
+    combined_files_with_prompts = build_files_prompt(file_list_for_questions, full_base_dir, individual_prompt_template)
+    file_references = ', '.join(f'"{f}"' for f in file_list_for_questions)
+    combined_files_with_prompts += f'Each question must reference the following files {file_references}.\n'
 
-    if not combined_files:
-        logger.warning(f"No valid files found for group {group_name}. Skipping.")
-        return
-
-    # Build prompt for generating questions.
+    # Build the final prompt for generating questions.
     question_list_prompt = (
         f"{header_prompt}\n\n"
         f"{group_prompt_template.format(files_content=combined_files_with_prompts)}\n\n"
@@ -229,7 +237,6 @@ def process_file_group(
                 else:
                     logger.info(f"Question {idx} in group {group_name} has changed. Regenerating answer.")
             else:
-                # Create meta file if missing.
                 write_text_to_file(meta_file_path, current_hash)
                 logger.info(f"Meta file created for existing answer {idx} in group {group_name}. Skipping regeneration.")
                 regenerate = False
@@ -239,6 +246,12 @@ def process_file_group(
 
         if not regenerate:
             continue
+
+        # --- Randomize file order for answer generation ---
+        file_list_for_answers = file_list.copy()
+        random.shuffle(file_list_for_answers)
+        logger.info(f"[Group: {group_name}] File order for answer generation (question {idx}): {file_list_for_answers}")
+        combined_files = build_files_content(file_list_for_answers, full_base_dir)
 
         individual_answer_prompt = (
             f"{combined_files}\n\n"
@@ -261,7 +274,6 @@ def process_file_group(
         write_text_to_file(answer_debug_path, individual_answer_prompt)
         write_text_to_file(meta_file_path, current_hash)
         logger.info(f"Saved answer for question {idx} in group {group_name} -> {answer_file_path}")
-
 
 # --- Main Script ---
 def main() -> None:
@@ -341,7 +353,6 @@ def main() -> None:
             global_ollama_url=global_ollama_url,
             openai_client=openai_client
         )
-
 
 if __name__ == "__main__":
     main()
