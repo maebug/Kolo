@@ -8,6 +8,7 @@ import logging
 import random
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Initialize logging.
 logging.basicConfig(
@@ -226,8 +227,8 @@ def process_file_group(
     total_questions = len(questions)
     logger.info(f"[Group: {group_name}] Found {total_questions} questions. Beginning answer generation...")
 
-    # Process each question to generate an answer.
-    for idx, question in enumerate(questions, start=1):
+    # --- Multi-threaded answer generation ---
+    def process_question(idx: int, question: str) -> None:
         logger.info(f"[Group: {group_name}] Processing question {idx}/{total_questions}: {question}")
 
         answer_filename = f"answer_{group_name}_{idx}.txt"
@@ -258,7 +259,7 @@ def process_file_group(
             logger.info(f"[Group: {group_name}] Generating answer for question {idx}.")
 
         if not regenerate:
-            continue
+            return
 
         # --- Randomize file order for answer generation ---
         file_list_for_answers = file_list.copy()
@@ -281,12 +282,22 @@ def process_file_group(
         )
         if not answer_text:
             logger.error(f"[Group: {group_name}] Failed to generate answer for question {idx}.")
-            continue
+            return
 
         write_text_to_file(answer_file_path, answer_text)
         write_text_to_file(answer_debug_path, individual_answer_prompt)
         write_text_to_file(meta_file_path, current_hash)
         logger.info(f"[Group: {group_name}] Saved answer for question {idx} -> {answer_file_path}")
+
+    # Use ThreadPoolExecutor to process answers concurrently.
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [
+            executor.submit(process_question, idx, question)
+            for idx, question in enumerate(questions, start=1)
+        ]
+        # Wait for all threads to complete.
+        for future in as_completed(futures):
+            future.result()
 
 # --- Main Script ---
 def main() -> None:
