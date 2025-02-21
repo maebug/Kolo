@@ -5,8 +5,10 @@ import argparse
 import requests
 import hashlib
 import logging
+import random
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Initialize logging.
 logging.basicConfig(
@@ -22,7 +24,6 @@ except ImportError:
     OpenAI = None
     logger.warning("OpenAI package not installed; openai provider will not work.")
 
-
 # --- Helper Functions ---
 def call_api(
     provider: str,
@@ -33,9 +34,6 @@ def call_api(
 ) -> Optional[str]:
     """
     Calls the appropriate API (OpenAI or Ollama) using the selected model and prompt.
-    
-    For OpenAI, uses the provided API key.
-    For Ollama, uses global_ollama_url.
     """
     if provider.lower() == "openai":
         if client is None:
@@ -74,7 +72,6 @@ def call_api(
         logger.error("Unknown provider specified.")
         return None
 
-
 def find_file_in_subdirectories(base_dir: Path, relative_path: str) -> Optional[Path]:
     """
     Attempts to locate a file by its relative path in base_dir or its subdirectories.
@@ -89,34 +86,63 @@ def find_file_in_subdirectories(base_dir: Path, relative_path: str) -> Optional[
             return path
     return None
 
-
 def parse_questions(question_text: str) -> List[str]:
-    """
-    Extracts question sentences from the provided text using a regex pattern.
-    
-    The pattern handles optional numbering, bullet points, or markdown markers,
-    and captures multi-line questions ending with a question mark.
-    """
-    pattern = r'(?m)^[\s*\d\.\-\+]*\**\s*(.+?\?)'
-    questions = re.findall(pattern, question_text, flags=re.DOTALL)
-    return [q.strip() for q in questions if q.strip()]
+    questions = []
+    for line in question_text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
 
+        # Remove leading numbering or bullets (like "1.", "-", "+", or "*")
+        cleaned = re.sub(r'^[\d\.\-\+\*]+\s*', '', stripped)
+        # Remove extra asterisks used for formatting
+        cleaned = re.sub(r'\*+', '', cleaned).strip()
+        # Check if this looks like a question
+        if '?' in cleaned:
+            questions.append(cleaned)
+    return questions
 
 def get_hash(text: str) -> str:
     """Returns the SHA-256 hash of the given text."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
 
 def write_text_to_file(file_path: Path, text: str) -> None:
     """Writes text to a file ensuring the parent directory exists."""
     file_path.parent.mkdir(parents=True, exist_ok=True)
     file_path.write_text(text, encoding="utf-8")
 
-
 def read_text_from_file(file_path: Path) -> str:
     """Reads and returns text from a file."""
     return file_path.read_text(encoding="utf-8")
 
+def build_files_prompt(file_list: List[str], base_dir: Path, template: str) -> str:
+    """
+    Build a combined prompt string for question generation by iterating over a list of files
+    using the provided individual prompt template.
+    """
+    combined = ""
+    for rel_path in file_list:
+        file_path = find_file_in_subdirectories(base_dir, rel_path)
+        if file_path and file_path.exists():
+            content = file_path.read_text(encoding="utf-8")
+            combined += f"{template.format(file_name=rel_path)}\n\n{content}\n\n"
+        else:
+            logger.warning(f"{rel_path} not found in {base_dir} or its subdirectories.")
+    return combined
+
+def build_files_content(file_list: List[str], base_dir: Path) -> str:
+    """
+    Build a combined content string for answer generation by iterating over a list of files.
+    """
+    combined = ""
+    for rel_path in file_list:
+        file_path = find_file_in_subdirectories(base_dir, rel_path)
+        if file_path and file_path.exists():
+            content = file_path.read_text(encoding="utf-8")
+            combined += f"File: {rel_path}\n\n{content}\n\n"
+        else:
+            logger.warning(f"{rel_path} not found in {base_dir} or its subdirectories.")
+    return combined
 
 # --- Main Processing Function ---
 def process_file_group(
@@ -140,29 +166,20 @@ def process_file_group(
     file_list: List[str] = group_config.get("files", [])
     group_prompts = group_config.get("prompts", {})
 
+    # Use the individual prompt template from config.
     individual_prompt_template = group_prompts.get("individual_question_prompt", default_individual_prompt)
     group_prompt_template = group_prompts.get("group_question_prompt", default_group_prompt)
     answer_prompt_template = group_prompts.get("answer_prompt_header", default_answer_prompt)
 
-    combined_files_with_prompts = ""
-    combined_files = ""
-    for rel_path in file_list:
-        file_path = find_file_in_subdirectories(full_base_dir, rel_path)
-        if file_path and file_path.exists():
-            content = file_path.read_text(encoding="utf-8")
-            combined_files_with_prompts += (
-                f"{individual_prompt_template.format(file_name=rel_path)}\n\n"
-                f"File: {rel_path}\n\n{content}\n\n"
-            )
-            combined_files += f"File: {rel_path}\n\n{content}\n\n"
-        else:
-            logger.warning(f"{rel_path} not found in {full_base_dir} or its subdirectories.")
+    # --- Randomize file order for question generation ---
+    file_list_for_questions = file_list.copy()
+    random.shuffle(file_list_for_questions)
+    logger.info(f"[Group: {group_name}] File order for question generation: {file_list_for_questions}")
+    combined_files_with_prompts = build_files_prompt(file_list_for_questions, full_base_dir, individual_prompt_template)
+    file_references = ', '.join(f'"{f}"' for f in file_list_for_questions)
+    combined_files_with_prompts += f'Each question must reference the following files {file_references}.\n'
 
-    if not combined_files:
-        logger.warning(f"No valid files found for group {group_name}. Skipping.")
-        return
-
-    # Build prompt for generating questions.
+    # Build the final prompt for generating questions.
     question_list_prompt = (
         f"{header_prompt}\n\n"
         f"{group_prompt_template.format(files_content=combined_files_with_prompts)}\n\n"
@@ -184,7 +201,7 @@ def process_file_group(
     # Generate questions if they don't already exist.
     if question_file_path.exists():
         question_list_text = read_text_from_file(question_file_path).strip()
-        logger.info(f"Questions file already exists for group {group_name}. Using existing questions.")
+        logger.info(f"[Group: {group_name}] Questions file already exists. Using existing questions.")
     else:
         question_list_text = call_api(
             provider=question_provider_config["provider"],
@@ -194,21 +211,26 @@ def process_file_group(
             client=openai_client,
         )
         if not question_list_text:
-            logger.error(f"Failed to generate questions for group {group_name}.")
+            logger.error(f"[Group: {group_name}] Failed to generate questions.")
             return
         write_text_to_file(question_file_path, question_list_text)
         write_text_to_file(question_debug_path, question_list_prompt)
-        logger.info(f"Processed group {group_name} -> Questions saved to {question_file_path}")
-        logger.info(f"Debug info saved to {question_debug_path}")
+        logger.info(f"[Group: {group_name}] Questions saved to {question_file_path}")
+        logger.info(f"[Group: {group_name}] Debug info saved to {question_debug_path}")
 
     # Parse questions.
     questions = parse_questions(question_list_text)
     if not questions:
-        logger.error(f"No valid questions found in group {group_name} output.")
+        logger.error(f"[Group: {group_name}] No valid questions found in output.")
         return
 
-    # Process each question to generate an answer.
-    for idx, question in enumerate(questions, start=1):
+    total_questions = len(questions)
+    logger.info(f"[Group: {group_name}] Found {total_questions} questions. Beginning answer generation...")
+
+    # --- Multi-threaded answer generation ---
+    def process_question(idx: int, question: str) -> None:
+        logger.info(f"[Group: {group_name}] Processing question {idx}/{total_questions}: {question}")
+
         answer_filename = f"answer_{group_name}_{idx}.txt"
         answer_debug_filename = f"debug_{group_name}_answer_{idx}.txt"
         meta_filename = f"answer_{group_name}_{idx}.meta"
@@ -224,21 +246,26 @@ def process_file_group(
             if meta_file_path.exists():
                 stored_hash = read_text_from_file(meta_file_path).strip()
                 if stored_hash == current_hash:
-                    logger.info(f"Answer for question {idx} in group {group_name} is up-to-date. Skipping.")
+                    logger.info(f"[Group: {group_name}] Answer {idx} is up-to-date. Skipping regeneration.")
                     regenerate = False
                 else:
-                    logger.info(f"Question {idx} in group {group_name} has changed. Regenerating answer.")
+                    logger.info(f"[Group: {group_name}] Question {idx} has changed. Regenerating answer.")
             else:
-                # Create meta file if missing.
                 write_text_to_file(meta_file_path, current_hash)
-                logger.info(f"Meta file created for existing answer {idx} in group {group_name}. Skipping regeneration.")
+                logger.info(f"[Group: {group_name}] Meta file created for answer {idx}. Skipping regeneration.")
                 regenerate = False
 
         if not answer_file_path.exists():
-            logger.info(f"Generating answer for question {idx} in group {group_name}.")
+            logger.info(f"[Group: {group_name}] Generating answer for question {idx}.")
 
         if not regenerate:
-            continue
+            return
+
+        # --- Randomize file order for answer generation ---
+        file_list_for_answers = file_list.copy()
+        random.shuffle(file_list_for_answers)
+        logger.info(f"[Group: {group_name}] File order for answer generation (question {idx}): {file_list_for_answers}")
+        combined_files = build_files_content(file_list_for_answers, full_base_dir)
 
         individual_answer_prompt = (
             f"{combined_files}\n\n"
@@ -254,14 +281,22 @@ def process_file_group(
             client=openai_client,
         )
         if not answer_text:
-            logger.error(f"Failed to generate answer for question {idx} in group {group_name}.")
-            continue
+            logger.error(f"[Group: {group_name}] Failed to generate answer for question {idx}.")
+            return
 
         write_text_to_file(answer_file_path, answer_text)
         write_text_to_file(answer_debug_path, individual_answer_prompt)
         write_text_to_file(meta_file_path, current_hash)
-        logger.info(f"Saved answer for question {idx} in group {group_name} -> {answer_file_path}")
+        logger.info(f"[Group: {group_name}] Saved answer for question {idx} -> {answer_file_path}")
 
+    # Process each question concurrently.
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [
+            executor.submit(process_question, idx, question)
+            for idx, question in enumerate(questions, start=1)
+        ]
+        for future in as_completed(futures):
+            future.result()
 
 # --- Main Script ---
 def main() -> None:
@@ -323,25 +358,34 @@ def main() -> None:
             key = f"{group_name}_{i}"
             allowed_file_groups[key] = group_config
 
-    # Process each file group.
-    for group_name, group_config in allowed_file_groups.items():
-        logger.info(f"\nProcessing group: {group_name}")
-        process_file_group(
-            group_name=group_name,
-            group_config=group_config,
-            full_base_dir=full_base_dir,
-            base_output_path=output_base_path,
-            header_prompt=header_prompt,
-            footer_prompt=footer_prompt,
-            default_individual_prompt=default_individual_prompt,
-            default_group_prompt=default_group_prompt,
-            default_answer_prompt=default_answer_prompt,
-            question_provider_config=question_provider_config,
-            answer_provider_config=answer_provider_config,
-            global_ollama_url=global_ollama_url,
-            openai_client=openai_client
-        )
+    total_groups = len(allowed_file_groups)
+    logger.info(f"Starting processing of {total_groups} file groups.")
 
+    # Process each file group concurrently.
+    with ThreadPoolExecutor(max_workers=16) as executor:  # Adjust max_workers based on your system.
+        futures = [
+            executor.submit(
+                process_file_group,
+                group_name=group_name,
+                group_config=group_config,
+                full_base_dir=full_base_dir,
+                base_output_path=output_base_path,
+                header_prompt=header_prompt,
+                footer_prompt=footer_prompt,
+                default_individual_prompt=default_individual_prompt,
+                default_group_prompt=default_group_prompt,
+                default_answer_prompt=default_answer_prompt,
+                question_provider_config=question_provider_config,
+                answer_provider_config=answer_provider_config,
+                global_ollama_url=global_ollama_url,
+                openai_client=openai_client
+            )
+            for group_name, group_config in allowed_file_groups.items()
+        ]
+        for future in as_completed(futures):
+            future.result()
+
+    logger.info("All file groups have been processed.")
 
 if __name__ == "__main__":
     main()
