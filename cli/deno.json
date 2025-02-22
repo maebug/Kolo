@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@std/fs": "jsr:@std/fs@^1.0.13",
+    "@std/path": "jsr:@std/path@^1.0.8",
+    "schema/": "./src/schema/",
+    "types/": "./src/types/"
+  }
+}

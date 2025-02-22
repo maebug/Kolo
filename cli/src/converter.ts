@@ -1,12 +1,15 @@
-import { Dataset, WebUiChatExport } from "./types"
-import { writeFileSync } from "fs"
-import path from "path"
+import { writeFileSync } from "node:fs"
+import * as path from "node:path"
+import type { OpenWebUiChatExport } from "types/OpenWebUiChat.d.ts"
+import type { TrainingDataset } from "types/TrainingDataset.d.ts"
 
 function isJsonlFile(filepath: string): boolean {
   return path.extname(filepath).toLowerCase() === ".jsonl"
 }
 
-export function convertToDataset(data: WebUiChatExport): Dataset {
+export function convertToTrainingDataset(
+  data: OpenWebUiChatExport,
+): TrainingDataset {
   // Extract messages from the first chat (assuming we want to process one chat at a time)
   const messages = data[0].chat.messages.map(({ role, content }) => ({
     role,
@@ -21,11 +24,14 @@ export function convertToDataset(data: WebUiChatExport): Dataset {
   return { messages }
 }
 
-export function saveDataset(dataset: Dataset, filepath: string): void {
+export function saveTrainingDataset(
+  dataset: TrainingDataset,
+  filepath: string,
+): void {
   if (isJsonlFile(filepath)) {
     // For JSONL format, write each message pair as a separate line
     const jsonLines = dataset.messages
-      .reduce((acc: Dataset[], _, index, array) => {
+      .reduce((acc: TrainingDataset[], _, index, array) => {
         // Skip odd indices to avoid duplicating pairs
         if (index % 2 === 0 && index + 1 < array.length) {
           acc.push({

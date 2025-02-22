@@ -5,16 +5,15 @@
   "module": "./src/index.ts",
   "type": "module",
   "scripts": {
-    "convert-cli": "bun ./src/index.ts",
-    "build": "tsc",
-    "package": "bun package:linux && bun package:linux64 && bun package:mac && bun package:mac64 && bun package:win",
-    "package:target": "bun build --compile --minify --sourcemap --bytecode --target=$TARGET ./src/index.ts --outfile ./bin/$TARGET_OS/kolo",
-    "package:linux": "TARGET=bun-linux-x64 TARGET_OS=linux bun package:target",
-    "package:linux64": "TARGET=bun-linux-arm64 TARGET_OS=linux64 bun package:target",
-    "package:mac": "TARGET=bun-darwin-x64 TARGET_OS=mac bun package:target",
-    "package:mac64": "TARGET=bun-darwin-arm64 TARGET_OS=mac64 bun package:target",
-    "package:win": "TARGET=bun-windows-x64 TARGET_OS=win bun package:target",
-    "package:win64": "TARGET=bun-windows-arm64 TARGET_OS=win64 bun package:target",
+    "kolo": "deno --allow-env --allow-read --allow-run --allow-sys --allow-write --env-file ./src/index.ts",
+    "package": "NODE_ENV=production && deno run package:all",
+    "package:all": "deno run package:linux && deno run package:linux64 && deno run package:mac && deno run package:mac64 && deno run package:win",
+    "package:target": "deno compile --allow-env --allow-read --allow-run --allow-sys --allow-write --env-file --target $TARGET --include ../dockerfile --include ../supervisord.conf --include ../scripts --include ../torchtune --output ./bin/$TARGET_OS/kolo ./src/index.ts",
+    "package:linux": "TARGET=x86_64-unknown-linux-gnu TARGET_OS=linux deno run package:target",
+    "package:linux64": "TARGET=aarch64-unknown-linux-gnu TARGET_OS=linux64 deno run package:target",
+    "package:mac": "TARGET=x86_64-apple-darwin TARGET_OS=mac deno run package:target",
+    "package:mac64": "TARGET=aarch64-apple-darwin TARGET_OS=mac64 deno run package:target",
+    "package:win": "TARGET=x86_64-pc-windows-msvc TARGET_OS=win deno run package:target",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -22,12 +21,13 @@
   "license": "Apache-2.0",
   "dependencies": {
     "ajv": "^8.12.0",
-    "commander": "^13.1.0"
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "inquirer": "^12.4.2",
+    "ora": "^8.2.0"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
-    "@types/bun": "^1.2.2",
-    "prettier": "^3.5.0",
-    "typescript": "^5.7.3"
+    "prettier": "^3.5.0"
   }
 }

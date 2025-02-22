@@ -1,6 +1,6 @@
-import webUiSchema from "../schema/open-webui-chat-export.json"
-import Ajv from "ajv"
-import { existsSync, readFileSync } from "fs"
+import { Ajv } from "ajv"
+import { existsSync, readFileSync } from "node:fs"
+import * as webUiSchema from "schema/open-webui-chat-export.json" with { type: "json" }
 
 const ajv = new Ajv()
 
