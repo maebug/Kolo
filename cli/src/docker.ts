@@ -126,3 +126,25 @@ export async function stopContainer(): Promise<string> {
     )
   }
 }
+
+export async function checkContainerExists(): Promise<boolean> {
+  try {
+    await execAsync(`docker container inspect ${dockerConfig.containerName}`)
+    return true
+  } catch (_error) {
+    return false
+  }
+}
+
+export async function startContainer(): Promise<string> {
+  try {
+    const { stdout } = await execAsync(
+      `docker start ${dockerConfig.containerName}`,
+    )
+    return stdout.trim()
+  } catch (error) {
+    throw new Error(
+      `Failed to start container: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+}
