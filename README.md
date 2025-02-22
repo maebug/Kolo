@@ -60,6 +60,7 @@ If you are using an AMD GPU, use the following command instead:
 ```bash
 ./build_image_amd.ps1
 ```
+Note: Only Torchtune supports AMD GPUs for fine-tuning.
 
 ### 3️⃣ Run the Container
 
