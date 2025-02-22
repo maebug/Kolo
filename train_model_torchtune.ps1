@@ -95,16 +95,6 @@ if ($BaseModel) {
 # Build the base torchtune command string using the configuration from the mapping.
 $command = "source /opt/conda/bin/activate kolo_env && tune run lora_finetune_single_device --config $configValue"
 
-# Fixed command options
-$command += " dataset.packed=False"
-$command += " compile=True"
-$command += " loss=torchtune.modules.loss.CEWithChunkedOutputLoss"
-$command += " enable_activation_checkpointing=True"
-$command += " optimizer_in_bwd=False"
-$command += " enable_activation_offloading=True"
-$command += " optimizer=torch.optim.AdamW"
-$command += " gradient_accumulation_steps=1"
-
 # Dynamic parameters with defaults
 if ($Epochs) {
     $command += " epochs=$Epochs"
