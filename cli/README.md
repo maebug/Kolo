@@ -2,29 +2,41 @@
 
 A command-line tool for converting Open WebUI chat exports into training datasets for AI fine-tuning.
 
-## Setup
+## Getting Started
+
+### 1. [Install Docker or Docker Desktop](https://docs.docker.com/get-docker/)
+
+### 2. [Download the Kolo CLI binary](https://github.com/maebug/kolo/releases)
 
 Download the latest release from the [releases page](https://github.com/maebug/kolo/releases) for your platform. You may use the binary directly without any additional setup, or you can add it to your PATH for easier access.
 
+### 3. Initialize Kolo
+
+Run the following command to initialize Kolo:
+
+```bash
+kolo init
+```
+
 ## Usage
+
+### Help
+
+For a list of all available commands, run:
+
+```bash
+kolo help
+```
+
+A summary of the available commands is shown below:
 
 ### Basic Conversion
 
-Convert a chat export to JSON format:
+Convert a chat export to a training dataset:
 
 ```bash
-kolo convert input.json output.json
+kolo convert chat-output.json training-dataset.json
 ```
-
-Convert to JSONL format:
-
-```bash
-kolo convert input.json output.jsonl
-```
-
-### Options
-
-- `-f, --force`: Force overwrite existing files without prompting
 
 ## Input Format
 
@@ -115,9 +127,17 @@ Run Kolo commands using Deno:
 deno run kolo help
 ```
 
+### Custom configuration
+
+You can modify certain certain aspects of the docker configuration, files that are copied, and more by setting up a custom `.env` file.
+
+Duplicate the `.env.example` file, rename it to `.env`, and modify it to suit your needs.
+
+The default values used when building Kolo are displayed in the `.env.example` file.
+
 ### Building Kolo binaries
 
-The project uses Deno for development and packaging. Here's how to build from source:
+Here's how to build from source:
 
 #### Building for all platforms
 

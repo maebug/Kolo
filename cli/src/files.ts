@@ -16,7 +16,11 @@ const cliRoot = join(dirname(fromFileUrl(import.meta.url)), "..")
  * @param envVarName Name of an environment variable containing a file or
  * directory path.
  */
-const getFilePath = (envVarName: string): string => {
+const getFilePath = (envVarName: string): string | false => {
+  const envVar = Deno.env.get(envVarName)
+  if (!envVar) {
+    return false
+  }
   return join(cliRoot, Deno.env.get(envVarName) || "")
 }
 
@@ -26,10 +30,11 @@ const getFilePath = (envVarName: string): string => {
 export const filePaths = {
   cliRoot: cliRoot,
   projectRoot: join(cliRoot, ".."),
-  dockerfile: getFilePath("FILE_DOCKERFILE"),
-  scripts: getFilePath("DIR_SCRIPTS"),
-  torchtune: getFilePath("DIR_TORCHTUNE"),
-  supervisordConf: getFilePath("FILE_SUPERVISORD_CONF"),
+  dockerfile: getFilePath("FILE_DOCKERFILE") || "../dockerfile",
+  scripts: getFilePath("DIR_SCRIPTS") || "../scripts",
+  torchtune: getFilePath("DIR_TORCHTUNE") || "../torchtune",
+  supervisordConf:
+    getFilePath("FILE_SUPERVISORD_CONF") || "../supervisord.conf",
 }
 
 /**
