@@ -24,7 +24,7 @@ Kolo is built using a powerful stack of LLM tools:
 
 - Operating System: Windows 10 or later, or Linux
 - Graphics Card: Nvidia GPU with CUDA 12.1 support and at least 8GB of VRAM
--   AMD GPU Users: Linux is required; Windows WSL2 does not support `ROCM`
+- AMD GPU Users: Linux is required; Windows WSL2 does not support `ROCM`
 - Memory: 16GB or more of system RAM
 
 May work on other systems, your results may vary. Let us know!
@@ -50,19 +50,23 @@ Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed.
 Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed. Or [Docker CLI](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
 
 #### AMD Requirements
+
 Install [ROCM](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/install/quick-start.html) on Linux.
 
-### 2️⃣ Build the Image  
+### 2️⃣ Build the Image
 
 To build the image, run:
+
 ```bash
 ./build_image.ps1
 ```
 
 If you are using an AMD GPU, use the following command instead:
+
 ```bash
 ./build_image_amd.ps1
 ```
+
 Note: Only Torchtune supports AMD GPUs for fine-tuning.
 
 ### 3️⃣ Run the Container
@@ -71,6 +75,12 @@ If running for first time:
 
 ```bash
 ./create_and_run_container.ps1
+```
+
+If you are using an AMD GPU, use the following command instead:
+
+```bash
+./create_and_run_container_amd.ps1
 ```
 
 For subsequent runs:
