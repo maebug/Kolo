@@ -49,6 +49,9 @@ Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed.
 
 Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed. Or [Docker CLI](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
 
+#### AMD Requirements
+Install [ROCM](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/install/quick-start.html) on Linux.
+
 ### 2️⃣ Build the Image  
 
 To build the image, run:
