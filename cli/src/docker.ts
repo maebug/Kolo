@@ -113,3 +113,16 @@ export async function initContainer(): Promise<ContainerInitResult> {
     },
   }
 }
+
+export async function stopContainer(): Promise<string> {
+  try {
+    const { stdout } = await execAsync(
+      `docker stop ${dockerConfig.containerName}`,
+    )
+    return stdout.trim()
+  } catch (error) {
+    throw new Error(
+      `Failed to stop container: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+}

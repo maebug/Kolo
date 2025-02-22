@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { style } from "./colors.ts"
 import { convertToTrainingDataset, saveTrainingDataset } from "./converter.ts"
-import { getDockerfileContent, initContainer } from "./docker.ts"
+import { getDockerfileContent, initContainer, stopContainer } from "./docker.ts"
 import { validateSourceFile } from "./validator.ts"
 import { Command } from "commander"
 import inquirer from "inquirer"
@@ -156,6 +156,24 @@ program
       spinner.fail("Failed to initialize container")
       console.error(
         style.error("Error initializing container:"),
+        error instanceof Error ? error.message : String(error),
+      )
+      process.exit(1)
+    }
+  })
+
+program
+  .command("stop")
+  .description("Stop the Kolo container")
+  .action(async () => {
+    const spinner = ora("Stopping container...").start()
+    try {
+      await stopContainer()
+      spinner.succeed("Container stopped successfully")
+    } catch (error) {
+      spinner.fail("Failed to stop container")
+      console.error(
+        style.error("Error stopping container:"),
         error instanceof Error ? error.message : String(error),
       )
       process.exit(1)
