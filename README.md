@@ -22,9 +22,10 @@ Kolo is built using a powerful stack of LLM tools:
 
 ## Recommended System Requirements
 
-- Windows 10 OS or higher. Might work on Linux & Mac (Untested)
-- Nvidia GPU with CUDA 12.1 capability and 8GB+ of VRAM
-- 16GB+ System RAM
+- Operating System: Windows 10 or later, or Linux
+- Graphics Card: Nvidia GPU with CUDA 12.1 support and at least 8GB of VRAM
+-   AMD GPU Users: Linux is required; Windows WSL2 does not support `ROCM`
+- Memory: 16GB or more of system RAM
 
 May work on other systems, your results may vary. Let us know!
 
@@ -36,16 +37,28 @@ Join our [Discord group](https://discord.gg/Ewe4hf5x3n)!
 
 ### 1️⃣ Install Dependencies
 
+#### 🖥️ Windows Requirements
+
 Ensure [HyperV](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/get-started/install-hyper-v?pivots=windows) is installed.
 
 Ensure [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) is installed; alternative [guide](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-containers).
 
 Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed.
 
+#### 🐧 Linux Requirements
+
+Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed.
+
 ### 2️⃣ Build the Image  
 
+To build the image, run:
 ```bash
 ./build_image.ps1
+```
+
+If you are using an AMD GPU, use the following command instead:
+```bash
+./build_image_amd.ps1
 ```
 
 ### 3️⃣ Run the Container
