@@ -103,7 +103,6 @@ $command += " enable_activation_checkpointing=True"
 $command += " optimizer_in_bwd=False"
 $command += " enable_activation_offloading=True"
 $command += " optimizer=torch.optim.AdamW"
-$command += " tokenizer.max_seq_len=2048"
 $command += " gradient_accumulation_steps=1"
 
 # Dynamic parameters with defaults
