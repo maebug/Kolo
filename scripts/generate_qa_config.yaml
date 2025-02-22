@@ -23,69 +23,103 @@ prompts:
     etc.
   individual_question_prompt: 'File contents for : "{file_name}"'
   group_question_prompt: '{files_content}'
-  answer_prompt_header: ''
+  answer_prompt: |
+    {answer}
+
+    Show the relevant content before answering the question.
 
 file_groups:
   TrainTorchTune:
-    iterations: 15
+    iterations: 50
     files:
       - train_model_torchtune.ps1
       - merge_lora.py
       - convert_jsonl_to_json.py
   BuildImage:
-    iterations: 15
+    iterations: 50
     files:
       - build_image.ps1
       - dockerfile
       - supervisord.conf
   UninstallModel:
-    iterations: 5
+    iterations: 15
     files:
       - uninstall_model.ps1
   DeleteModel:
-    iterations: 5
+    iterations: 15
     files:
       - delete_model.ps1
   RunContainer:
-    iterations: 5
+    iterations: 15
     files:
       - create_and_run_container.ps1
       - run_container.ps1
   TrainUnsloth:
-    iterations: 15
+    iterations: 50
     files:
       - train_model_unsloth.ps1
       - train.py
   TrainingPSCommands:
-    iterations: 15
+    iterations: 50
     files:
       - train_model_torchtune.ps1
       - train_model_unsloth.ps1
   InstallModel:
-    iterations: 5
+    iterations: 15
     files:
       - install_model.ps1
   ListModels:
-    iterations: 5
+    iterations: 15
     files:
       - list_models.ps1
   CopyScripts:
-    iterations: 5
+    iterations: 15
     files:
       - copy_scripts.ps1
   CopyConfigs:
-    iterations: 5
+    iterations: 15
     files:
       - copy_configs.ps1
   ConnectSSH:
-    iterations: 5
+    iterations: 15
     files:
       - connect.ps1
   FineTuningGuide:
-    iterations: 15
+    iterations: 50
     files:
       - FineTuningGuide.md
   README:
-    iterations: 15
+    iterations: 50
     files:
       - README.md
+  GenerateQAData:
+    iterations: 50
+    files:
+      - generate_qa_data.ps1
+      - generate_qa_data.py
+      - generate_qa_config.yaml
+  ConvertQAData:
+    iterations: 25
+    files:
+      - parse_qa_data.py
+      - convert_qa_output.ps1
+  GenerateTrainingDataGuide:
+    iterations: 50
+    files:
+      - GenerateTrainingDataGuide.md
+  CopyQAInputGeneration:
+    iterations: 15
+    files:
+      - copy_qa_input_generation.ps1
+  GenerateQADataPy:
+    iterations: 50
+    files:
+      - generate_qa_data.py
+  GenerateQADataPs1:
+    iterations: 15
+    files:
+      - generate_qa_data.ps1
+  GenerateQADataYaml:
+    iterations: 15
+    files:
+      - generate_qa_config.yaml

@@ -169,7 +169,7 @@ def process_file_group(
     # Use the individual prompt template from config.
     individual_prompt_template = group_prompts.get("individual_question_prompt", default_individual_prompt)
     group_prompt_template = group_prompts.get("group_question_prompt", default_group_prompt)
-    answer_prompt_template = group_prompts.get("answer_prompt_header", default_answer_prompt)
+    answer_prompt_template = group_prompts.get("answer_prompt", default_answer_prompt)
 
     # --- Randomize file order for question generation ---
     file_list_for_questions = file_list.copy()
@@ -269,8 +269,7 @@ def process_file_group(
 
         individual_answer_prompt = (
             f"{combined_files}\n\n"
-            f"{answer_prompt_template.format(file_name='[customizable]')}\n\n"
-            f"{question}"
+            f"{answer_prompt_template.format(answer=question)}"
         )
 
         answer_text = call_api(
@@ -330,8 +329,8 @@ def main() -> None:
     default_individual_prompt = prompts_config.get("individual_question_prompt", "")
     default_group_prompt = prompts_config.get("group_question_prompt", "{files_content}")
     default_answer_prompt = prompts_config.get(
-        "answer_prompt_header",
-        "Based on the file content provided, answer the following question in detail."
+        "answer_prompt",
+        "Based on the file content provided, answer the following question in detail: {answer}"
     )
 
     # File groups.

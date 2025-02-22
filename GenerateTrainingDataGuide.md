@@ -56,36 +56,38 @@ This YAML configuration file controls various aspects of the QA generation proce
 
 ### Directories & Paths
 
-- **`base_dir`**: Location of the QA generation input files.  
-- **`output_dir`**: Directory where QA generation output and debug files are saved.  
-- **`output_base_path`**: The base path for output files (e.g., `/var/kolo_data`).  
+- **`base_dir`**: Location of the QA generation input files.
+- **`output_dir`**: Directory where QA generation output and debug files are saved.
+- **`output_base_path`**: The base path for output files (e.g., `/var/kolo_data`).
 
 ### Service Endpoints
 
-- **`ollama_url`**: URL endpoint for the Ollama API (if used).  
+- **`ollama_url`**: URL endpoint for the Ollama API (if used).
 
 ## Providers
 
 Define the API providers for generating both questions and answers. Each provider block specifies:
 
-- **`provider`**: The service to use (e.g., `openai` or `ollama`).  
-- **`model`**: The model to be used (e.g., `gpt-4o-mini`).  
+- **`provider`**: The service to use (e.g., `openai` or `ollama`).
+- **`model`**: The model to be used (e.g., `gpt-4o-mini`).
 
 ## Prompts
+
 All prompts that control the instructions provided to the LLM during QA generation.
 
 - **`question_prompt_header`**: The main header prompt instructing the LLM on how to generate a list of questions.
 - **`question_prompt_footer`**: Defines the expected output format for questions.
-NOTE: Changing the output format may break the conversion script.
+  NOTE: Changing the output format may break the conversion script.
 - **`individual_question_prompt`**: A prompt that is used for each file in a group. Typically includes a `{file_name}` placeholder to refer to the specific file.
 - **`group_question_prompt`**: A prompt that includes the `{files_content}` variable. You can place additional information around the file content if needed.
-- **`answer_prompt_header`**: The prompt header instructing the LLM how to generate an answer based on each question.
+- **`answer_prompt`**: The prompt instructing the LLM how to generate an answer based on each question The placholder `{answer}` refers to the question.
 
 ### Overall Prompt Structure
 
 This is what is sent to the LLM provider for question and answer generation. You can look at `/var/kolo_data/qa_generation_output/debug` folder to see exactly what is sent to the LLM provider during generation.
 
 #### Question Prompt
+
 ```
 <question_prompt_header>
 <group_question_prompt (which includes for each file: <individual_question_prompt> + file content)
@@ -93,6 +95,7 @@ This is what is sent to the LLM provider for question and answer generation. You
 ```
 
 #### Answer Prompt
+
 ```
 <Combined_file_content>
 <Answer_prompt_header>
