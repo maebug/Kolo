@@ -47,7 +47,7 @@ Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed.
 
 #### 🐧 Linux Requirements
 
-Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed.
+Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed. Or [Docker CLI] (https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
 
 ### 2️⃣ Build the Image  
 
