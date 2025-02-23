@@ -269,7 +269,7 @@ def process_file_group(
 
         individual_answer_prompt = (
             f"{combined_files}\n\n"
-            f"{answer_prompt_template.format(answer=question)}"
+            f"{answer_prompt_template.format(question=question)}"
         )
 
         answer_text = call_api(
