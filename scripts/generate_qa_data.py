@@ -361,7 +361,7 @@ def main() -> None:
     logger.info(f"Starting processing of {total_groups} file groups.")
 
     # Process each file group concurrently.
-    with ThreadPoolExecutor(max_workers=64) as executor:  # Adjust max_workers based on your system.
+    with ThreadPoolExecutor(max_workers=32) as executor:  # Adjust max_workers based on your system.
         futures = [
             executor.submit(
                 process_file_group,
