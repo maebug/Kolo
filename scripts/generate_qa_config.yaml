@@ -14,7 +14,7 @@ providers:
 
 prompts:
   question_prompt_header: >
-    Create a list of questions that thoroughly explore the functionality and usage of the following.
+    I want you to act as a data extractor for fine-tuning purposes. Then generate a comprehensive list of questions that capture all key facts, concepts, details, and nuances from the text. Your goal is to create questions that cover every important aspect of the content so that, when answered, the resulting QA pairs will fully represent the material for model fine-tuning. Ensure each question is clear, specific, and focused on one distinct key point. Analyze the following material:
   question_prompt_footer: |
     Please generate the following list:
     1. <question 1>

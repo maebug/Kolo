@@ -289,7 +289,7 @@ def process_file_group(
         logger.info(f"[Group: {group_name}] Saved answer for question {idx} -> {answer_file_path}")
 
     # Process each question concurrently.
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         futures = [
             executor.submit(process_question, idx, question)
             for idx, question in enumerate(questions, start=1)
@@ -361,7 +361,7 @@ def main() -> None:
     logger.info(f"Starting processing of {total_groups} file groups.")
 
     # Process each file group concurrently.
-    with ThreadPoolExecutor(max_workers=16) as executor:  # Adjust max_workers based on your system.
+    with ThreadPoolExecutor(max_workers=64) as executor:  # Adjust max_workers based on your system.
         futures = [
             executor.submit(
                 process_file_group,
