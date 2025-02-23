@@ -271,3 +271,68 @@ export async function containerServices(): Promise<ServiceInfo[]> {
     )
   }
 }
+
+export interface ServiceHealthCheck {
+  name: string
+  port: number
+  url: string
+  isHealthy: boolean
+  responseTime?: number
+}
+
+async function checkPortStatus(port: number): Promise<boolean> {
+  try {
+    const conn = await Deno.connect({ hostname: "localhost", port })
+    conn.close()
+    return true
+  } catch (_error) {
+    return false
+  }
+}
+
+export async function checkServicesHealth(
+  maxRetries = 12,
+  retryInterval = 5000,
+): Promise<ServiceHealthCheck[]> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const services = await containerServices()
+    const healthChecks = await Promise.all(
+      services.map(async (service) => {
+        const startTime = Date.now()
+        const isHealthy = await checkPortStatus(service.port)
+        const responseTime = Date.now() - startTime
+
+        return {
+          ...service,
+          isHealthy,
+          responseTime: isHealthy ? responseTime : undefined,
+        }
+      }),
+    )
+
+    const allHealthy = healthChecks.every((check) => check.isHealthy)
+    if (allHealthy) {
+      return healthChecks
+    }
+
+    if (attempt < maxRetries) {
+      await new Promise((resolve) => setTimeout(resolve, retryInterval))
+    }
+  }
+
+  // Return final status even if not all services are healthy
+  const services = await containerServices()
+  return Promise.all(
+    services.map(async (service) => {
+      const startTime = Date.now()
+      const isHealthy = await checkPortStatus(service.port)
+      const responseTime = Date.now() - startTime
+
+      return {
+        ...service,
+        isHealthy,
+        responseTime: isHealthy ? responseTime : undefined,
+      }
+    }),
+  )
+}

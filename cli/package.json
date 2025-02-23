@@ -5,10 +5,10 @@
   "module": "./src/index.ts",
   "type": "module",
   "scripts": {
-    "kolo": "deno --allow-env --allow-read --allow-run --allow-sys --allow-write --env-file ./src/index.ts",
+    "kolo": "deno --allow-env --allow-net --allow-read --allow-run --allow-sys --allow-write --env-file ./src/index.ts",
     "package": "NODE_ENV=production && deno run package:all",
     "package:all": "deno run package:linux && deno run package:linux64 && deno run package:mac && deno run package:mac64 && deno run package:win",
-    "package:target": "deno compile --allow-env --allow-read --allow-run --allow-sys --allow-write --env-file --target $TARGET --include ../dockerfile --include ../supervisord.conf --include ../scripts --include ../torchtune --output ./bin/$TARGET_OS/kolo ./src/index.ts",
+    "package:target": "deno compile --allow-env --allow-net --allow-read --allow-run --allow-sys --allow-write --env-file --target $TARGET --include ../dockerfile --include ../supervisord.conf --include ../scripts --include ../torchtune --output ./bin/$TARGET_OS/kolo ./src/index.ts",
     "package:linux": "TARGET=x86_64-unknown-linux-gnu TARGET_OS=linux deno run package:target",
     "package:linux64": "TARGET=aarch64-unknown-linux-gnu TARGET_OS=linux64 deno run package:target",
     "package:mac": "TARGET=x86_64-apple-darwin TARGET_OS=mac deno run package:target",

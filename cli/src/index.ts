@@ -10,6 +10,7 @@ import {
   destroyContainer,
   checkComponents,
   containerServices,
+  checkServicesHealth,
 } from "./docker.ts"
 import { validateSourceFile } from "./validator.ts"
 import Table from "cli-table3"
@@ -27,6 +28,60 @@ type CommandOptions = {
   volume?: boolean
   image?: boolean
   all?: boolean
+}
+
+/**
+ * Displays the health check status of services running on the Kolo container.
+ *
+ * This function performs a health check on a list of services,  then
+ * displays the status of each service in a table format. It uses a spinner to
+ * indicate the progress of the health check.
+ *
+ * @param {string} [message="Checking services health..."] - The message to
+ *   display while performing the health check.
+ * @returns {Promise<void>} A promise that resolves when the health check is
+ *   complete.
+ */
+async function displayHealthCheck(
+  message = "Checking services health...",
+): Promise<void> {
+  const healthSpinner = ora(message).start()
+  const healthChecks = await checkServicesHealth()
+  healthSpinner.succeed("Health check completed")
+
+  const servicesTable = new Table({
+    head: [
+      style.title("Service"),
+      style.title("URL"),
+      style.title("Status"),
+      style.title("Response Time"),
+    ],
+  })
+
+  healthChecks.forEach((service) => {
+    servicesTable.push([
+      service.name,
+      terminalLink.isSupported
+        ? style.path(terminalLink(service.url, service.url))
+        : style.path(service.url),
+      service.isHealthy
+        ? style.success("Healthy")
+        : style.error("Not Responding"),
+      service.responseTime
+        ? style.secondary(`${service.responseTime}ms`)
+        : style.error("N/A"),
+    ])
+  })
+
+  console.log(servicesTable.toString())
+
+  const unhealthyServices = healthChecks.filter((s) => !s.isHealthy)
+  if (unhealthyServices.length > 0) {
+    console.log(style.warning("\nWarning: Some services are not responding:"))
+    unhealthyServices.forEach((service) => {
+      console.log(style.error(`- ${service.name} (${service.url})`))
+    })
+  }
 }
 
 const program = new Command()
@@ -204,6 +259,9 @@ program
         console.log(style.primary("Container creation output:"))
         console.log(style.secondary(result.container.output))
       }
+
+      const healthSpinner = ora("Performing initial health check...").start()
+      await displayHealthCheck()
     } catch (error) {
       spinner.fail("Failed to initialize container")
       console.error(
@@ -285,6 +343,8 @@ program
       })
 
       console.log(servicesTable.toString())
+
+      await displayHealthCheck()
     } catch (error) {
       spinner.fail("Failed to start container")
       console.error(
@@ -384,6 +444,31 @@ program
       spinner.fail("Failed to destroy Kolo resources")
       console.error(
         style.error("Error:"),
+        error instanceof Error ? error.message : String(error),
+      )
+      process.exit(1)
+    }
+  })
+
+program
+  .command("healthcheck")
+  .description("Check the health of Kolo services")
+  .action(async () => {
+    try {
+      const exists = await checkContainerExists()
+      if (!exists) {
+        console.error(
+          style.error(
+            "The Kolo container does not exist. Please run 'kolo init' first to initialize Kolo.",
+          ),
+        )
+        process.exit(1)
+      }
+
+      await displayHealthCheck()
+    } catch (error) {
+      console.error(
+        style.error("Error checking services:"),
         error instanceof Error ? error.message : String(error),
       )
       process.exit(1)
