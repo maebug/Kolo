@@ -9,13 +9,16 @@ import {
   startContainer,
   destroyContainer,
   checkComponents,
+  containerServices,
 } from "./docker.ts"
 import { validateSourceFile } from "./validator.ts"
+import Table from "cli-table3"
 import { Command } from "commander"
 import inquirer from "inquirer"
 import { readFileSync, existsSync } from "node:fs"
 import process from "node:process"
 import ora from "ora"
+import terminalLink from "terminal-link"
 
 type CommandOptions = {
   force?: boolean
@@ -129,66 +132,75 @@ program
     // Check existing components first
     const components = await checkComponents()
 
-    console.log(style.title("Detected pre-existing Kolo components:"))
-    console.log(
-      `${style.secondary("Container exists:")} ${style.command(components.container ? "Yes" : "No")}`,
-    )
-    console.log(
-      `${style.secondary("Volume exists:")} ${style.command(components.volume ? "Yes" : "No")}`,
-    )
-    console.log(
-      `${style.secondary("Image exists:")} ${style.command(components.image ? "Yes" : "No")}`,
+    console.log(style.title(" Detected Kolo components:"))
+
+    const componentsTable = new Table({
+      head: [style.title("Component"), style.title("Exists")],
+    })
+
+    componentsTable.push(
+      [
+        "Container",
+        components.container ? style.success("true") : style.error("false"),
+      ],
+      [
+        "Volume",
+        components.volume ? style.success("true") : style.error("false"),
+      ],
+      [
+        "Image",
+        components.image ? style.success("true") : style.error("false"),
+      ],
     )
 
-    console.log()
+    console.log(componentsTable.toString())
+
     const spinner = ora(
       "Initializing container, this may take a while...",
     ).start()
 
     try {
       const result = await initContainer()
-      spinner.succeed("Container initialized successfully")
+      spinner.succeed("Kolo initialized successfully!")
 
-      console.log(style.title("Container setup complete:"))
-      console.log(
-        `${style.primary("Docker version:")} ${style.secondary(result.dockerStatus.version || "")}`,
+      console.log(style.title(" Kolo details:"))
+
+      const services = await containerServices()
+
+      const setupTable = new Table()
+
+      setupTable.push(
+        {
+          "Docker version": style.secondary(result.dockerStatus.version || ""),
+        },
+        {
+          "Image status": style.secondary(
+            result.build.imageExisted
+              ? `Using existing image ${result.build.imageName}`
+              : `Built new image ${result.build.imageName}`,
+          ),
+        },
+        { Volume: style.secondary(result.volume.name) },
+        { "Container name": style.secondary(result.container.name) },
       )
 
-      // Image status
-      if (result.build.imageExisted) {
-        console.log(
-          `${style.primary("Image status:")} ${style.secondary(`Using existing image ${result.build.imageName}`)}`,
-        )
-      } else {
-        console.log(
-          `${style.primary("Image status:")} ${style.secondary(`Built new image ${result.build.imageName}`)}`,
-        )
-        if (options.verbose && result.build.buildOutput) {
+      services.forEach((service) => {
+        setupTable.push({
+          [service.name]: terminalLink.isSupported
+            ? style.path(terminalLink(service.url, service.url))
+            : style.path(service.url),
+        })
+      })
+
+      console.log(setupTable.toString())
+
+      if (options.verbose) {
+        if (!result.build.imageExisted && result.build.buildOutput) {
           console.log(style.primary("Build output:"))
           console.log(style.secondary(result.build.buildOutput))
         }
-      }
-
-      // Volume status
-      console.log(
-        `${style.primary("Volume:")} ${style.secondary(result.volume.name)}`,
-      )
-      if (options.verbose) {
         console.log(style.primary("Volume creation output:"))
         console.log(style.secondary(result.volume.output))
-      }
-
-      // Container status
-      console.log(
-        `${style.primary("Container name:")} ${style.secondary(result.container.name)}`,
-      )
-      console.log(
-        `${style.primary("SSH port:")} ${style.secondary(String(result.container.ports.ssh))}`,
-      )
-      console.log(
-        `${style.primary("Web port:")} ${style.secondary(String(result.container.ports.web))}`,
-      )
-      if (options.verbose) {
         console.log(style.primary("Container creation output:"))
         console.log(style.secondary(result.container.output))
       }
@@ -224,10 +236,17 @@ program
   .command("dev:color-test")
   .description("Test the color theme")
   .action(() => {
+    // Base
     console.log(style.primary("Primary color"))
     console.log(style.secondary("Secondary color"))
+
+    // Status styles
     console.log(style.error("Error color"))
     console.log(style.success("Success color"))
+    console.log(style.warning("Warning color"))
+    console.log(style.info("Info color"))
+
+    // Special styles
     console.log(style.command("Command color"))
     console.log(style.path("Path color"))
     console.log(style.title("Title color"))
@@ -252,6 +271,20 @@ program
 
       await startContainer()
       spinner.succeed("Container started successfully")
+
+      console.log(style.title("\n Available services:"))
+      const services = await containerServices()
+      const servicesTable = new Table()
+
+      services.forEach((service) => {
+        servicesTable.push({
+          [service.name]: terminalLink.isSupported
+            ? style.path(terminalLink(service.url, service.url))
+            : style.path(service.url),
+        })
+      })
+
+      console.log(servicesTable.toString())
     } catch (error) {
       spinner.fail("Failed to start container")
       console.error(
@@ -279,26 +312,47 @@ program
       image: options.all || options.image,
     }
 
+    console.log(style.title("\n Components to be removed:"))
+
+    const componentsTable = new Table({
+      head: [style.title("Component"), style.title("Will be removed")],
+    })
+
+    componentsTable.push(
+      [
+        "Container",
+        destroyOptions.container ? style.error("Yes") : style.secondary("No"),
+      ],
+      [
+        "Volume",
+        destroyOptions.volume ? style.error("Yes") : style.secondary("No"),
+      ],
+      [
+        "Image",
+        destroyOptions.image ? style.error("Yes") : style.secondary("No"),
+      ],
+    )
+
+    console.log(componentsTable.toString())
+
     if (!options.force) {
-      const components = Object.entries(destroyOptions)
-        .filter(([, value]) => value)
-        .map(([key]) => key)
-        .join(", ")
+      console.log(style.warning("\n⚠️  Warning:"))
+      console.log(style.error("  • This action cannot be undone"))
+      console.log(
+        style.error("  • All selected components will be permanently removed"),
+      )
 
       const { confirm } = await inquirer.prompt<{ confirm: boolean }>([
         {
           type: "confirm",
           name: "confirm",
-          message: style.error(
-            `This will permanently remove the following Kolo components: ${components}.\n` +
-              "This action cannot be undone. Are you sure you want to continue?",
-          ),
+          message: "Do you want to proceed with the removal?",
           default: false,
         },
       ])
 
       if (!confirm) {
-        console.log(style.secondary("Operation cancelled"))
+        console.log(style.secondary("\nOperation cancelled"))
         process.exit(0)
       }
     }
@@ -307,6 +361,24 @@ program
     try {
       await destroyContainer(destroyOptions)
       spinner.succeed("Successfully removed selected Kolo components")
+
+      const summaryTable = new Table({
+        head: [style.title("Component"), style.title("Status")],
+      })
+
+      if (destroyOptions.container) {
+        summaryTable.push(["Container", style.success("Removed")])
+      }
+      if (destroyOptions.volume) {
+        summaryTable.push(["Volume", style.success("Removed")])
+      }
+      if (destroyOptions.image) {
+        summaryTable.push(["Image", style.success("Removed")])
+      }
+
+      console.log("\nDestruction summary:")
+      console.log(summaryTable.toString())
+
       process.exit(0)
     } catch (error) {
       spinner.fail("Failed to destroy Kolo resources")

@@ -218,3 +218,56 @@ export async function destroyContainer(
     )
   }
 }
+
+export interface ServiceInfo {
+  name: string
+  port: number
+  url: string
+}
+
+export async function containerServices(): Promise<ServiceInfo[]> {
+  try {
+    const { stdout } = await execAsync(
+      `docker port ${dockerConfig.containerName}`,
+    )
+    const services: ServiceInfo[] = []
+
+    const portMappings = stdout.trim().split("\n")
+    for (const mapping of portMappings) {
+      const [containerPort, hostBinding] = mapping.split(" -> ")
+      if (!hostBinding) continue
+
+      const portMatch = containerPort.match(/(\d+)/)
+      const hostMatch = hostBinding.match(/([^:]+):(\d+)/)
+
+      if (portMatch && hostMatch) {
+        const containerPortNum = parseInt(portMatch[1])
+        const hostIp = hostMatch[1]
+        const hostPort = parseInt(hostMatch[2])
+
+        let serviceName = "unknown"
+        if (containerPortNum === dockerConfig.sshPort)
+          serviceName = "Open WebUI (SSH)"
+        else if (containerPortNum === dockerConfig.webPort)
+          serviceName = "Open WebUI"
+
+        let url = `http://${hostIp}:${hostPort}`
+        if (hostIp === "0.0.0.0") {
+          url = `http://localhost:${hostPort}`
+        }
+
+        services.push({
+          name: serviceName,
+          port: hostPort,
+          url,
+        })
+      }
+    }
+
+    return services
+  } catch (error) {
+    throw new Error(
+      `Failed to scan container services: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+}

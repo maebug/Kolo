@@ -6,10 +6,12 @@
     "npm:@trivago/prettier-plugin-sort-imports@^5.2.2": "5.2.2_prettier@3.5.1",
     "npm:ajv@^8.12.0": "8.17.1",
     "npm:chalk@^5.4.1": "5.4.1",
+    "npm:cli-table3@~0.6.5": "0.6.5",
     "npm:commander@^13.1.0": "13.1.0",
     "npm:inquirer@^12.4.2": "12.4.2",
     "npm:ora@^8.2.0": "8.2.0",
-    "npm:prettier@^3.5.0": "3.5.1"
+    "npm:prettier@^3.5.0": "3.5.1",
+    "npm:terminal-link@3": "3.0.0"
   },
   "jsr": {
     "@std/fs@1.0.13": {
@@ -80,13 +82,16 @@
         "@babel/helper-validator-identifier"
       ]
     },
+    "@colors/colors@1.5.0": {
+      "integrity": "sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ=="
+    },
     "@inquirer/checkbox@4.1.2": {
       "integrity": "sha512-PL9ixC5YsPXzXhAZFUPmkXGxfgjkdfZdPEPPmt4kFwQ4LBMDG9n/nHXYRGGZSKZJs+d1sGKWgS2GiPzVRKUdtQ==",
       "dependencies": [
         "@inquirer/core",
         "@inquirer/figures",
         "@inquirer/type",
-        "ansi-escapes",
+        "ansi-escapes@4.3.2",
         "yoctocolors-cjs"
       ]
     },
@@ -102,7 +107,7 @@
       "dependencies": [
         "@inquirer/figures",
         "@inquirer/type",
-        "ansi-escapes",
+        "ansi-escapes@4.3.2",
         "cli-width",
         "mute-stream",
         "signal-exit",
@@ -148,7 +153,7 @@
       "dependencies": [
         "@inquirer/core",
         "@inquirer/type",
-        "ansi-escapes"
+        "ansi-escapes@4.3.2"
       ]
     },
     "@inquirer/prompts@7.3.2": {
@@ -189,7 +194,7 @@
         "@inquirer/core",
         "@inquirer/figures",
         "@inquirer/type",
-        "ansi-escapes",
+        "ansi-escapes@4.3.2",
         "yoctocolors-cjs"
       ]
     },
@@ -244,7 +249,13 @@
     "ansi-escapes@4.3.2": {
       "integrity": "sha512-gKXj5ALrKWQLsYG9jlTRmR/xKluxHV+Z9QEwNIgCfM1/uwPMCuzVVnh5mwTd+OuBZcwSIMbqssNWRm1lE51QaQ==",
       "dependencies": [
-        "type-fest"
+        "type-fest@0.21.3"
+      ]
+    },
+    "ansi-escapes@5.0.0": {
+      "integrity": "sha512-5GFMVX8HqE/TB+FuBJGuO5XG0WrsA6ptUqoODaT/n9mmUaZFkqnBueB4leqGBCmrUHnCnC4PCZTCd0E7QQ83bA==",
+      "dependencies": [
+        "type-fest@1.4.0"
       ]
     },
     "ansi-regex@5.0.1": {
@@ -273,6 +284,13 @@
     },
     "cli-spinners@2.9.2": {
       "integrity": "sha512-ywqV+5MmyL4E7ybXgKys4DugZbX0FC6LnwrhjuykIjnK9k8OQacQ7axGKnjDXWNhns0xot3bZI5h55H8yo9cJg=="
+    },
+    "cli-table3@0.6.5": {
+      "integrity": "sha512-+W/5efTR7y5HRD7gACw9yQjqMVvEMLBHmboM/kPWam+H+Hmyrgjh6YncVKK122YZkXrLudzTuAukUw9FnMf7IQ==",
+      "dependencies": [
+        "@colors/colors",
+        "string-width@4.2.3"
+      ]
     },
     "cli-width@4.1.0": {
       "integrity": "sha512-ouuZd4/dm2Sw5Gmqy6bGyNNNe1qt9RpmxveLSO7KcgsTnU7RXfsw+/bukWGo1abgBiMAic068rclZsO4IWmmxQ=="
@@ -321,6 +339,9 @@
     "globals@11.12.0": {
       "integrity": "sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA=="
     },
+    "has-flag@4.0.0": {
+      "integrity": "sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ=="
+    },
     "iconv-lite@0.4.24": {
       "integrity": "sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==",
       "dependencies": [
@@ -333,7 +354,7 @@
         "@inquirer/core",
         "@inquirer/prompts",
         "@inquirer/type",
-        "ansi-escapes",
+        "ansi-escapes@4.3.2",
         "mute-stream",
         "run-async",
         "rxjs"
@@ -467,6 +488,26 @@
         "ansi-regex@6.1.0"
       ]
     },
+    "supports-color@7.2.0": {
+      "integrity": "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==",
+      "dependencies": [
+        "has-flag"
+      ]
+    },
+    "supports-hyperlinks@2.3.0": {
+      "integrity": "sha512-RpsAZlpWcDwOPQA22aCH4J0t7L8JmAvsCxfOSEwm7cQs3LshN36QaTkwd70DnBOXDWGssw2eUoc8CaRWT0XunA==",
+      "dependencies": [
+        "has-flag",
+        "supports-color"
+      ]
+    },
+    "terminal-link@3.0.0": {
+      "integrity": "sha512-flFL3m4wuixmf6IfhFJd1YPiLiMuxEc8uHRM1buzIeZPm22Au2pDqBJQgdo7n1WfPU1ONFGv7YDwpFBmHGF6lg==",
+      "dependencies": [
+        "ansi-escapes@5.0.0",
+        "supports-hyperlinks"
+      ]
+    },
     "tmp@0.0.33": {
       "integrity": "sha512-jRCJlojKnZ3addtTOjdIqoRuPEKBvNXcGYqzO6zWZX8KfKEpnGY5jfggJQ3EjKuu8D4bJRr0y+cYJFmYbImXGw==",
       "dependencies": [
@@ -478,6 +519,9 @@
     },
     "type-fest@0.21.3": {
       "integrity": "sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w=="
+    },
+    "type-fest@1.4.0": {
+      "integrity": "sha512-yGSza74xk0UG8k+pLh5oeoYirvIiWo5t0/o3zHHAO2tRDiZcxWP7fywNlXhqb6/r6sWvwi+RsyQMWhVLe4BVuA=="
     },
     "wrap-ansi@6.2.0": {
       "integrity": "sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==",
@@ -501,10 +545,12 @@
         "npm:@trivago/prettier-plugin-sort-imports@^5.2.2",
         "npm:ajv@^8.12.0",
         "npm:chalk@^5.4.1",
+        "npm:cli-table3@~0.6.5",
         "npm:commander@^13.1.0",
         "npm:inquirer@^12.4.2",
         "npm:ora@^8.2.0",
-        "npm:prettier@^3.5.0"
+        "npm:prettier@^3.5.0",
+        "npm:terminal-link@3"
       ]
     }
   }

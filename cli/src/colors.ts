@@ -1,24 +1,27 @@
-import { themeConfig } from "./config.ts"
 import chalk from "chalk"
 
-class Style {
-  protected colors = {
-    primary: chalk.hex(themeConfig.primaryColor),
-    secondary: chalk.hex(themeConfig.secondaryColor),
-    error: chalk.red,
-    success: chalk.green,
-  }
-
-  // Base styles
-  primary = (text: string) => this.colors.primary(text)
-  secondary = (text: string) => this.colors.secondary(text)
-  error = (text: string) => this.colors.error(text)
-  success = (text: string) => this.colors.success(text)
-
-  // Special styles
-  command = (text: string) => this.colors.secondary.bold(text)
-  path = (text: string) => this.colors.primary.underline(text)
-  title = (text: string) => this.colors.primary.bold(text)
+const colors = {
+  primary: chalk.ansi256(92),
+  secondary: chalk.ansi256(78),
+  error: chalk.red,
+  warning: chalk.yellow,
+  info: chalk.blue,
+  success: chalk.green,
 }
 
-export const style = new Style()
+export const style = Object.assign(chalk, {
+  // Base styles
+  primary: colors.primary,
+  secondary: colors.secondary,
+
+  // Status styles
+  error: colors.error,
+  warning: colors.warning,
+  info: colors.info,
+  success: colors.success,
+
+  // Special styles
+  command: colors.secondary.bold,
+  path: colors.primary.underline,
+  title: colors.primary.bold,
+})

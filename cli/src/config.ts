@@ -31,17 +31,3 @@ export const dockerConfig = {
    */
   installUrl: "https://docs.docker.com/get-docker/",
 }
-
-/**
- * Theme configuration for kolo CLI.
- */
-export const themeConfig = {
-  /**
-   * The primary color for the CLI theme.
-   */
-  primaryColor: Deno.env.get("THEME_PRIMARY_COLOR") || "#9D8CFF",
-  /**
-   * The secondary color for the CLI theme.
-   */
-  secondaryColor: Deno.env.get("THEME_SECONDARY_COLOR") || "#64DD17",
-}
