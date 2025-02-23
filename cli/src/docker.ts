@@ -25,15 +25,6 @@ async function checkDockerAvailability(): Promise<{
   }
 }
 
-async function checkImageExists(imageName: string): Promise<boolean> {
-  try {
-    await execAsync(`docker image inspect ${imageName}`)
-    return true
-  } catch (_error) {
-    return false
-  }
-}
-
 export interface DockerBuildResult {
   imageExisted: boolean
   imageName: string
@@ -59,6 +50,26 @@ export interface ContainerInitResult {
   build: DockerBuildResult
   volume: DockerVolumeResult
   container: DockerContainerResult
+}
+
+export interface ComponentStatus {
+  container: boolean
+  volume: boolean
+  image: boolean
+}
+
+export async function checkComponents(): Promise<ComponentStatus> {
+  const [container, volume, image] = await Promise.all([
+    checkContainerExists(),
+    checkVolumeExists(),
+    checkImageExists(dockerConfig.imageName),
+  ])
+
+  return {
+    container,
+    volume,
+    image,
+  }
 }
 
 export async function initContainer(): Promise<ContainerInitResult> {
@@ -136,6 +147,24 @@ export async function checkContainerExists(): Promise<boolean> {
   }
 }
 
+async function checkImageExists(imageName: string): Promise<boolean> {
+  try {
+    await execAsync(`docker image inspect ${imageName}`)
+    return true
+  } catch (_error) {
+    return false
+  }
+}
+
+export async function checkVolumeExists(): Promise<boolean> {
+  try {
+    await execAsync(`docker volume inspect ${dockerConfig.volumeName}`)
+    return true
+  } catch (_error) {
+    return false
+  }
+}
+
 export async function startContainer(): Promise<string> {
   try {
     const { stdout } = await execAsync(
@@ -145,6 +174,47 @@ export async function startContainer(): Promise<string> {
   } catch (error) {
     throw new Error(
       `Failed to start container: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+}
+
+export interface DestroyOptions {
+  container?: boolean
+  volume?: boolean
+  image?: boolean
+}
+
+export async function destroyContainer(
+  options: DestroyOptions = {},
+): Promise<void> {
+  const { container = false, volume = false, image = false } = options
+
+  try {
+    // Remove container if requested and exists
+    if (container && (await checkContainerExists())) {
+      await execAsync(`docker rm -f ${dockerConfig.containerName}`)
+    }
+
+    // Remove volume if requested
+    if (volume) {
+      try {
+        await execAsync(`docker volume rm ${dockerConfig.volumeName}`)
+      } catch (_error) {
+        // Ignore error if volume doesn't exist
+      }
+    }
+
+    // Remove image if requested
+    if (image) {
+      try {
+        await execAsync(`docker rmi ${dockerConfig.imageName}`)
+      } catch (_error) {
+        // Ignore error if image doesn't exist
+      }
+    }
+  } catch (error) {
+    throw new Error(
+      `Failed to destroy resources: ${error instanceof Error ? error.message : String(error)}`,
     )
   }
 }

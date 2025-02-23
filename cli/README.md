@@ -100,6 +100,16 @@ Example input structure:
 }
 ```
 
+## Uninstalling
+
+It is recommended that you run the `destroy --all` command to remove all Docker containers, volumes, and images created by Kolo.
+
+```bash
+kolo destroy --all
+```
+
+After running the command, you can safely delete the Kolo binary.
+
 ## Development
 
 ### Technology Stack
