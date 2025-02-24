@@ -13,8 +13,17 @@ providers:
     model: gpt-4o-mini
 
 prompts:
-  question_prompt_header: >
-    I want you to act as a data extractor for fine-tuning purposes. Then generate a comprehensive list of questions that capture all key facts, concepts, details, and nuances from the text. Your goal is to create questions that cover every important aspect of the content so that, when answered, the resulting QA pairs will fully represent the material for model fine-tuning. Ensure each question is clear, specific, and focused on one distinct key point. Analyze the following material:
+  question_prompt_headers:
+    - 'Generate a list of questions that ask about certain details of the following content:'
+    - 'Generate a list of questions that ask to regurgitate specific parts of the following content:'
+    - 'Generate a list of questions that ask about the key concepts and ideas in the following content:'
+    - 'Generate a list of questions that ask about the functionality of the following content:'
+    - 'Generate a list of questions that ask about how the different sections of the following content relate to each other:'
+    - 'Generate a list of questions that ask about the flow and usage of the following content:'
+    - 'Generate a list of questions that ask about different ways the following content could be used:'
+    - 'Generate a list of questions that ask about edge cases inside the following content:'
+    - 'Generate a list of questions that recall the relationships between different parts of the following content:'
+    - 'Generate a list of questions that ask about the sequence of operations and how data flows through the following content:'
   question_prompt_footer: |
     Please generate the following list:
     1. <question 1>
@@ -25,8 +34,17 @@ prompts:
   group_question_prompt: '{files_content}'
   answer_prompt: |
     {question}
+    Show the relevant content if any, before answering the question.
 
 file_groups:
+  UninstallModel:
+    iterations: 10
+    files:
+      - uninstall_model.ps1
+  DeleteModel:
+    iterations: 10
+    files:
+      - delete_model.ps1
   TrainTorchTune:
     iterations: 30
     files:
@@ -39,14 +57,6 @@ file_groups:
       - build_image.ps1
       - dockerfile
       - supervisord.conf
-  UninstallModel:
-    iterations: 10
-    files:
-      - uninstall_model.ps1
-  DeleteModel:
-    iterations: 10
-    files:
-      - delete_model.ps1
   RunContainer:
     iterations: 10
     files:
@@ -147,3 +157,7 @@ file_groups:
     files:
       - dockerfile-amd
       - dockerfile
+  CopyTrainingData:
+    iterations: 10
+    files:
+      - copy_training_data.ps1

@@ -150,7 +150,7 @@ def process_file_group(
     group_config: Dict[str, Any],
     full_base_dir: Path,
     base_output_path: Path,
-    header_prompt: str,
+    question_prompt_headers: List[str],
     footer_prompt: str,
     default_individual_prompt: str,
     default_group_prompt: str,
@@ -162,6 +162,7 @@ def process_file_group(
 ) -> None:
     """
     Processes a group of files to generate questions and answers using LLM providers.
+    Selects a header prompt based on the iteration number extracted from the group name.
     """
     file_list: List[str] = group_config.get("files", [])
     group_prompts = group_config.get("prompts", {})
@@ -170,6 +171,14 @@ def process_file_group(
     individual_prompt_template = group_prompts.get("individual_question_prompt", default_individual_prompt)
     group_prompt_template = group_prompts.get("group_question_prompt", default_group_prompt)
     answer_prompt_template = group_prompts.get("answer_prompt", default_answer_prompt)
+
+    # --- Determine header prompt based on iteration ---
+    try:
+        iteration = int(group_name.split('_')[-1])
+        header_prompt = question_prompt_headers[(iteration - 1) % len(question_prompt_headers)]
+    except Exception as e:
+        logger.warning(f"Could not determine iteration for group {group_name}: {e}")
+        header_prompt = question_prompt_headers[0] if question_prompt_headers else ""
 
     # --- Randomize file order for question generation ---
     file_list_for_questions = file_list.copy()
@@ -324,7 +333,8 @@ def main() -> None:
 
     # Prompt templates.
     prompts_config = config.get("prompts", {})
-    header_prompt = prompts_config.get("question_prompt_header", "")
+    # Load the list of question prompt headers instead of a single header.
+    question_prompt_headers = prompts_config.get("question_prompt_headers", [])
     footer_prompt = prompts_config.get("question_prompt_footer", "")
     default_individual_prompt = prompts_config.get("individual_question_prompt", "")
     default_group_prompt = prompts_config.get("group_question_prompt", "{files_content}")
@@ -369,7 +379,7 @@ def main() -> None:
                 group_config=group_config,
                 full_base_dir=full_base_dir,
                 base_output_path=output_base_path,
-                header_prompt=header_prompt,
+                question_prompt_headers=question_prompt_headers,
                 footer_prompt=footer_prompt,
                 default_individual_prompt=default_individual_prompt,
                 default_group_prompt=default_group_prompt,

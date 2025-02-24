@@ -75,7 +75,7 @@ Define the API providers for generating both questions and answers. Each provide
 
 All prompts that control the instructions provided to the LLM during QA generation.
 
-- **`question_prompt_header`**: The main header prompt instructing the LLM on how to generate a list of questions.
+- **`question_prompt_headers`**: The list of question header prompts instructing the LLM on how to generate a list of questions. It will iterate through the list.
 - **`question_prompt_footer`**: Defines the expected output format for questions.
   NOTE: Changing the output format may break the conversion script.
 - **`individual_question_prompt`**: A prompt that is used for each file in a group. Typically includes a `{file_name}` placeholder to refer to the specific file.
