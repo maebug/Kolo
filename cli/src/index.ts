@@ -6,6 +6,7 @@ import { createDevCLIColorsCommand } from "./commands/dev/cli-colors.ts"
 import { createDockerfileCommand } from "./commands/docker-file.ts"
 import { createHealthcheckCommand } from "./commands/healthcheck.ts"
 import { createInitCommand } from "./commands/init.ts"
+import { createSshCommand } from "./commands/ssh.ts"
 import { createStartCommand } from "./commands/start.ts"
 import { createStopCommand } from "./commands/stop.ts"
 import { Command } from "commander"
@@ -23,7 +24,7 @@ program
       "Welcome to Kolo, a set of tools for fine-tuning AI models.",
     ),
   )
-  .version("0.0.9")
+  .version("0.0.10")
 
 program
   .addCommand(createConvertCommand())
@@ -31,6 +32,7 @@ program
   .addCommand(createDockerfileCommand())
   .addCommand(createHealthcheckCommand())
   .addCommand(createInitCommand())
+  .addCommand(createSshCommand())
   .addCommand(createStartCommand())
   .addCommand(createStopCommand())
 
