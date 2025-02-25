@@ -35,25 +35,40 @@ SHELL ["/opt/conda/bin/conda", "run", "-n", "kolo_env", "/bin/bash", "-c"]
 RUN conda config --set remote_read_timeout_secs 86400
 
 # Install torchtune
-RUN pip install torch torchvision torchao
-RUN pip install torchtune
+RUN pip install torch==2.6.0
+RUN pip install torchvision==0.21.0
+RUN pip install torchao==0.8.0
+RUN pip install torchtune==0.5.0
 
 # Create a Conda environment and install PyTorch with CUDA support and xformers
 RUN --mount=type=cache,target=/opt/conda/pkgs \
-    conda install -y pytorch-cuda=12.1 pytorch cudatoolkit xformers -c pytorch -c nvidia -c xformers && conda clean -afy
+    conda install -y \
+    pytorch-cuda=12.1 \
+    cudatoolkit=11.7.0 \
+    xformers=0.0.29.post3 \
+    -c pytorch -c nvidia -c xformers && \
+    conda clean -afy
 
-# Install unsloth and additional ML/utility packages.
+# Set a long timeout for pip commands.
 RUN pip config set global.timeout 86400
-RUN pip install numpy datasets
+
+# Install packages with exact version pins.
+RUN pip install numpy==2.2.3 datasets==3.3.2
+
+# Install unsloth from a specific commit (already frozen).
 RUN pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git@038e6d4c8d40207a87297ab3aaf787c19b1006d1"
-RUN pip install --no-deps trl==0.14.0 peft accelerate bitsandbytes
-RUN pip install transformers
 
-# Upgrade Xformers
-RUN pip install xformers --upgrade
+# Install additional ML/utility packages with version pins.
+RUN pip install --no-deps trl==0.14.0 peft==0.14.0 accelerate==1.4.0 bitsandbytes==0.45.3
 
-# Install OpenAI
-RUN pip install openai
+# Freeze transformers version.
+RUN pip install transformers==4.49.0
+
+# Upgrade Xformers to a specific version.
+RUN pip install xformers==0.0.29.post3
+
+# Install OpenAI with a fixed version.
+RUN pip install openai==1.64.0
 
 # Create Open-webui env
 RUN /opt/conda/bin/conda create -y --name openwebui_env python=3.11
