@@ -15,7 +15,8 @@ param (
     [string]$Quantization = "Q4_K_M", # Default quantization value
     [double]$WeightDecay,
     [switch]$UseCheckpoint,
-    [string]$HfToken
+    [string]$HfToken,
+    [switch]$FastTransfer
 )
 
 # Log received parameters
@@ -37,6 +38,7 @@ if ($Quantization) { Write-Host "Quantization: $Quantization" }
 if ($WeightDecay) { Write-Host "WeightDecay: $WeightDecay" }
 if ($UseCheckpoint) { Write-Host "UseCheckpoint: Enabled" } else { Write-Host "UseCheckpoint: Disabled" }
 if ($HfToken) { Write-Host "Hugging Face Token provided" } else { Write-Host "Hugging Face Token not provided" }
+if ($FastTransfer) { Write-Host "FastTransfer: Enabled (HF_HUB_ENABLE_HF_TRANSFER=1)" } else { Write-Host "FastTransfer: Disabled (HF_HUB_ENABLE_HF_TRANSFER=0)" }
 
 # Define the Docker container name
 $ContainerName = "kolo_container"
@@ -71,7 +73,10 @@ if ($BaseModel) {
         Write-Host "Error: Hugging Face token must be provided." -ForegroundColor Red
         exit 1
     }
-    $downloadCommand = "source /opt/conda/bin/activate kolo_env && tune download $BaseModel --ignore-patterns 'original/consolidated.00.pth' --hf-token '$HfToken'"
+
+    # Set HF_HUB_ENABLE_HF_TRANSFER based on FastTransfer parameter
+    $hfTransferValue = if ($FastTransfer) { "1" } else { "0" }
+    $downloadCommand = "export HF_HUB_ENABLE_HF_TRANSFER=$hfTransferValue && source /opt/conda/bin/activate kolo_env && tune download $BaseModel --ignore-patterns 'original/consolidated.00.pth' --hf-token '$HfToken'"
     Write-Host "Downloading BaseModel using command:" -ForegroundColor Yellow
     Write-Host $downloadCommand -ForegroundColor Yellow
 

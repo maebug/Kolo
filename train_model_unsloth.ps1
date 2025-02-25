@@ -2,6 +2,7 @@
 ###
 ### Usage:
 ### ./train_model_unsloth.ps1 -Epochs 3 -LearningRate 1e-4 -TrainData "data.jsonl" -BaseModel "unsloth/Llama-3.2-1B-Instruct-bnb-4bit" -ChatTemplate "llama-3.1" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -SaveSteps 500 -SaveTotalLimit 5 -Seed 1337 -SchedulerType "linear" -BatchSize 2 -OutputDir "GodOutput" -Quantization "Q4_K_M" -WeightDecay 0
+### When -FastTransfer is used, HF_HUB_ENABLE_HF_TRANSFER=1 will be set, forcing HF to use the faster but much less reliable Rust downloader (recommended only for 1Gbps+ connections)
 param (
     [int]$Epochs,
     [double]$LearningRate,
@@ -21,7 +22,8 @@ param (
     [string]$OutputDir,
     [string]$Quantization,
     [double]$WeightDecay,
-    [switch]$UseCheckpoint
+    [switch]$UseCheckpoint,
+    [switch]$FastTransfer
 )
 
 Write-Host "Parameters passed to the script:" -ForegroundColor Cyan
@@ -45,7 +47,7 @@ if ($OutputDir) { Write-Host "OutputDir: $OutputDir" }
 if ($Quantization) { Write-Host "Quantization: $Quantization" }
 if ($WeightDecay) { Write-Host "WeightDecay: $WeightDecay" }
 if ($UseCheckpoint) { Write-Host "UseCheckpoint: Enabled" } else { Write-Host "UseCheckpoint: Disabled" }
-
+if ($FastTransfer) { Write-Host "FastTransfer: Enabled (HF_HUB_ENABLE_HF_TRANSFER=1)" } else { Write-Host "FastTransfer: Disabled (HF_HUB_ENABLE_HF_TRANSFER=0)" }
 # Define container name
 $ContainerName = "kolo_container"
 
@@ -58,7 +60,8 @@ if (-Not $containerRunning) {
 }
 
 # Build command string dynamically
-$command = "source /opt/conda/bin/activate kolo_env && python /app/train.py"
+$hfTransferValue = if ($FastTransfer) { "1" } else { "0" }
+$command = "export HF_HUB_ENABLE_HF_TRANSFER=$hfTransferValue && source /opt/conda/bin/activate kolo_env && python /app/train.py"
 
 if ($Epochs) { $command += " --epochs $Epochs" }
 if ($LearningRate) { $command += " --learning_rate $LearningRate" }
