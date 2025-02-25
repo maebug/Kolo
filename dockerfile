@@ -40,7 +40,7 @@ RUN pip install torchtune==0.5.0
 
 # Create a Conda environment and install PyTorch with CUDA support and xformers
 RUN conda install -y pytorch-cuda=12.1 cudatoolkit=11.7.0 -c pytorch -c nvidia && \
-    pip install xformers==0.0.29.post1 --index-url https://download.pytorch.org/whl/cu121 && \
+    pip install xformers==0.0.29.post3 --index-url https://download.pytorch.org/whl/cu124 && \
     conda clean -afy
 
 # Set a long timeout for pip commands.
@@ -57,9 +57,6 @@ RUN pip install --no-deps trl==0.14.0 peft==0.14.0 accelerate==1.4.0 bitsandbyte
 
 # Freeze transformers version.
 RUN pip install transformers==4.49.0
-
-# Upgrade Xformers to a specific version.
-RUN pip install xformers==0.0.29.post1 --index-url https://download.pytorch.org/whl/cu121
 
 # Install OpenAI with a fixed version.
 RUN pip install openai==1.64.0
