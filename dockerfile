@@ -46,7 +46,7 @@ RUN --mount=type=cache,target=/opt/conda/pkgs \
 RUN pip config set global.timeout 86400
 RUN pip install numpy datasets
 RUN pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git@038e6d4c8d40207a87297ab3aaf787c19b1006d1"
-RUN pip install --no-deps trl peft accelerate bitsandbytes
+RUN pip install --no-deps trl==0.14.0 peft accelerate bitsandbytes
 RUN pip install transformers
 
 # Upgrade Xformers
