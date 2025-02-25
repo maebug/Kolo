@@ -5,12 +5,10 @@ RUN apt-get update && \
     apt-get install -y openssh-server sudo build-essential curl git wget vim && \
     rm -rf /var/lib/apt/lists/*
 
-# Add NodeSource repository for Node.js v18.x
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-
-# Install Node.js (v18.x) and npm from NodeSource
-RUN apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
+# Download and install Node.js v18.20.6 (with npm v10.8.2)
+RUN curl -fsSL https://deb.nodesource.com/node_18.x/pool/main/n/nodejs/nodejs_18.20.6-1nodesource1_amd64.deb -o nodejs.deb && \
+    dpkg -i nodejs.deb && \
+    rm -f nodejs.deb /var/lib/apt/lists/*
 
 # Create the SSH daemon run directory.
 RUN mkdir /var/run/sshd
@@ -38,7 +36,7 @@ RUN conda config --set remote_read_timeout_secs 86400
 RUN pip install torch==2.6.0
 RUN pip install torchvision==0.21.0
 RUN pip install torchao==0.8.0
-RUN pip install torchtune==0.5.0
+RUN pip install torchtune==0.6.0.dev20250224+cpu
 
 # Create a Conda environment and install PyTorch with CUDA support and xformers
 RUN --mount=type=cache,target=/opt/conda/pkgs \
@@ -82,7 +80,7 @@ RUN pip install git+https://github.com/open-webui/open-webui.git@b72150c88195572
 SHELL ["/bin/bash", "-c"]
 
 # Install Ollama.
-RUN curl -fsSL https://ollama.ai/install.sh | sh
+RUN curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=0.5.12 sh
 
 # Set the working directory (optional).
 WORKDIR /app
@@ -112,8 +110,10 @@ RUN apt-get update && apt-get install -y cmake && apt-get clean
 
 RUN git clone https://github.com/ggerganov/llama.cpp && \
     cd llama.cpp && \
+    git checkout a82c9e7c23ef6db48cebfa194dc9cebbc4ac3552 && \
     cmake -B build && \
     cmake --build build --config Release
+
 
 RUN mv llama.cpp/build/bin/llama-quantize llama.cpp/
 
