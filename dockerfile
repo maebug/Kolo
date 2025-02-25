@@ -36,7 +36,7 @@ RUN conda config --set remote_read_timeout_secs 86400
 RUN pip install torch==2.6.0
 RUN pip install torchvision==0.21.0
 RUN pip install torchao==0.8.0
-RUN pip install torchtune==0.6.0.dev20250224+cpu
+RUN pip install torchtune==0.5.0
 
 # Create a Conda environment and install PyTorch with CUDA support and xformers
 RUN --mount=type=cache,target=/opt/conda/pkgs \
