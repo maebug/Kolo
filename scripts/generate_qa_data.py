@@ -6,6 +6,7 @@ import requests
 import hashlib
 import logging
 import random
+import time
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -34,39 +35,59 @@ def call_api(
 ) -> Optional[str]:
     """
     Calls the appropriate API (OpenAI or Ollama) using the selected model and prompt.
+    Implements an exponential backoff strategy for handling transient failures.
     """
+    max_retries = 5
+    backoff_factor = 1  # Base backoff time in seconds
+
     if provider.lower() == "openai":
         if client is None:
             logger.error("OpenAI client is not initialized.")
             return None
-        try:
-            response = client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            logger.error(f"OpenAI API error: {e}")
-            return None
+
+        attempt = 0
+        while attempt <= max_retries:
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                logger.error(f"OpenAI API error on attempt {attempt+1}/{max_retries}: {e}")
+                if attempt == max_retries:
+                    return None
+                sleep_time = backoff_factor * (2 ** attempt) + random.uniform(0, 1)
+                logger.info(f"Retrying OpenAI API call in {sleep_time:.2f} seconds...")
+                time.sleep(sleep_time)
+                attempt += 1
 
     elif provider.lower() == "ollama":
         if not global_ollama_url:
             logger.error("Global Ollama URL is not provided.")
             return None
+
         payload = {
             "model": model,
             "prompt": prompt,
             "stream": False,
             "options": {}
         }
-        try:
-            response = requests.post(global_ollama_url, json=payload)
-            response.raise_for_status()
-            result = response.json()
-            return result.get("response", "").strip()
-        except Exception as e:
-            logger.error(f"Ollama API error: {e}")
-            return None
+        attempt = 0
+        while attempt <= max_retries:
+            try:
+                response = requests.post(global_ollama_url, json=payload)
+                response.raise_for_status()
+                result = response.json()
+                return result.get("response", "").strip()
+            except Exception as e:
+                logger.error(f"Ollama API error on attempt {attempt+1}/{max_retries}: {e}")
+                if attempt == max_retries:
+                    return None
+                sleep_time = backoff_factor * (2 ** attempt) + random.uniform(0, 1)
+                logger.info(f"Retrying Ollama API call in {sleep_time:.2f} seconds...")
+                time.sleep(sleep_time)
+                attempt += 1
 
     else:
         logger.error("Unknown provider specified.")
@@ -158,7 +179,8 @@ def process_file_group(
     question_provider_config: Dict[str, Any],
     answer_provider_config: Dict[str, Any],
     global_ollama_url: Optional[str],
-    openai_client: Optional[Any] = None
+    openai_client: Optional[Any] = None,
+    answer_workers: int = 1  # New parameter for answer generation concurrency.
 ) -> None:
     """
     Processes a group of files to generate questions and answers using LLM providers.
@@ -302,8 +324,8 @@ def process_file_group(
         write_text_to_file(meta_file_path, current_hash)
         logger.info(f"[Group: {group_name}] Saved answer for question {idx} -> {answer_file_path}")
 
-    # Process each question concurrently.
-    with ThreadPoolExecutor(max_workers=1) as executor:
+    # Use a ThreadPoolExecutor for answer generation with configurable workers.
+    with ThreadPoolExecutor(max_workers=answer_workers) as executor:
         futures = [
             executor.submit(process_question, idx, question)
             for idx, question in enumerate(questions, start=1)
@@ -315,6 +337,8 @@ def process_file_group(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate QA data for LLM fine-tuning.")
     parser.add_argument("--config", default="generate_qa_config.yaml", help="Path to configuration YAML file")
+    parser.add_argument("--group-workers", type=int, default=32, help="Max workers for processing file groups")
+    parser.add_argument("--answer-workers", type=int, default=1, help="Max workers for answer generation")
     args = parser.parse_args()
 
     config_path = Path(args.config)
@@ -375,8 +399,8 @@ def main() -> None:
     total_groups = len(allowed_file_groups)
     logger.info(f"Starting processing of {total_groups} file groups.")
 
-    # Process each file group concurrently.
-    with ThreadPoolExecutor(max_workers=32) as executor:  # Adjust max_workers based on your system.
+    # Process each file group concurrently using the provided group_workers value.
+    with ThreadPoolExecutor(max_workers=args.group_workers) as executor:
         futures = [
             executor.submit(
                 process_file_group,
@@ -392,7 +416,8 @@ def main() -> None:
                 question_provider_config=question_provider_config,
                 answer_provider_config=answer_provider_config,
                 global_ollama_url=global_ollama_url,
-                openai_client=openai_client
+                openai_client=openai_client,
+                answer_workers=args.answer_workers
             )
             for group_name, group_config in allowed_file_groups.items()
         ]
