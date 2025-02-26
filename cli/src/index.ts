@@ -6,6 +6,8 @@ import { createDevCLIColorsCommand } from "./commands/dev/cli-colors.ts"
 import { createDockerfileCommand } from "./commands/docker-file.ts"
 import { createHealthcheckCommand } from "./commands/healthcheck.ts"
 import { createInitCommand } from "./commands/init.ts"
+import { createModelAddCommand } from "./commands/model/add.ts"
+import { createModelRemoveCommand } from "./commands/model/remove.ts"
 import { createOllamaCommand } from "./commands/ollama.ts"
 import { createSshCommand } from "./commands/ssh.ts"
 import { createStartCommand } from "./commands/start.ts"
@@ -25,7 +27,7 @@ program
       "Welcome to Kolo, a set of tools for fine-tuning AI models.",
     ),
   )
-  .version("0.0.10")
+  .version("0.0.11")
   .enablePositionalOptions()
 
 program
@@ -34,6 +36,8 @@ program
   .addCommand(createDockerfileCommand())
   .addCommand(createHealthcheckCommand())
   .addCommand(createInitCommand())
+  .addCommand(createModelAddCommand())
+  .addCommand(createModelRemoveCommand())
   .addCommand(createOllamaCommand())
   .addCommand(createSshCommand())
   .addCommand(createStartCommand())
