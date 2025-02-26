@@ -6,6 +6,7 @@ import { createDevCLIColorsCommand } from "./commands/dev/cli-colors.ts"
 import { createDockerfileCommand } from "./commands/docker-file.ts"
 import { createHealthcheckCommand } from "./commands/healthcheck.ts"
 import { createInitCommand } from "./commands/init.ts"
+import { createOllamaCommand } from "./commands/ollama.ts"
 import { createSshCommand } from "./commands/ssh.ts"
 import { createStartCommand } from "./commands/start.ts"
 import { createStopCommand } from "./commands/stop.ts"
@@ -25,6 +26,7 @@ program
     ),
   )
   .version("0.0.10")
+  .enablePositionalOptions()
 
 program
   .addCommand(createConvertCommand())
@@ -32,6 +34,7 @@ program
   .addCommand(createDockerfileCommand())
   .addCommand(createHealthcheckCommand())
   .addCommand(createInitCommand())
+  .addCommand(createOllamaCommand())
   .addCommand(createSshCommand())
   .addCommand(createStartCommand())
   .addCommand(createStopCommand())
