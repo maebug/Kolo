@@ -7,6 +7,7 @@ import { createDockerfileCommand } from "./commands/docker-file.ts"
 import { createHealthcheckCommand } from "./commands/healthcheck.ts"
 import { createInitCommand } from "./commands/init.ts"
 import { createModelAddCommand } from "./commands/model/add.ts"
+import { createModelListCommand } from "./commands/model/list.ts"
 import { createModelRemoveCommand } from "./commands/model/remove.ts"
 import { createOllamaCommand } from "./commands/ollama.ts"
 import { createSshCommand } from "./commands/ssh.ts"
@@ -27,7 +28,7 @@ program
       "Welcome to Kolo, a set of tools for fine-tuning AI models.",
     ),
   )
-  .version("0.0.11")
+  .version("0.0.12")
   .enablePositionalOptions()
 
 program
@@ -37,6 +38,7 @@ program
   .addCommand(createHealthcheckCommand())
   .addCommand(createInitCommand())
   .addCommand(createModelAddCommand())
+  .addCommand(createModelListCommand())
   .addCommand(createModelRemoveCommand())
   .addCommand(createOllamaCommand())
   .addCommand(createSshCommand())

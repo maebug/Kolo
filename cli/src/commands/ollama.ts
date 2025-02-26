@@ -23,7 +23,7 @@ export function createOllamaCommand() {
           const { spawn } = await import("node:child_process")
           const dockerProcess = spawn(
             "docker",
-            ["exec", "-i", dockerConfig.containerName, "ollama", ...args],
+            ["exec", "-it", dockerConfig.containerName, "ollama", ...args],
             {
               stdio: "inherit",
             },
