@@ -1,34 +1,3 @@
-<#
-.SYNOPSIS
-    Executes a torchtune LoRA/QLoRA finetuning run inside a Docker container,
-    merges the resulting model using merge_lora.py, converts the merged model to gguf format,
-    quantizes the gguf file, and then creates two model files in the same directory as the ggufs.
-    
-    Additionally, this script now downloads the specified BaseModel using a Hugging Face token,
-    and selects the appropriate configuration based on a mapping from BaseModel to configuration string.
-
-.DESCRIPTION
-    This script builds and runs a torchtune command for fine-tuning using a recipe.
-    It first downloads the BaseModel using:
-    
-        tune download <BaseModel> --ignore-patterns "original/consolidated.00.pth" --hf-token "<HfToken>"
-    
-    Then, it selects the configuration for the run based on the BaseModel mapping. For example, if
-    BaseModel is "Meta-llama/Llama-3.2-1B-Instruct", it uses the configuration "llama3_1/8B_qlora_single_device".
-    
-    After the finetuning completes, it identifies the epoch folder with the largest index,
-    runs a merge script (/app/merge_lora.py), converts the merged model to gguf format,
-    quantizes the gguf file, and creates model files accordingly.
-
-.PARAMETER BaseModel
-    The base model to be used. Default: "Meta-llama/Llama-3.2-1B-Instruct"
-
-.PARAMETER HfToken
-    Hugging Face Token used for downloading the BaseModel.
-
-... [other parameter help as in your original script] ...
-#>
-
 param (
     [int]$Epochs,
     [double]$LearningRate,
@@ -46,7 +15,8 @@ param (
     [string]$Quantization = "Q4_K_M", # Default quantization value
     [double]$WeightDecay,
     [switch]$UseCheckpoint,
-    [string]$HfToken
+    [string]$HfToken,
+    [switch]$FastTransfer
 )
 
 # Log received parameters
@@ -68,6 +38,7 @@ if ($Quantization) { Write-Host "Quantization: $Quantization" }
 if ($WeightDecay) { Write-Host "WeightDecay: $WeightDecay" }
 if ($UseCheckpoint) { Write-Host "UseCheckpoint: Enabled" } else { Write-Host "UseCheckpoint: Disabled" }
 if ($HfToken) { Write-Host "Hugging Face Token provided" } else { Write-Host "Hugging Face Token not provided" }
+if ($FastTransfer) { Write-Host "FastTransfer: Enabled (HF_HUB_ENABLE_HF_TRANSFER=1)" } else { Write-Host "FastTransfer: Disabled (HF_HUB_ENABLE_HF_TRANSFER=0)" }
 
 # Define the Docker container name
 $ContainerName = "kolo_container"
@@ -102,7 +73,10 @@ if ($BaseModel) {
         Write-Host "Error: Hugging Face token must be provided." -ForegroundColor Red
         exit 1
     }
-    $downloadCommand = "source /opt/conda/bin/activate kolo_env && tune download $BaseModel --ignore-patterns 'original/consolidated.00.pth' --hf-token '$HfToken'"
+
+    # Set HF_HUB_ENABLE_HF_TRANSFER based on FastTransfer parameter
+    $hfTransferValue = if ($FastTransfer) { "1" } else { "0" }
+    $downloadCommand = "export HF_HUB_ENABLE_HF_TRANSFER=$hfTransferValue && source /opt/conda/bin/activate kolo_env && tune download $BaseModel --ignore-patterns 'original/consolidated.00.pth' --hf-token '$HfToken'"
     Write-Host "Downloading BaseModel using command:" -ForegroundColor Yellow
     Write-Host $downloadCommand -ForegroundColor Yellow
 
@@ -125,17 +99,6 @@ if ($BaseModel) {
 # --- Begin torchtune run ---
 # Build the base torchtune command string using the configuration from the mapping.
 $command = "source /opt/conda/bin/activate kolo_env && tune run lora_finetune_single_device --config $configValue"
-
-# Fixed command options
-$command += " dataset.packed=False"
-$command += " compile=True"
-$command += " loss=torchtune.modules.loss.CEWithChunkedOutputLoss"
-$command += " enable_activation_checkpointing=True"
-$command += " optimizer_in_bwd=False"
-$command += " enable_activation_offloading=True"
-$command += " optimizer=torch.optim.AdamW"
-$command += " tokenizer.max_seq_len=2048"
-$command += " gradient_accumulation_steps=1"
 
 # Dynamic parameters with defaults
 if ($Epochs) {

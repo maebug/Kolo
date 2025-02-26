@@ -1,9 +1,6 @@
-# Usage Examples:
-# Using the torchtune data source:
-#   .\run_model.ps1 "my_model_name" -OutputDir "outputs" -Quantization "Q4_K_M" -Tool "torchtune"
-#
-# Using the unsloth data source:
-#   .\run_model.ps1 "my_model_name" -OutputDir "custom_outputs" -Quantization "Q4_K_M" -Tool "unsloth"
+# Usage Example:
+# ./install_model.ps1 "God" -Tool "unsloth" -OutputDir "GodOutput" -Quantization "Q4_K_M"
+# ./install_model.ps1 "God" -Tool "torchtune" -OutputDir "GodOutput" -Quantization "Q4_K_M"
 
 param (
     [Parameter(Mandatory = $true, Position = 0)]

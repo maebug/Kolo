@@ -1,13 +1,13 @@
 # Kolo
 
-**Kolo** is a lightweight tool designed for **fast and efficient fine-tuning and testing of Large Language Models (LLMs)** on your local machine. It leverages cutting-edge tools to simplify the fine-tuning process, making it as quick and seamless as possible.
+**Kolo** is a lightweight tool designed for **fast and efficient data generation, fine-tuning and testing of Large Language Models (LLMs)** on your local machine. It leverages cutting-edge tools to simplify the fine-tuning and data generation process, making it as quick and seamless as possible.
 
 ## 🚀 Features
 
-- 🏗 **Lightweight**: Minimal dependencies, optimized for speed.
 - ⚡ **Runs Locally**: No need for cloud-based services; fine-tune models on your own machine.
-- 🛠 **Easy Setup**: Simple installation and execution with Docker.
-- 🔌 **Support for Popular Frameworks**: Integrates with major LLM toolkits.
+- 🛠 **Easy Setup**: Simple installation of all dependencies with Docker. No more wasting time setting up your own LLM development environment we already did it for you!
+- 📁 **Generate Training Data**: Generate synthetic QA training data using your text files quick and easy!
+- 🔌 **Support for Popular Frameworks**: Integrates with major LLM toolkits such as Unsloth, Torchtune, Llama.cpp, Ollama and Open WebUI.
 
 ## 🛠 Tools Used
 
@@ -20,11 +20,14 @@ Kolo is built using a powerful stack of LLM tools:
 - [Docker](https://www.docker.com/) – Containerized environment ensuring consistent, scalable deployments.
 - [Open WebUI](https://github.com/open-webui/open-webui) – Intuitive self-hosted web interface for LLM management.
 
-## System Requirements
+## Recommended System Requirements
 
-- Windows 10 OS or higher. Might work on Linux & Mac (Untested)
-- Nvidia GPU with CUDA 12.1 capability and 8GB+ of VRAM
-- 16GB+ System RAM
+- Operating System: Windows 10 or later, or Linux
+- Graphics Card: Nvidia GPU with CUDA 12.1 support and at least 8GB of VRAM
+- AMD GPU Users: Linux is required; Windows WSL2 does not support `ROCM`
+- Memory: 16GB or more of system RAM
+
+May work on other systems, your results may vary. Let us know!
 
 ## Issues or Feedback
 
@@ -34,17 +37,37 @@ Join our [Discord group](https://discord.gg/Ewe4hf5x3n)!
 
 ### 1️⃣ Install Dependencies
 
+#### 🖥️ Windows Requirements
+
 Ensure [HyperV](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/get-started/install-hyper-v?pivots=windows) is installed.
 
 Ensure [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) is installed; alternative [guide](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-containers).
 
 Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed.
 
+#### 🐧 Linux Requirements
+
+Ensure [Docker Desktop](https://docs.docker.com/get-docker/) is installed. Or [Docker CLI](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
+
+#### AMD Requirements
+
+Install [ROCM](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/install/quick-start.html) on Linux.
+
 ### 2️⃣ Build the Image
+
+To build the image, run:
 
 ```bash
 ./build_image.ps1
 ```
+
+If you are using an AMD GPU, use the following command instead:
+
+```bash
+./build_image_amd.ps1
+```
+
+Note: Only Torchtune supports AMD GPUs for fine-tuning.
 
 ### 3️⃣ Run the Container
 
@@ -52,6 +75,12 @@ If running for first time:
 
 ```bash
 ./create_and_run_container.ps1
+```
+
+If you are using an AMD GPU, use the following command instead:
+
+```bash
+./create_and_run_container_amd.ps1
 ```
 
 For subsequent runs:
@@ -65,6 +94,8 @@ For subsequent runs:
 ```bash
 ./copy_training_data.ps1 -f examples/God.jsonl -d data.jsonl
 ```
+
+Don't have training data? Check out our synthetic QA [data generation guide](GenerateTrainingDataGuide.md)!
 
 ### 5️⃣ Train Model
 
@@ -88,10 +119,22 @@ Requirements: Create a [Hugging Face](https://huggingface.co/) account and creat
 ./train_model_torchtune.ps1 -OutputDir "GodOutput" -Quantization "Q4_K_M" -TrainData "data.json" -HfToken "your_token"
 ```
 
+If you are using an AMD GPU, use the following command instead:
+
+```bash
+./train_model_torchtune_amd.ps1 -OutputDir "GodOutput" -Quantization "Q4_K_M" -TrainData "data.json" -HfToken "your_token"
+```
+
 All available parameters
 
 ```bash
 ./train_model_torchtune.ps1 -HfToken "your_token" -Epochs 3 -LearningRate 1e-4 -TrainData "data.json" -BaseModel "Meta-llama/Llama-3.2-1B-Instruct" -LoraRank 16 -LoraAlpha 16 -LoraDropout 0 -MaxSeqLength 1024 -WarmupSteps 10 -Seed 1337 -SchedulerType "cosine" -BatchSize 2 -OutputDir "GodOutput" -Quantization "Q4_K_M" -WeightDecay 0
+```
+
+Note: If re-training with the same OutputDir, delete the existing directory first:
+
+```bash
+./delete_model.ps1 "GodOutput" -Tool "unsloth|torchtune"
 ```
 
 For more information about fine tuning parameters please refer to the [Fine Tune Training Guide](https://github.com/MaxHastings/Kolo/blob/main/FineTuningGuide.md).
@@ -116,21 +159,25 @@ Open your browser and navigate to [localhost:8080](http://localhost:8080/)
 
 ### Other Commands
 
+Uninstalls the Model from Ollama.
+
 ```bash
 ./uninstall_model.ps1 "God"
 ```
+
+Lists all models installed on Ollama and the training model directories for both torchtune and unsloth.
 
 ```bash
 ./list_models.ps1
 ```
 
-```bash
-./delete_model.ps1 "GodOutput" -Tool "unsloth|torchtune"
-```
+Copies all the scripts and files inside `/scripts` into Kolo at `/app/`
 
 ```bash
 ./copy_scripts.ps1
 ```
+
+Copies all the torchtune config files inside `/torchtune` into Kolo at `/app/torchtune`
 
 ```bash
 ./copy_configs.ps1

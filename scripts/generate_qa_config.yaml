@@ -1,0 +1,163 @@
+global:
+  base_dir: qa_generation_input
+  output_dir: qa_generation_output
+  output_base_path: /var/kolo_data
+  ollama_url: http://localhost:11434/api/generate
+
+providers:
+  question:
+    provider: openai # Use "ollama" or "openai"
+    model: gpt-4o-mini
+  answer:
+    provider: openai # Use "ollama" or "openai"
+    model: gpt-4o-mini
+
+prompts:
+  question_prompt_headers:
+    - 'Generate a list of questions that ask about certain details of the following content:'
+    - 'Generate a list of questions that ask to regurgitate specific parts of the following content:'
+    - 'Generate a list of questions that ask about the key concepts and ideas in the following content:'
+    - 'Generate a list of questions that ask about the functionality of the following content:'
+    - 'Generate a list of questions that ask about how the different sections of the following content relate to each other:'
+    - 'Generate a list of questions that ask about the flow and usage of the following content:'
+    - 'Generate a list of questions that ask about different ways the following content could be used:'
+    - 'Generate a list of questions that ask about edge cases inside the following content:'
+    - 'Generate a list of questions that recall the relationships between different parts of the following content:'
+    - 'Generate a list of questions that ask about the sequence of operations and how data flows through the following content:'
+  question_prompt_footer: |
+    Please generate the following list:
+    1. <question 1>
+    2. <question 2>
+    3. <question 3>
+    etc.
+  individual_question_prompt: 'File contents for : "{file_name}"'
+  group_question_prompt: '{files_content}'
+  answer_prompt: |
+    {question}
+    Show the relevant content if any, before answering the question.
+
+file_groups:
+  UninstallModel:
+    iterations: 10
+    files:
+      - uninstall_model.ps1
+  DeleteModel:
+    iterations: 10
+    files:
+      - delete_model.ps1
+  TrainTorchTune:
+    iterations: 30
+    files:
+      - train_model_torchtune.ps1
+      - merge_lora.py
+      - convert_jsonl_to_json.py
+  BuildImage:
+    iterations: 30
+    files:
+      - build_image.ps1
+      - dockerfile
+      - supervisord.conf
+  RunContainer:
+    iterations: 10
+    files:
+      - create_and_run_container.ps1
+      - run_container.ps1
+  TrainUnsloth:
+    iterations: 30
+    files:
+      - train_model_unsloth.ps1
+      - train.py
+  TrainingPSCommands:
+    iterations: 30
+    files:
+      - train_model_torchtune.ps1
+      - train_model_unsloth.ps1
+  InstallModel:
+    iterations: 10
+    files:
+      - install_model.ps1
+  ListModels:
+    iterations: 10
+    files:
+      - list_models.ps1
+  CopyScripts:
+    iterations: 10
+    files:
+      - copy_scripts.ps1
+  CopyConfigs:
+    iterations: 10
+    files:
+      - copy_configs.ps1
+  ConnectSSH:
+    iterations: 10
+    files:
+      - connect.ps1
+  FineTuningGuide:
+    iterations: 30
+    files:
+      - FineTuningGuide.md
+  README:
+    iterations: 30
+    files:
+      - README.md
+  GenerateQAData:
+    iterations: 30
+    files:
+      - generate_qa_data.ps1
+      - generate_qa_data.py
+      - generate_qa_config.yaml
+  ConvertQAData:
+    iterations: 15
+    files:
+      - parse_qa_data.py
+      - convert_qa_output.ps1
+  GenerateTrainingDataGuide:
+    iterations: 30
+    files:
+      - GenerateTrainingDataGuide.md
+  CopyQAInputGeneration:
+    iterations: 10
+    files:
+      - copy_qa_input_generation.ps1
+  GenerateQADataPy:
+    iterations: 30
+    files:
+      - generate_qa_data.py
+  GenerateQADataPs1:
+    iterations: 10
+    files:
+      - generate_qa_data.ps1
+  GenerateQADataYaml:
+    iterations: 10
+    files:
+      - generate_qa_config.yaml
+  DeleteQAGeneration:
+    iterations: 10
+    files:
+      - delete_qa_generation_output.ps1
+  CreateAndrunContainerAMD:
+    iterations: 10
+    files:
+      - create_and_run_container_amd.ps1
+  BuildImageAMD:
+    iterations: 10
+    files:
+      - build_image_amd.ps1
+  TrainModelTorchtuneAMDBoth:
+    iterations: 10
+    files:
+      - train_model_torchtune_amd.ps1
+      - train_model_torchtune.ps1
+  TrainModelTorchtuneAMD:
+    iterations: 5
+    files:
+      - train_model_torchtune_amd.ps1
+  DockerFileAMD:
+    iterations: 10
+    files:
+      - dockerfile-amd
+      - dockerfile
+  CopyTrainingData:
+    iterations: 10
+    files:
+      - copy_training_data.ps1

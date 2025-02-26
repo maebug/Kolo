@@ -8,7 +8,7 @@ Description:
         --train_data         Path to the training data file
         --base_model         Base model path or identifier
         --chat_template      Chat template identifier for tokenization
-        --lora_rank                 LoRA rank parameter
+        --lora_rank          LoRA rank parameter
         --lora_alpha         LoRA alpha parameter
         --lora_dropout       LoRA dropout probability
         --max_seq_length     Maximum sequence length
@@ -25,7 +25,6 @@ Description:
 """
 
 import argparse
-import os
 
 from unsloth import FastLanguageModel, is_bfloat16_supported
 from unsloth.chat_templates import get_chat_template
