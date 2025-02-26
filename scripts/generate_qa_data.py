@@ -337,8 +337,8 @@ def process_file_group(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate QA data for LLM fine-tuning.")
     parser.add_argument("--config", default="generate_qa_config.yaml", help="Path to configuration YAML file")
-    parser.add_argument("--group-workers", type=int, default=32, help="Max workers for processing file groups")
-    parser.add_argument("--answer-workers", type=int, default=1, help="Max workers for answer generation")
+    parser.add_argument("--group-workers", type=int, default=8, help="Max workers for processing file groups")
+    parser.add_argument("--answer-workers", type=int, default=4, help="Max workers for answer generation")
     args = parser.parse_args()
 
     config_path = Path(args.config)

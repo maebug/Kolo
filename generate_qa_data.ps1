@@ -6,8 +6,8 @@
     sets the API key as an environment variable inside the container, and passes the worker parameters
     to the Python script.
 .EXAMPLE
-    .\generate_qa_data.ps1 -OpenAI_API_KEY "your_api_key_here" -GroupWorkers 32 -AnswerWorkers 1
-    .\generate_qa_data.ps1 -GroupWorkers 16 -AnswerWorkers 4
+    .\generate_qa_data.ps1 -OpenAI_API_KEY "your_api_key_here" -GroupWorkers 8 -AnswerWorkers 4
+    .\generate_qa_data.ps1 -GroupWorkers 8 -AnswerWorkers 4
 #>
 
 [CmdletBinding()]
@@ -15,11 +15,11 @@ param(
     [Parameter(Mandatory = $false, HelpMessage = "Provide your OpenAI API Key (optional).")]
     [string]$OpenAI_API_KEY,
     
-    [Parameter(Mandatory = $false, HelpMessage = "Max workers for processing file groups (default: 32).")]
-    [int]$GroupWorkers = 32,
+    [Parameter(Mandatory = $false, HelpMessage = "Max workers for processing file groups (default: 8).")]
+    [int]$GroupWorkers = 8,
     
-    [Parameter(Mandatory = $false, HelpMessage = "Max workers for answer generation (default: 1).")]
-    [int]$AnswerWorkers = 1
+    [Parameter(Mandatory = $false, HelpMessage = "Max workers for answer generation (default: 4).")]
+    [int]$AnswerWorkers = 4
 )
 
 # Define the container name
