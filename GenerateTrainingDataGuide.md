@@ -30,6 +30,12 @@ The **Kolo** project uses the following scripts and configuration file to genera
    ./generate_qa_data.ps1 -OPENAI_API_KEY "your key"
    ```
 
+   Multi-threaded parameters
+
+   ```bash
+   ./generate_qa_data.ps1 -OPENAI_API_KEY "your key" -GroupWorkers 8 -AnswerWorkers 4
+   ```
+
 1. After generating the QA prompts, this command converts the question and answer text files inside  
    `/var/kolo_data/qa_generation_output` into training data: `data.jsonl` and `data.json` in `/app/`.
 
@@ -76,7 +82,7 @@ Define the API providers for generating both questions and answers. Each provide
 All prompts that control the instructions provided to the LLM during QA generation.
 
 - **`question_prompt_headers`**: The list of question header prompts instructing the LLM on how to generate a list of questions. It will iterate through the list.
-- **`question_prompt_footer`**: Defines the expected output format for questions.
+- **`question_prompt_footer`**: Defines the expected output format for questions. `{file_references}` for a list of the file names in the file group. If you want to instruct the LLM to reference them for each question.
   NOTE: Changing the output format may break the conversion script.
 - **`individual_question_prompt`**: A prompt that is used for each file in a group. Typically includes a `{file_name}` placeholder to refer to the specific file.
 - **`group_question_prompt`**: A prompt that includes the `{files_content}` variable. You can place additional information around the file content if needed.
