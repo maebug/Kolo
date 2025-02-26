@@ -336,3 +336,32 @@ export async function checkServicesHealth(
     }),
   )
 }
+
+export interface DockerContainerCheckResult {
+  dockerRunning: boolean
+  containerExists: boolean
+  dockerVersion?: string
+}
+
+export async function checkDockerAndContainer(): Promise<DockerContainerCheckResult> {
+  // First check if Docker is available
+  const dockerStatus = await checkDockerAvailability()
+
+  // If Docker isn't running, return early
+  if (!dockerStatus.available) {
+    return {
+      dockerRunning: false,
+      containerExists: false,
+      dockerVersion: undefined,
+    }
+  }
+
+  // If Docker is available, check for the container
+  const containerExists = await checkContainerExists()
+
+  return {
+    dockerRunning: true,
+    containerExists,
+    dockerVersion: dockerStatus.version,
+  }
+}
