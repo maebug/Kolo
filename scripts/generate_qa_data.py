@@ -151,7 +151,7 @@ def process_file_group(
     full_base_dir: Path,
     base_output_path: Path,
     question_prompt_headers: List[str],
-    footer_prompt: str,
+    global_footer_prompt: str,
     default_individual_prompt: str,
     default_group_prompt: str,
     default_answer_prompt: str,
@@ -185,14 +185,19 @@ def process_file_group(
     random.shuffle(file_list_for_questions)
     logger.info(f"[Group: {group_name}] File order for question generation: {file_list_for_questions}")
     combined_files_with_prompts = build_files_prompt(file_list_for_questions, full_base_dir, individual_prompt_template)
+
+    # Compute file references for use in the footer prompt.
     file_references = ', '.join(f'"{f}"' for f in file_list_for_questions)
-    combined_files_with_prompts += f'Each question must reference the following files {file_references}.\n'
+
+    # Use group-level footer override if provided, otherwise use global footer prompt.
+    footer_prompt_template = group_config.get("question_prompt_footer", global_footer_prompt)
+    formatted_footer_prompt = footer_prompt_template.format(file_references=file_references)
 
     # Build the final prompt for generating questions.
     question_list_prompt = (
         f"{header_prompt}\n\n"
         f"{group_prompt_template.format(files_content=combined_files_with_prompts)}\n\n"
-        f"{footer_prompt}"
+        f"{formatted_footer_prompt}"
     )
 
     # Define directories.
@@ -333,9 +338,9 @@ def main() -> None:
 
     # Prompt templates.
     prompts_config = config.get("prompts", {})
-    # Load the list of question prompt headers instead of a single header.
+    # Load the list of question prompt headers.
     question_prompt_headers = prompts_config.get("question_prompt_headers", [])
-    footer_prompt = prompts_config.get("question_prompt_footer", "")
+    global_footer_prompt = prompts_config.get("question_prompt_footer", "")
     default_individual_prompt = prompts_config.get("individual_question_prompt", "")
     default_group_prompt = prompts_config.get("group_question_prompt", "{files_content}")
     default_answer_prompt = prompts_config.get(
@@ -380,7 +385,7 @@ def main() -> None:
                 full_base_dir=full_base_dir,
                 base_output_path=output_base_path,
                 question_prompt_headers=question_prompt_headers,
-                footer_prompt=footer_prompt,
+                global_footer_prompt=global_footer_prompt,
                 default_individual_prompt=default_individual_prompt,
                 default_group_prompt=default_group_prompt,
                 default_answer_prompt=default_answer_prompt,

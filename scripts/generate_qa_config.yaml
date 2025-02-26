@@ -6,10 +6,10 @@ global:
 
 providers:
   question:
-    provider: openai # Use "ollama" or "openai"
+    provider: openai  # Use "ollama" or "openai"
     model: gpt-4o-mini
   answer:
-    provider: openai # Use "ollama" or "openai"
+    provider: openai  # Use "ollama" or "openai"
     model: gpt-4o-mini
 
 prompts:
@@ -25,7 +25,7 @@ prompts:
     - 'Generate a list of questions that recall the relationships between different parts of the following content:'
     - 'Generate a list of questions that ask about the sequence of operations and how data flows through the following content:'
   question_prompt_footer: |
-    Please generate the following list:
+    Please generate the following list using the files: {file_references}
     1. <question 1>
     2. <question 2>
     3. <question 3>
@@ -37,6 +37,21 @@ prompts:
     Show the relevant content if any, before answering the question.
 
 file_groups:
+  UninstallModel:
+    iterations: 10
+    files:
+      - uninstall_model.ps1
+file_groups:
+  README:
+    iterations: 30
+    files:
+      - README.md
+    question_prompt_footer: |
+      Please generate the following list:
+      1. <question 1>
+      2. <question 2>
+      3. <question 3>
+      etc.
   UninstallModel:
     iterations: 10
     files:
@@ -96,10 +111,12 @@ file_groups:
     iterations: 30
     files:
       - FineTuningGuide.md
-  README:
-    iterations: 30
-    files:
-      - README.md
+    question_prompt_footer: |
+      Please generate the following list:
+      1. <question 1>
+      2. <question 2>
+      3. <question 3>
+      etc.
   GenerateQAData:
     iterations: 30
     files:
