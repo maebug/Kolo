@@ -83,15 +83,9 @@ if (-not $HfToken) {
     exit 1
 }
 
-if ($GpuArch -and $GpuArch -ne "") {
-    # AMD GPU branch – no HF_HUB_ENABLE_HF_TRANSFER env var is set.
-    $downloadCommand = "source /opt/conda/bin/activate kolo_env && tune download $BaseModel --ignore-patterns 'original/consolidated.00.pth' --hf-token '$HfToken'"
-}
-else {
-    # Default branch – set HF_HUB_ENABLE_HF_TRANSFER based on FastTransfer switch.
-    $hfTransferValue = if ($FastTransfer) { "1" } else { "0" }
-    $downloadCommand = "export HF_HUB_ENABLE_HF_TRANSFER=$hfTransferValue && source /opt/conda/bin/activate kolo_env && tune download $BaseModel --ignore-patterns 'original/consolidated.00.pth' --hf-token '$HfToken'"
-}
+$hfTransferValue = if ($FastTransfer) { "1" } else { "0" }
+$downloadCommand = "export HF_HUB_ENABLE_HF_TRANSFER=$hfTransferValue && source /opt/conda/bin/activate kolo_env && tune download $BaseModel --ignore-patterns 'original/consolidated.00.pth' --hf-token '$HfToken'"
+
 Write-Host "Downloading BaseModel using command:" -ForegroundColor Yellow
 Write-Host $downloadCommand -ForegroundColor Yellow
 
@@ -278,15 +272,7 @@ catch {
     exit 1
 }
 
-# --- Begin conversion step ---
-if ($GpuArch -and $GpuArch -ne "") {
-    # AMD GPU branch: use outtype f32
-    $conversionCommand = "source /opt/conda/bin/activate kolo_env && /app/llama.cpp/convert_hf_to_gguf.py --outtype f32 --outfile '$FullOutputDir/Merged.gguf' '$mergedModelPath'"
-}
-else {
-    # Default branch: use outtype f16
-    $conversionCommand = "source /opt/conda/bin/activate kolo_env && /app/llama.cpp/convert_hf_to_gguf.py --outtype f16 --outfile '$FullOutputDir/Merged.gguf' '$mergedModelPath'"
-}
+$conversionCommand = "source /opt/conda/bin/activate kolo_env && /app/llama.cpp/convert_hf_to_gguf.py --outtype f16 --outfile '$FullOutputDir/Merged.gguf' '$mergedModelPath'"
 Write-Host "Executing conversion command inside container '$ContainerName':" -ForegroundColor Yellow
 Write-Host $conversionCommand -ForegroundColor Yellow
 
