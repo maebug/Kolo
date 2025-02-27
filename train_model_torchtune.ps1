@@ -16,7 +16,8 @@ param (
     [double]$WeightDecay,
     [switch]$UseCheckpoint,
     [string]$HfToken,
-    [switch]$FastTransfer
+    [switch]$FastTransfer, # For non-AMD mode: enables fast transfer via HF_HUB_ENABLE_HF_TRANSFER
+    [string]$GpuArch = ""          # If using an AMD GPU, specify e.g. "gfx90a". Leave empty for default mode.
 )
 
 # Log received parameters
@@ -37,13 +38,22 @@ if ($OutputDir) { Write-Host "OutputDir: $OutputDir" } else { $OutputDir = "outp
 if ($Quantization) { Write-Host "Quantization: $Quantization" }
 if ($WeightDecay) { Write-Host "WeightDecay: $WeightDecay" }
 if ($UseCheckpoint) { Write-Host "UseCheckpoint: Enabled" } else { Write-Host "UseCheckpoint: Disabled" }
-if ($HfToken) { Write-Host "Hugging Face Token provided" } else { Write-Host "Hugging Face Token not provided" }
-if ($FastTransfer) { Write-Host "FastTransfer: Enabled (HF_HUB_ENABLE_HF_TRANSFER=1)" } else { Write-Host "FastTransfer: Disabled (HF_HUB_ENABLE_HF_TRANSFER=0)" }
 
-# Define the Docker container name
+# Log GPU mode or fast transfer based on parameters
+if ($GpuArch -and $GpuArch -ne "") {
+    Write-Host "GPU Architecture: $GpuArch" -ForegroundColor Cyan
+}
+else {
+    if ($FastTransfer) {
+        Write-Host "FastTransfer: Enabled (HF_HUB_ENABLE_HF_TRANSFER=1)" -ForegroundColor Cyan
+    }
+    else {
+        Write-Host "FastTransfer: Disabled (HF_HUB_ENABLE_HF_TRANSFER=0)" -ForegroundColor Cyan
+    }
+}
+
+# Define the Docker container name and check if it is running
 $ContainerName = "kolo_container"
-
-# Check if the container is running
 $containerRunning = docker ps --format "{{.Names}}" | Select-String -Pattern $ContainerName
 if (-not $containerRunning) {
     Write-Host "Error: Container '$ContainerName' is not running." -ForegroundColor Red
@@ -68,39 +78,50 @@ else {
 Write-Host "Using configuration: $configValue for BaseModel: $BaseModel" -ForegroundColor Cyan
 
 # --- Begin BaseModel download step ---
-if ($BaseModel) {
-    if (-not $HfToken) {
-        Write-Host "Error: Hugging Face token must be provided." -ForegroundColor Red
-        exit 1
-    }
+if (-not $HfToken) {
+    Write-Host "Error: Hugging Face token must be provided." -ForegroundColor Red
+    exit 1
+}
 
-    # Set HF_HUB_ENABLE_HF_TRANSFER based on FastTransfer parameter
+if ($GpuArch -and $GpuArch -ne "") {
+    # AMD GPU branch – no HF_HUB_ENABLE_HF_TRANSFER env var is set.
+    $downloadCommand = "source /opt/conda/bin/activate kolo_env && tune download $BaseModel --ignore-patterns 'original/consolidated.00.pth' --hf-token '$HfToken'"
+}
+else {
+    # Default branch – set HF_HUB_ENABLE_HF_TRANSFER based on FastTransfer switch.
     $hfTransferValue = if ($FastTransfer) { "1" } else { "0" }
     $downloadCommand = "export HF_HUB_ENABLE_HF_TRANSFER=$hfTransferValue && source /opt/conda/bin/activate kolo_env && tune download $BaseModel --ignore-patterns 'original/consolidated.00.pth' --hf-token '$HfToken'"
-    Write-Host "Downloading BaseModel using command:" -ForegroundColor Yellow
-    Write-Host $downloadCommand -ForegroundColor Yellow
+}
+Write-Host "Downloading BaseModel using command:" -ForegroundColor Yellow
+Write-Host $downloadCommand -ForegroundColor Yellow
 
-    try {
-        docker exec -it $ContainerName /bin/bash -c $downloadCommand
-        if ($?) {
-            Write-Host "BaseModel downloaded successfully!" -ForegroundColor Green
-        }
-        else {
-            Write-Host "Failed to download BaseModel." -ForegroundColor Red
-            exit 1
-        }
+try {
+    docker exec -it $ContainerName /bin/bash -c $downloadCommand
+    if ($?) {
+        Write-Host "BaseModel downloaded successfully!" -ForegroundColor Green
     }
-    catch {
-        Write-Host "An error occurred during BaseModel download: $_" -ForegroundColor Red
+    else {
+        Write-Host "Failed to download BaseModel." -ForegroundColor Red
         exit 1
     }
+}
+catch {
+    Write-Host "An error occurred during BaseModel download: $_" -ForegroundColor Red
+    exit 1
 }
 
 # --- Begin torchtune run ---
 # Build the base torchtune command string using the configuration from the mapping.
-$command = "source /opt/conda/bin/activate kolo_env && tune run lora_finetune_single_device --config $configValue"
+if ($GpuArch -and $GpuArch -ne "") {
+    # AMD GPU branch: set HIP alloc conf and ROCm arch.
+    $command = "export PYTORCH_HIP_ALLOC_CONF='garbage_collection_threshold:0.8,max_split_size_mb:512' && PYTORCH_ROCM_ARCH=$GpuArch source /opt/conda/bin/activate kolo_env && tune run lora_finetune_single_device --config $configValue"
+}
+else {
+    # Default branch.
+    $command = "source /opt/conda/bin/activate kolo_env && tune run lora_finetune_single_device --config $configValue"
+}
 
-# Dynamic parameters with defaults
+# Append dynamic parameters with defaults
 if ($Epochs) {
     $command += " epochs=$Epochs"
 }
@@ -193,7 +214,7 @@ else {
 $FullOutputDir = "/var/kolo_data/torchtune/$OutputDir"
 $command += " output_dir='$FullOutputDir'"
 
-# Log parameters for reference
+# Log a note on quantization if provided
 if ($Quantization) {
     Write-Host "Note: Quantization parameter '$Quantization' is provided and will be used for quantization."
 }
@@ -201,7 +222,6 @@ if ($Quantization) {
 Write-Host "Executing torchtune command inside container '$ContainerName':" -ForegroundColor Yellow
 Write-Host $command -ForegroundColor Yellow
 
-# Execute the torchtune command inside the Docker container.
 try {
     docker exec -it $ContainerName /bin/bash -c $command
     if ($?) {
@@ -259,7 +279,14 @@ catch {
 }
 
 # --- Begin conversion step ---
-$conversionCommand = "source /opt/conda/bin/activate kolo_env && /app/llama.cpp/convert_hf_to_gguf.py --outtype f16 --outfile '$FullOutputDir/Merged.gguf' '$mergedModelPath'"
+if ($GpuArch -and $GpuArch -ne "") {
+    # AMD GPU branch: use outtype f32
+    $conversionCommand = "source /opt/conda/bin/activate kolo_env && /app/llama.cpp/convert_hf_to_gguf.py --outtype f32 --outfile '$FullOutputDir/Merged.gguf' '$mergedModelPath'"
+}
+else {
+    # Default branch: use outtype f16
+    $conversionCommand = "source /opt/conda/bin/activate kolo_env && /app/llama.cpp/convert_hf_to_gguf.py --outtype f16 --outfile '$FullOutputDir/Merged.gguf' '$mergedModelPath'"
+}
 Write-Host "Executing conversion command inside container '$ContainerName':" -ForegroundColor Yellow
 Write-Host $conversionCommand -ForegroundColor Yellow
 
