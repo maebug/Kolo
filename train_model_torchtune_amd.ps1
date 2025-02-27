@@ -257,6 +257,9 @@ catch {
 
 # --- Begin conversion step ---
 $conversionCommand = "source /opt/conda/bin/activate kolo_env && /app/llama.cpp/convert_hf_to_gguf.py --outtype f32 --outfile '$FullOutputDir/Merged.gguf' '$mergedModelPath'"
+if ($Quantization) {
+    $pythonCommand += " --quantization '$Quantization'"
+}
 Write-Host "Executing conversion command inside container '$ContainerName':" -ForegroundColor Yellow
 Write-Host $conversionCommand -ForegroundColor Yellow
 
@@ -300,43 +303,3 @@ else {
         exit 1
     }
 }
-
-# --- Begin model file creation step ---
-# Create a model file for the unquantized gguf.
-$modelFileCommand = "echo 'FROM Merged.gguf' > '$FullOutputDir/Modelfile'"
-Write-Host "Creating model file for unquantized model inside container '$ContainerName':" -ForegroundColor Yellow
-Write-Host $modelFileCommand -ForegroundColor Yellow
-try {
-    docker exec -it $ContainerName /bin/bash -c $modelFileCommand
-    if ($?) {
-        Write-Host "Model file 'Modelfile' created successfully!" -ForegroundColor Green
-    }
-    else {
-        Write-Host "Failed to create 'Modelfile'." -ForegroundColor Red
-        exit 1
-    }
-}
-catch {
-    Write-Host "An error occurred while creating 'Modelfile': $_" -ForegroundColor Red
-    exit 1
-}
-
-# Create a model file for the quantized gguf.
-$modelFileQuantCommand = "echo 'FROM Merged${Quantization}.gguf' > '$FullOutputDir/Modelfile${Quantization}'"
-Write-Host "Creating model file for quantized model inside container '$ContainerName':" -ForegroundColor Yellow
-Write-Host $modelFileQuantCommand -ForegroundColor Yellow
-try {
-    docker exec -it $ContainerName /bin/bash -c $modelFileQuantCommand
-    if ($?) {
-        Write-Host "Model file 'Modelfile${Quantization}' created successfully!" -ForegroundColor Green
-    }
-    else {
-        Write-Host "Failed to create 'Modelfile${Quantization}'." -ForegroundColor Red
-        exit 1
-    }
-}
-catch {
-    Write-Host "An error occurred while creating 'Modelfile${Quantization}': $_" -ForegroundColor Red
-    exit 1
-}
-
