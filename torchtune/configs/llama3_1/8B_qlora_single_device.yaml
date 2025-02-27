@@ -23,8 +23,8 @@ model:
   lora_attn_modules: ['q_proj', 'v_proj', 'output_proj']
   apply_lora_to_mlp: True
   apply_lora_to_output: False
-  lora_rank: 8 # higher increases accuracy and memory
-  lora_alpha: 16 # usually alpha=2*rank
+  lora_rank: 16
+  lora_alpha: 16
   lora_dropout: 0.0
 
 # Tokenizer
@@ -55,23 +55,23 @@ dataset:
   packed: False # True increases speed
 seed: null
 shuffle: True
-batch_size: 2
+batch_size: 1
 
 # Optimizer and Scheduler
 optimizer:
   _component_: torch.optim.AdamW
   fused: True
-  weight_decay: 0.01
-  lr: 3e-4
+  weight_decay: 0
+  lr: 2e-4
 lr_scheduler:
   _component_: torchtune.training.lr_schedulers.get_cosine_schedule_with_warmup
-  num_warmup_steps: 100
+  num_warmup_steps: 0
 
 loss:
   _component_: torchtune.modules.loss.CEWithChunkedOutputLoss
 
 # Training
-epochs: 1
+epochs: 3
 max_steps_per_epoch: null
 gradient_accumulation_steps: 1
 clip_grad_norm: null
