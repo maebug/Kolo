@@ -122,7 +122,7 @@ Requirements: Create a [Hugging Face](https://huggingface.co/) account and creat
 If you are using an AMD GPU, use the following command instead:
 
 ```bash
-./train_model_torchtune_amd.ps1 -OutputDir "GodOutput" -Quantization "Q4_K_M" -TrainData "data.json" -HfToken "your_token"
+./train_model_torchtune.ps1 -GpuArch "gfx90a" -OutputDir "GodOutput" -Quantization "Q4_K_M" -TrainData "data.json" -HfToken "your_token"
 ```
 
 All available parameters
