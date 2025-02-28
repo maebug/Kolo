@@ -6,52 +6,46 @@ global:
 
 providers:
   question:
-    provider: openai  # Use "ollama" or "openai"
+    provider: openai # Use "ollama" or "openai"
     model: gpt-4o-mini
   answer:
-    provider: openai  # Use "ollama" or "openai"
+    provider: openai # Use "ollama" or "openai"
     model: gpt-4o-mini
 
-prompts:
-  question_prompt_headers:
-    - 'Generate a list of questions that ask about certain details of the following content:'
-    - 'Generate a list of questions that ask to regurgitate specific parts of the following content:'
-    - 'Generate a list of questions that ask about the key concepts and ideas in the following content:'
-    - 'Generate a list of questions that ask about the functionality of the following content:'
-    - 'Generate a list of questions that ask about how the different sections of the following content relate to each other:'
-    - 'Generate a list of questions that ask about the flow and usage of the following content:'
-    - 'Generate a list of questions that ask about different ways the following content could be used:'
-    - 'Generate a list of questions that ask about edge cases inside the following content:'
-    - 'Generate a list of questions that recall the relationships between different parts of the following content:'
-    - 'Generate a list of questions that ask about the sequence of operations and how data flows through the following content:'
-  question_prompt_footer: |
-    Please generate a question list and for each question please reference one or more of the following files {file_references}:
-    1. <question 1>
-    2. <question 2>
-    3. <question 3>
-    etc.
-  individual_question_prompt: 'File contents for : "{file_name}"'
-  group_question_prompt: '{files_content}'
-  answer_prompt: |
-    {question}
-    Show the relevant content if any, before answering the question.
+personas:
+  question_personas:
+    - 'Someone that speaks casually with grammatical mistakes and typos'
+    - 'A formal person who is concise and uses correct terminology.'
+    - 'Someone new who is asking basic questions.'
+    - 'Someone who is in a rush and misses key details.'
+    - 'A detail-oriented user who fixates on minor details and seeks precise clarification.'
 
 file_groups:
-  UninstallModel:
-    iterations: 10
-    files:
-      - uninstall_model.ps1
-file_groups:
   README:
-    iterations: 20
+    iterations: 25
     files:
       - README.md
-    question_prompt_footer: |
-      Please generate the following list:
-      1. <question 1>
-      2. <question 2>
-      3. <question 3>
-      etc.
+    prompts:
+      # For question generation:
+      question_prompt_headers:
+        - 'Generate a list of questions where the user is confused about something.'
+        - 'Generate a list of questions where the user wants to know how to do something specific.'
+        - 'Generate a list of questions where the user wants to list all the commands they need to run for their situation.'
+        - 'Generate a list of questions where the user asks something vague.'
+        - 'Generate a list of questions where the user wants to know the difference between things.'
+      question_prompt_footer: |
+        Please generate a question list:
+        1. <question 1>
+        2. <question 2>
+        3. <question 3>
+        etc.
+      question_file_prompt_header: 'The file contents for: {file_name}'
+      question_context_prompt: '{files_content}'
+
+      # For answer generation:
+      answer_file_prompt_header: 'The file contents for: {file_name}'
+      answer_context_prompt: '{files_content}'
+      answer_question_prompt: 'Based on the file content provided, answer the following question in detail: {question}'
   # UninstallModel:
   #   iterations: 10
   #   files:

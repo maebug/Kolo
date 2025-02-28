@@ -138,7 +138,7 @@ def read_text_from_file(file_path: Path) -> str:
 
 def build_files_prompt(file_list: List[str], base_dir: Path, template: str) -> str:
     """
-    Build a combined prompt string for question generation by iterating over a list of files
+    Build a combined prompt string by iterating over a list of files
     using the provided individual prompt template.
     """
     combined = ""
@@ -151,75 +151,62 @@ def build_files_prompt(file_list: List[str], base_dir: Path, template: str) -> s
             logger.warning(f"{rel_path} not found in {base_dir} or its subdirectories.")
     return combined
 
-def build_files_content(file_list: List[str], base_dir: Path) -> str:
-    """
-    Build a combined content string for answer generation by iterating over a list of files.
-    """
-    combined = ""
-    for rel_path in file_list:
-        file_path = find_file_in_subdirectories(base_dir, rel_path)
-        if file_path and file_path.exists():
-            content = file_path.read_text(encoding="utf-8")
-            combined += f"File: {rel_path}\n\n{content}\n\n"
-        else:
-            logger.warning(f"{rel_path} not found in {base_dir} or its subdirectories.")
-    return combined
-
 # --- Main Processing Function ---
 def process_file_group(
     group_name: str,
     group_config: Dict[str, Any],
     full_base_dir: Path,
     base_output_path: Path,
-    question_prompt_headers: List[str],
-    global_footer_prompt: str,
-    default_individual_prompt: str,
-    default_group_prompt: str,
-    default_answer_prompt: str,
     question_provider_config: Dict[str, Any],
     answer_provider_config: Dict[str, Any],
     global_ollama_url: Optional[str],
     openai_client: Optional[Any] = None,
-    answer_workers: int = 1  # New parameter for answer generation concurrency.
+    answer_workers: int = 1,
+    question_personas: List[str] = None
 ) -> None:
     """
     Processes a group of files to generate questions and answers using LLM providers.
-    Selects a header prompt based on the iteration number extracted from the group name.
+    Each file group handles its own prompts individually.
     """
     file_list: List[str] = group_config.get("files", [])
     group_prompts = group_config.get("prompts", {})
 
-    # Use the individual prompt template from config.
-    individual_prompt_template = group_prompts.get("individual_question_prompt", default_individual_prompt)
-    group_prompt_template = group_prompts.get("group_question_prompt", default_group_prompt)
-    answer_prompt_template = group_prompts.get("answer_prompt", default_answer_prompt)
+    # Extract file group specific prompts.
+    q_prompt_headers: List[str] = group_prompts.get("question_prompt_headers", [])
+    q_prompt_footer: str = group_prompts.get("question_prompt_footer", "")
+    q_file_prompt_header: str = group_prompts.get("question_file_prompt_header", "File: {file_name}")
+    q_context_prompt: str = group_prompts.get("question_context_prompt", "{files_content}")
+    a_file_prompt_header: str = group_prompts.get("answer_file_prompt_header", "File: {file_name}")
+    a_context_prompt: str = group_prompts.get("answer_context_prompt", "{files_content}")
+    a_question_prompt: str = group_prompts.get("answer_question_prompt", "Based on the file content provided, answer the following question in detail: {question}")
 
     # --- Determine header prompt based on iteration ---
     try:
         iteration = int(group_name.split('_')[-1])
-        header_prompt = question_prompt_headers[(iteration - 1) % len(question_prompt_headers)]
+        header_prompt = q_prompt_headers[(iteration - 1) % len(q_prompt_headers)] if q_prompt_headers else ""
     except Exception as e:
         logger.warning(f"Could not determine iteration for group {group_name}: {e}")
-        header_prompt = question_prompt_headers[0] if question_prompt_headers else ""
+        header_prompt = q_prompt_headers[0] if q_prompt_headers else ""
+
+    # --- Select a random persona for question generation ---
+    persona_instructions = ""
+    if question_personas:
+        selected_persona = random.choice(question_personas)
+        persona_instructions = f"Please use the following persona when generating the questions: {selected_persona}."
 
     # --- Randomize file order for question generation ---
     file_list_for_questions = file_list.copy()
     random.shuffle(file_list_for_questions)
     logger.info(f"[Group: {group_name}] File order for question generation: {file_list_for_questions}")
-    combined_files_with_prompts = build_files_prompt(file_list_for_questions, full_base_dir, individual_prompt_template)
+    combined_files_with_prompts = build_files_prompt(file_list_for_questions, full_base_dir, q_file_prompt_header)
 
-    # Compute file references for use in the footer prompt.
-    file_references = ', '.join(f'"{f}"' for f in file_list_for_questions)
-
-    # Use group-level footer override if provided, otherwise use global footer prompt.
-    footer_prompt_template = group_config.get("question_prompt_footer", global_footer_prompt)
-    formatted_footer_prompt = footer_prompt_template.format(file_references=file_references)
-
-    # Build the final prompt for generating questions.
-    question_list_prompt = (
+    # Build the final question prompt using the structure:
+    # {question_context_prompt (with {files_content} replaced)} + header prompt + persona instructions + question_prompt_footer
+    final_question_prompt = (
+        f"{q_context_prompt.format(files_content=combined_files_with_prompts)}\n\n"
         f"{header_prompt}\n\n"
-        f"{group_prompt_template.format(files_content=combined_files_with_prompts)}\n\n"
-        f"{formatted_footer_prompt}"
+        f"{persona_instructions}\n\n"
+        f"{q_prompt_footer}"
     )
 
     # Define directories.
@@ -242,7 +229,7 @@ def process_file_group(
         question_list_text = call_api(
             provider=question_provider_config["provider"],
             model=question_provider_config["model"],
-            prompt=question_list_prompt,
+            prompt=final_question_prompt,
             global_ollama_url=global_ollama_url,
             client=openai_client,
         )
@@ -250,7 +237,7 @@ def process_file_group(
             logger.error(f"[Group: {group_name}] Failed to generate questions.")
             return
         write_text_to_file(question_file_path, question_list_text)
-        write_text_to_file(question_debug_path, question_list_prompt)
+        write_text_to_file(question_debug_path, final_question_prompt)
         logger.info(f"[Group: {group_name}] Questions saved to {question_file_path}")
         logger.info(f"[Group: {group_name}] Debug info saved to {question_debug_path}")
 
@@ -301,17 +288,17 @@ def process_file_group(
         file_list_for_answers = file_list.copy()
         random.shuffle(file_list_for_answers)
         logger.info(f"[Group: {group_name}] File order for answer generation (question {idx}): {file_list_for_answers}")
-        combined_files = build_files_content(file_list_for_answers, full_base_dir)
+        combined_files_for_answers = build_files_prompt(file_list_for_answers, full_base_dir, a_file_prompt_header)
 
-        individual_answer_prompt = (
-            f"{combined_files}\n\n"
-            f"{answer_prompt_template.format(question=question)}"
+        final_answer_prompt = (
+            f"{a_context_prompt.format(files_content=combined_files_for_answers)}\n\n"
+            f"{a_question_prompt.format(question=question)}"
         )
 
         answer_text = call_api(
             provider=answer_provider_config["provider"],
             model=answer_provider_config["model"],
-            prompt=individual_answer_prompt,
+            prompt=final_answer_prompt,
             global_ollama_url=global_ollama_url,
             client=openai_client,
         )
@@ -320,7 +307,7 @@ def process_file_group(
             return
 
         write_text_to_file(answer_file_path, answer_text)
-        write_text_to_file(answer_debug_path, individual_answer_prompt)
+        write_text_to_file(answer_debug_path, final_answer_prompt)
         write_text_to_file(meta_file_path, current_hash)
         logger.info(f"[Group: {group_name}] Saved answer for question {idx} -> {answer_file_path}")
 
@@ -360,17 +347,8 @@ def main() -> None:
     question_provider_config = config.get("providers", {}).get("question", {})
     answer_provider_config = config.get("providers", {}).get("answer", {})
 
-    # Prompt templates.
-    prompts_config = config.get("prompts", {})
-    # Load the list of question prompt headers.
-    question_prompt_headers = prompts_config.get("question_prompt_headers", [])
-    global_footer_prompt = prompts_config.get("question_prompt_footer", "")
-    default_individual_prompt = prompts_config.get("individual_question_prompt", "")
-    default_group_prompt = prompts_config.get("group_question_prompt", "{files_content}")
-    default_answer_prompt = prompts_config.get(
-        "answer_prompt",
-        "Based on the file content provided, answer the following question in detail: {answer}"
-    )
+    # Load question personas.
+    question_personas = config.get("personas", {}).get("question_personas", [])
 
     # File groups.
     file_groups_config = config.get("file_groups", {})
@@ -408,16 +386,12 @@ def main() -> None:
                 group_config=group_config,
                 full_base_dir=full_base_dir,
                 base_output_path=output_base_path,
-                question_prompt_headers=question_prompt_headers,
-                global_footer_prompt=global_footer_prompt,
-                default_individual_prompt=default_individual_prompt,
-                default_group_prompt=default_group_prompt,
-                default_answer_prompt=default_answer_prompt,
                 question_provider_config=question_provider_config,
                 answer_provider_config=answer_provider_config,
                 global_ollama_url=global_ollama_url,
                 openai_client=openai_client,
-                answer_workers=args.answer_workers
+                answer_workers=args.answer_workers,
+                question_personas=question_personas
             )
             for group_name, group_config in allowed_file_groups.items()
         ]
