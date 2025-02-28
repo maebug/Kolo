@@ -25,11 +25,13 @@ file_groups:
     prompts:
       # For question generation:
       question_prompt_headers:
-        - 'Generate a list of questions where they want to know which commands they need to pay attention to given their current situation.'
-        - 'Generate a list of questions where the user wants to know how to use a specific command.'
-        - 'Generate a list of questions where the user wants to know what a specific section of the ReadMe says.'
-        - 'Generate a list of questions where the user ask a very general vague question about the ReadMe.'
-        - 'Generate a list of questions where the user wants to know the difference between certain commands and or tools.'
+        - 'Generate a list of questions where the user wants to know a specific thing to do something.'
+        - 'Generate a list of questions where the user asks something specific.'
+        - 'Generate a list of questions where the user asks how to use something.'
+        - 'Generate a list of questions where the user asks what something is.'
+        - 'Generate a list of questions where the user asks to compare two different things.'
+        - 'Generate a list of questions where the user asks how to do something given their particular situation.'
+        - 'Generate a list of questions where the user asks about something broad.'
       question_prompt_footer: |
         Please generate a question list:
         1. <question 1>

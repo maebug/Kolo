@@ -15,11 +15,8 @@ param(
     [Parameter(Mandatory = $false, HelpMessage = "Provide your OpenAI API Key (optional).")]
     [string]$OpenAI_API_KEY,
     
-    [Parameter(Mandatory = $false, HelpMessage = "Max workers for processing file groups (default: 8).")]
-    [int]$GroupWorkers = 8,
-    
-    [Parameter(Mandatory = $false, HelpMessage = "Max workers for answer generation (default: 4).")]
-    [int]$AnswerWorkers = 4
+    [Parameter(Mandatory = $false, HelpMessage = "Max workers for processing.")]
+    [int]$Threads = 8
 )
 
 # Define the container name
@@ -34,7 +31,7 @@ if (-Not $containerRunning) {
 }
 
 # Build the command string to execute inside the container.
-$baseCommand = "source /opt/conda/bin/activate kolo_env && python /app/generate_qa_data.py --group-workers $GroupWorkers --answer-workers $AnswerWorkers"
+$baseCommand = "source /opt/conda/bin/activate kolo_env && python /app/generate_qa_data.py --threads $Threads"
 
 if ($OpenAI_API_KEY) {
     $command = "export OPENAI_API_KEY='$OpenAI_API_KEY'; $baseCommand"
