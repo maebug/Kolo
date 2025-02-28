@@ -69,7 +69,7 @@ epochs: 3
 max_steps_per_epoch: null
 gradient_accumulation_steps: 1
 clip_grad_norm: null
-compile: False # torch.compile the model + loss, True increases speed + decreases memory
+compile: True # torch.compile the model + loss, True increases speed + decreases memory
 
 # Logging
 metric_logger:
@@ -84,7 +84,8 @@ dtype: bf16
 
 # Activations Memory
 enable_activation_checkpointing: True # True reduces memory
-enable_activation_offloading: False # True reduces memory
+enable_activation_offloading: True # True reduces memory
+optimizer_in_bwd: False
 
 # Profiler (disabled)
 profiler:
