@@ -179,7 +179,7 @@ def process_file_group(
     q_context_prompt: str = group_prompts.get("question_context_prompt", "{files_content}")
     a_file_prompt_header: str = group_prompts.get("answer_file_prompt_header", "File: {file_name}")
     a_context_prompt: str = group_prompts.get("answer_context_prompt", "{files_content}")
-    a_question_prompt: str = group_prompts.get("answer_question_prompt", "Based on the file content provided, answer the following question in detail: {question}")
+    a_question_prompt: str = group_prompts.get("answer_question_prompt", "{question}")
 
     try:
         iteration = int(group_name.split('_')[-1])
