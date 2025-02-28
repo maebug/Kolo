@@ -14,25 +14,22 @@ providers:
 
 personas:
   question_personas:
-    - 'Someone that speaks casually with grammatical mistakes and typos'
+    - 'A casual person that makes grammatical mistakes and typos'
     - 'A formal person who is concise and uses correct terminology.'
-    - 'Someone new who is asking basic questions.'
-    - 'Someone who is in a rush and misses key details.'
-    - 'A detail-oriented user who fixates on minor details and seeks precise clarification.'
 
 file_groups:
   README:
-    iterations: 25
+    iterations: 1
     files:
       - README.md
     prompts:
       # For question generation:
       question_prompt_headers:
-        - 'Generate a list of questions where the user is confused about something.'
-        - 'Generate a list of questions where the user wants to know how to do something specific.'
-        - 'Generate a list of questions where the user wants to list all the commands they need to run for their situation.'
-        - 'Generate a list of questions where the user asks something vague.'
-        - 'Generate a list of questions where the user wants to know the difference between things.'
+        - 'Generate a list of questions where they want to know which commands they need to pay attention to given their current situation.'
+        - 'Generate a list of questions where the user wants to know how to use a specific command.'
+        - 'Generate a list of questions where the user wants to know what a specific section of the ReadMe says.'
+        - 'Generate a list of questions where the user ask a very general vague question about the ReadMe.'
+        - 'Generate a list of questions where the user wants to know the difference between certain commands and or tools.'
       question_prompt_footer: |
         Please generate a question list:
         1. <question 1>
@@ -45,7 +42,7 @@ file_groups:
       # For answer generation:
       answer_file_prompt_header: 'The file contents for: {file_name}'
       answer_context_prompt: '{files_content}'
-      answer_question_prompt: 'Based on the file content provided, answer the following question in detail: {question}'
+      answer_question_prompt: '{question}'
   # UninstallModel:
   #   iterations: 10
   #   files:

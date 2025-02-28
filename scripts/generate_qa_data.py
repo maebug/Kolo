@@ -166,7 +166,7 @@ def process_file_group(
 ) -> None:
     """
     Processes a group of files to generate questions and answers using LLM providers.
-    Each file group handles its own prompts individually.
+    Each file group iteration handles its own prompts individually.
     """
     file_list: List[str] = group_config.get("files", [])
     group_prompts = group_config.get("prompts", {})
@@ -180,36 +180,23 @@ def process_file_group(
     a_context_prompt: str = group_prompts.get("answer_context_prompt", "{files_content}")
     a_question_prompt: str = group_prompts.get("answer_question_prompt", "Based on the file content provided, answer the following question in detail: {question}")
 
-    # --- Determine header prompt based on iteration ---
+    # For logging purposes, we can still try to pick a header based on the iteration.
     try:
         iteration = int(group_name.split('_')[-1])
-        header_prompt = q_prompt_headers[(iteration - 1) % len(q_prompt_headers)] if q_prompt_headers else ""
     except Exception as e:
         logger.warning(f"Could not determine iteration for group {group_name}: {e}")
-        header_prompt = q_prompt_headers[0] if q_prompt_headers else ""
+        iteration = 1
 
-    # --- Select a random persona for question generation ---
-    persona_instructions = ""
-    if question_personas:
-        selected_persona = random.choice(question_personas)
-        persona_instructions = f"Please use the following persona when generating the questions: {selected_persona}."
-
-    # --- Randomize file order for question generation ---
+    # Randomize file order for prompt construction.
     file_list_for_questions = file_list.copy()
     random.shuffle(file_list_for_questions)
     logger.info(f"[Group: {group_name}] File order for question generation: {file_list_for_questions}")
     combined_files_with_prompts = build_files_prompt(file_list_for_questions, full_base_dir, q_file_prompt_header)
 
-    # Build the final question prompt using the structure:
-    # {question_context_prompt (with {files_content} replaced)} + header prompt + persona instructions + question_prompt_footer
-    final_question_prompt = (
-        f"{q_context_prompt.format(files_content=combined_files_with_prompts)}\n\n"
-        f"{header_prompt}\n\n"
-        f"{persona_instructions}\n\n"
-        f"{q_prompt_footer}"
-    )
+    # Ensure we have a list of personas (or use empty string if not defined).
+    personas = question_personas if question_personas else [""]
 
-    # Define directories.
+    # Prepare directories.
     output_dir = base_output_path / "qa_generation_output"
     questions_dir = output_dir / "questions"
     answers_dir = output_dir / "answers"
@@ -218,45 +205,80 @@ def process_file_group(
     answers_dir.mkdir(parents=True, exist_ok=True)
     debug_dir.mkdir(parents=True, exist_ok=True)
 
-    question_file_path = questions_dir / f"questions_{group_name}.txt"
-    question_debug_path = debug_dir / f"debug_{group_name}_questions.txt"
+    # We'll collect all generated questions across header-persona combinations.
+    # Each entry in generated_questions is a tuple:
+    # (header_index, persona_index, question_text, list_of_questions)
+    generated_questions = []
 
-    # Generate questions if they don't already exist.
-    if question_file_path.exists():
-        question_list_text = read_text_from_file(question_file_path).strip()
-        logger.info(f"[Group: {group_name}] Questions file already exists. Using existing questions.")
-    else:
-        question_list_text = call_api(
-            provider=question_provider_config["provider"],
-            model=question_provider_config["model"],
-            prompt=final_question_prompt,
-            global_ollama_url=global_ollama_url,
-            client=openai_client,
-        )
-        if not question_list_text:
-            logger.error(f"[Group: {group_name}] Failed to generate questions.")
-            return
-        write_text_to_file(question_file_path, question_list_text)
-        write_text_to_file(question_debug_path, final_question_prompt)
-        logger.info(f"[Group: {group_name}] Questions saved to {question_file_path}")
-        logger.info(f"[Group: {group_name}] Debug info saved to {question_debug_path}")
+    # --- Generate question lists for each header-persona combination ---
+    for h_idx, header in enumerate(q_prompt_headers or [""]):
+        for p_idx, persona in enumerate(personas):
+            persona_instructions = f"Please use the following persona when generating the questions: {persona}." if persona else ""
+            final_question_prompt = (
+                f"{q_context_prompt.format(files_content=combined_files_with_prompts)}\n\n"
+                f"{header}\n\n"
+                f"{persona_instructions}\n\n"
+                f"{q_prompt_footer}"
+            )
+            # Create unique file names per header-persona combo.
+            question_file_name = f"questions_{group_name}_h{h_idx+1}_p{p_idx+1}.txt"
+            question_debug_name = f"debug_{group_name}_h{h_idx+1}_p{p_idx+1}_questions.txt"
+            question_file_path = questions_dir / question_file_name
+            question_debug_path = debug_dir / question_debug_name
 
-    # Parse questions.
-    questions = parse_questions(question_list_text)
-    if not questions:
-        logger.error(f"[Group: {group_name}] No valid questions found in output.")
-        return
+            logger.info(f"[Group: {group_name}] Generating questions using header {h_idx+1} and persona {p_idx+1}.")
 
-    total_questions = len(questions)
-    logger.info(f"[Group: {group_name}] Found {total_questions} questions. Beginning answer generation...")
+            # Only generate if not already existing.
+            if question_file_path.exists():
+                question_list_text = read_text_from_file(question_file_path).strip()
+                logger.info(f"[Group: {group_name}] Questions file {question_file_name} already exists. Using existing questions.")
+            else:
+                question_list_text = call_api(
+                    provider=question_provider_config["provider"],
+                    model=question_provider_config["model"],
+                    prompt=final_question_prompt,
+                    global_ollama_url=global_ollama_url,
+                    client=openai_client,
+                )
+                if not question_list_text:
+                    logger.error(f"[Group: {group_name}] Failed to generate questions for header {h_idx+1} persona {p_idx+1}.")
+                    continue
+                write_text_to_file(question_file_path, question_list_text)
+                write_text_to_file(question_debug_path, final_question_prompt)
+                logger.info(f"[Group: {group_name}] Questions saved to {question_file_path}")
+                logger.info(f"[Group: {group_name}] Debug info saved to {question_debug_path}")
+
+            generated_questions.append((h_idx, p_idx, question_list_text))
+
+    # --- Parse questions and prepare answer generation ---
+    # We'll generate answers for every question in each question list.
+    answer_tasks = []
+
+    # Update the total count (used only for logging purposes later)
+    total_questions_overall = 0
+
+    for (h_idx, p_idx, question_list_text) in generated_questions:
+        questions = parse_questions(question_list_text)
+        if not questions:
+            logger.error(f"[Group: {group_name}] No valid questions found in generated list for header {h_idx+1} and persona {p_idx+1}.")
+            continue
+
+        logger.info(f"[Group: {group_name}] Found {len(questions)} questions for header {h_idx+1} and persona {p_idx+1}.")
+        total_questions_overall += len(questions)
+
+        # Prepare each question for answer generation.
+        for q_idx, question in enumerate(questions, start=1):
+            answer_tasks.append((h_idx, p_idx, q_idx, question))
+
+    logger.info(f"[Group: {group_name}] Total of {total_questions_overall} questions found. Beginning answer generation...")
 
     # --- Multi-threaded answer generation ---
-    def process_question(idx: int, question: str) -> None:
-        logger.info(f"[Group: {group_name}] Processing question {idx}/{total_questions}: {question}")
+    def process_question(h_idx: int, p_idx: int, q_idx: int, question: str) -> None:
+        logger.info(f"[Group: {group_name}] Processing question h{h_idx+1} p{p_idx+1} q{q_idx}: {question}")
 
-        answer_filename = f"answer_{group_name}_{idx}.txt"
-        answer_debug_filename = f"debug_{group_name}_answer_{idx}.txt"
-        meta_filename = f"answer_{group_name}_{idx}.meta"
+        answer_filename = f"answer_{group_name}_h{h_idx+1}_p{p_idx+1}_{q_idx}.txt"
+        answer_debug_filename = f"debug_{group_name}_answer_h{h_idx+1}_p{p_idx+1}_{q_idx}.txt"
+        meta_filename = f"answer_{group_name}_h{h_idx+1}_p{p_idx+1}_{q_idx}.meta"
 
         answer_file_path = answers_dir / answer_filename
         answer_debug_path = debug_dir / answer_debug_filename
@@ -269,25 +291,25 @@ def process_file_group(
             if meta_file_path.exists():
                 stored_hash = read_text_from_file(meta_file_path).strip()
                 if stored_hash == current_hash:
-                    logger.info(f"[Group: {group_name}] Answer {idx} is up-to-date. Skipping regeneration.")
+                    logger.info(f"[Group: {group_name}] Answer h{h_idx+1} p{p_idx+1} q{q_idx} is up-to-date. Skipping regeneration.")
                     regenerate = False
                 else:
-                    logger.info(f"[Group: {group_name}] Question {idx} has changed. Regenerating answer.")
+                    logger.info(f"[Group: {group_name}] Question h{h_idx+1} p{p_idx+1} q{q_idx} has changed. Regenerating answer.")
             else:
                 write_text_to_file(meta_file_path, current_hash)
-                logger.info(f"[Group: {group_name}] Meta file created for answer {idx}. Skipping regeneration.")
+                logger.info(f"[Group: {group_name}] Meta file created for answer h{h_idx+1} p{p_idx+1} q{q_idx}. Skipping regeneration.")
                 regenerate = False
 
         if not answer_file_path.exists():
-            logger.info(f"[Group: {group_name}] Generating answer for question {idx}.")
+            logger.info(f"[Group: {group_name}] Generating answer for question h{h_idx+1} p{p_idx+1} q{q_idx}.")
 
         if not regenerate:
             return
 
-        # --- Randomize file order for answer generation ---
+        # Randomize file order for answer generation.
         file_list_for_answers = file_list.copy()
         random.shuffle(file_list_for_answers)
-        logger.info(f"[Group: {group_name}] File order for answer generation (question {idx}): {file_list_for_answers}")
+        logger.info(f"[Group: {group_name}] File order for answer generation (h{h_idx+1} p{p_idx+1} q{q_idx}): {file_list_for_answers}")
         combined_files_for_answers = build_files_prompt(file_list_for_answers, full_base_dir, a_file_prompt_header)
 
         final_answer_prompt = (
@@ -303,19 +325,18 @@ def process_file_group(
             client=openai_client,
         )
         if not answer_text:
-            logger.error(f"[Group: {group_name}] Failed to generate answer for question {idx}.")
+            logger.error(f"[Group: {group_name}] Failed to generate answer for question h{h_idx+1} p{p_idx+1} q{q_idx}.")
             return
 
         write_text_to_file(answer_file_path, answer_text)
         write_text_to_file(answer_debug_path, final_answer_prompt)
         write_text_to_file(meta_file_path, current_hash)
-        logger.info(f"[Group: {group_name}] Saved answer for question {idx} -> {answer_file_path}")
+        logger.info(f"[Group: {group_name}] Saved answer for question h{h_idx+1} p{p_idx+1} q{q_idx} -> {answer_file_path}")
 
-    # Use a ThreadPoolExecutor for answer generation with configurable workers.
     with ThreadPoolExecutor(max_workers=answer_workers) as executor:
         futures = [
-            executor.submit(process_question, idx, question)
-            for idx, question in enumerate(questions, start=1)
+            executor.submit(process_question, h_idx, p_idx, q_idx, question)
+            for (h_idx, p_idx, q_idx, question) in answer_tasks
         ]
         for future in as_completed(futures):
             future.result()
