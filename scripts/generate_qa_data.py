@@ -205,50 +205,56 @@ def process_file_group(
     answers_dir.mkdir(parents=True, exist_ok=True)
     debug_dir.mkdir(parents=True, exist_ok=True)
 
-    # We'll collect all generated questions across header-persona combinations.
-    # Each entry in generated_questions is a tuple:
-    # (header_index, persona_index, question_text, list_of_questions)
-    generated_questions = []
+    # --- Generate question lists for each header-persona combination concurrently ---
+    def generate_question_combo(h_idx: int, p_idx: int, header: str, persona: str) -> Optional[tuple]:
+        persona_instructions = (f"Please use the following persona when generating the questions: {persona}."
+                                if persona else "")
+        final_question_prompt = (
+            f"{q_context_prompt.format(files_content=combined_files_with_prompts)}\n\n"
+            f"{header}\n\n"
+            f"{persona_instructions}\n\n"
+            f"{q_prompt_footer}"
+        )
+        question_file_name = f"questions_{group_name}_h{h_idx+1}_p{p_idx+1}.txt"
+        question_debug_name = f"debug_{group_name}_h{h_idx+1}_p{p_idx+1}_questions.txt"
+        question_file_path = questions_dir / question_file_name
+        question_debug_path = debug_dir / question_debug_name
 
-    # --- Generate question lists for each header-persona combination ---
-    for h_idx, header in enumerate(q_prompt_headers or [""]):
-        for p_idx, persona in enumerate(personas):
-            persona_instructions = f"Please use the following persona when generating the questions: {persona}." if persona else ""
-            final_question_prompt = (
-                f"{q_context_prompt.format(files_content=combined_files_with_prompts)}\n\n"
-                f"{header}\n\n"
-                f"{persona_instructions}\n\n"
-                f"{q_prompt_footer}"
+        logger.info(f"[Group: {group_name}] Generating questions using header {h_idx+1} and persona {p_idx+1}.")
+
+        if question_file_path.exists():
+            question_list_text = read_text_from_file(question_file_path).strip()
+            logger.info(f"[Group: {group_name}] Questions file {question_file_name} already exists. Using existing questions.")
+        else:
+            question_list_text = call_api(
+                provider=question_provider_config["provider"],
+                model=question_provider_config["model"],
+                prompt=final_question_prompt,
+                global_ollama_url=global_ollama_url,
+                client=openai_client,
             )
-            # Create unique file names per header-persona combo.
-            question_file_name = f"questions_{group_name}_h{h_idx+1}_p{p_idx+1}.txt"
-            question_debug_name = f"debug_{group_name}_h{h_idx+1}_p{p_idx+1}_questions.txt"
-            question_file_path = questions_dir / question_file_name
-            question_debug_path = debug_dir / question_debug_name
+            if not question_list_text:
+                logger.error(f"[Group: {group_name}] Failed to generate questions for header {h_idx+1} persona {p_idx+1}.")
+                return None
+            write_text_to_file(question_file_path, question_list_text)
+            write_text_to_file(question_debug_path, final_question_prompt)
+            logger.info(f"[Group: {group_name}] Questions saved to {question_file_path}")
+            logger.info(f"[Group: {group_name}] Debug info saved to {question_debug_path}")
 
-            logger.info(f"[Group: {group_name}] Generating questions using header {h_idx+1} and persona {p_idx+1}.")
+        return (h_idx, p_idx, question_list_text)
 
-            # Only generate if not already existing.
-            if question_file_path.exists():
-                question_list_text = read_text_from_file(question_file_path).strip()
-                logger.info(f"[Group: {group_name}] Questions file {question_file_name} already exists. Using existing questions.")
-            else:
-                question_list_text = call_api(
-                    provider=question_provider_config["provider"],
-                    model=question_provider_config["model"],
-                    prompt=final_question_prompt,
-                    global_ollama_url=global_ollama_url,
-                    client=openai_client,
-                )
-                if not question_list_text:
-                    logger.error(f"[Group: {group_name}] Failed to generate questions for header {h_idx+1} persona {p_idx+1}.")
-                    continue
-                write_text_to_file(question_file_path, question_list_text)
-                write_text_to_file(question_debug_path, final_question_prompt)
-                logger.info(f"[Group: {group_name}] Questions saved to {question_file_path}")
-                logger.info(f"[Group: {group_name}] Debug info saved to {question_debug_path}")
-
-            generated_questions.append((h_idx, p_idx, question_list_text))
+    generated_questions = []
+    question_futures = []
+    total_combos = len(q_prompt_headers or [""]) * len(personas)
+    with ThreadPoolExecutor(max_workers=total_combos) as q_executor:
+        for h_idx, header in enumerate(q_prompt_headers or [""]):
+            for p_idx, persona in enumerate(personas):
+                future = q_executor.submit(generate_question_combo, h_idx, p_idx, header, persona)
+                question_futures.append(future)
+        for future in as_completed(question_futures):
+            result = future.result()
+            if result is not None:
+                generated_questions.append(result)
 
     # --- Parse questions and prepare answer generation ---
     # We'll generate answers for every question in each question list.
