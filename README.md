@@ -150,6 +150,8 @@ For more information about fine tuning parameters please refer to the [Fine Tune
 
 Open your browser and navigate to [localhost:8080](http://localhost:8080/)
 
+![Open WebUI Demo](https://github.com/open-webui/open-webui/raw/main/demo.gif)
+
 ### Other Commands
 
 Uninstalls the Model from Ollama.
