@@ -12,181 +12,81 @@ providers:
     provider: openai # Use "ollama" or "openai"
     model: gpt-4o-mini
 
-personas:
-  question_personas:
-    - 'A casual person that makes grammatical mistakes and typos'
-    - 'A formal person who is concise and uses correct terminology.'
+QuestionInstructionList:
+  - name: 'CasualandFormal'
+    instruction:
+      - 'For each question write like a casual person that makes grammatical mistakes and typos'
+      - 'For each question write like a formal person who is concise and uses correct terminology.'
+
+AnswerInstructionList:
+  - name: 'SimpleAndComplex'
+    instruction:
+      - 'Keep the answer simple and direct.'
+      - 'For your answer give a lot of detail.'
+
+GenerateQuestionLists:
+  - name: 'DocumentList'
+    questions:
+      - 'Generate a list of questions where the user wants to know how to do something.'
+      - 'Generate a list of questions where the user wants to know a specific thing.'
+      - 'Generate a list of questions where the user asks how to do something given their particular situation.'
+      - 'Generate a list of questions where the user asks about something broad.'
+  - name: 'CodingList'
+    questions:
+      - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
+      - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
+
+FileHeaders:
+  - name: 'DefaultFileHeader'
+    description: 'The file contents for: {file_name}'
+
+AnswerPrompt:
+  - name: 'DefaultAnswerPrompt'
+    description: |
+      {file_content}
+      {instruction}
+      {question}
+
+QuestionPrompt:
+  - name: 'NoFileName'
+    description: |
+      {file_content}
+      {generate_question}
+      {instruction}
+      Use the following output format:
+        1. <question 1>
+        2. <question 2>
+        3. <question 3>
+      etc.
+  - name: 'WithFileName'
+    description: |
+      {file_content}
+      {generate_question}
+      {instruction}
+      Use the following output format and for each question reference {file_name_list}:
+        1. <question 1>
+        2. <question 2>
+        3. <question 3>
+      etc.
 
 file_groups:
   README:
     iterations: 3
     files:
       - README.md
-    prompts:
-      question_prompt_headers:
-        - 'Generate a list of questions where the user wants to know how to do something.'
-        - 'Generate a list of questions where the user wants to know a specific thing.'
-        - 'Generate a list of questions where the user asks how to do something given their particular situation.'
-        - 'Generate a list of questions where the user asks about something broad.'
-      question_prompt_footer: |
-        Please generate a question list:
-        1. <question 1>
-        2. <question 2>
-        3. <question 3>
-        etc.
-      question_file_prompt_header: 'The file contents for: {file_name}'
-      question_context_prompt: '{files_content}'
-      answer_file_prompt_header: 'The file contents for: {file_name}'
-      answer_context_prompt: '{files_content}'
-      answer_question_prompt: '{question}'
+    question_prompt: NoFileName
+    generate_question_list: [DocumentList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
   UninstallModel:
     iterations: 3
-    prompts:
-      question_prompt_headers:
-        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
-        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
-      question_prompt_footer: |
-        For each question please reference the file name Uninstall Model in some way based on the user's personality.
-        Please generate a question list:
-        1. <question 1>
-        2. <question 2>
-        3. <question 3>
-        etc.
-      answer_file_prompt_header: 'The file contents for: {file_name}'
-      answer_context_prompt: '{files_content}'
-      answer_question_prompt: '{question}'
     files:
       - uninstall_model.ps1
-  DeleteModel:
-    iterations: 3
-    prompts:
-      question_prompt_headers:
-        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
-        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
-      question_prompt_footer: |
-        For each question please reference the file name Delete Model in some way based on the user's personality.
-        Please generate a question list:
-        1. <question 1>
-        2. <question 2>
-        3. <question 3>
-        etc.
-      answer_file_prompt_header: 'The file contents for: {file_name}'
-      answer_context_prompt: '{files_content}'
-      answer_question_prompt: '{question}'
-    files:
-      - delete_model.ps1
-  TrainTorchTune:
-    iterations: 3
-    prompts:
-      question_prompt_headers:
-        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
-        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
-      question_prompt_footer: |
-        For each question please reference the file name for Train Model Torchtune, Merge Lora or Convert JSONL to JSON in some way based on the user's personality.
-        Please generate a question list:
-        1. <question 1>
-        2. <question 2>
-        3. <question 3>
-        etc.
-      answer_file_prompt_header: 'The file contents for: {file_name}'
-      answer_context_prompt: '{files_content}'
-      answer_question_prompt: '{question}'
-    files:
-      - train_model_torchtune.ps1
-      - merge_lora.py
-      - convert_jsonl_to_json.py
-  BuildImage:
-    iterations: 3
-    prompts:
-      question_prompt_headers:
-        - 'Generate a list of questions where the user wants to about specific things that are being installed.'
-        - 'Generate a list of questions where the user wants to know about how things are being set up.'
-        - 'Generate a list of questions where the user wants to know about the environment configurations.'
-        - 'Generate a list of questions where the user wants to know how the files interact with each other and what they do.'
-      question_prompt_footer: |
-        For each question please reference the file name for Build Image, dockerfile or supervisord in some way based on the user's personality.
-        Please generate a question list:
-        1. <question 1>
-        2. <question 2>
-        3. <question 3>
-        etc.
-      answer_file_prompt_header: 'The file contents for: {file_name}'
-      answer_context_prompt: '{files_content}'
-      answer_question_prompt: '{question}'
-    files:
-      - build_image.ps1
-      - dockerfile
-      - supervisord.conf
-  TrainUnsloth:
-    iterations: 3
-    prompts:
-      question_prompt_headers:
-        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
-        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
-      question_prompt_footer: |
-        For each question please reference the file name for Train Model Unsloth or Train.py in some way based on the user's personality.
-        Please generate a question list:
-        1. <question 1>
-        2. <question 2>
-        3. <question 3>
-        etc.
-      answer_file_prompt_header: 'The file contents for: {file_name}'
-      answer_context_prompt: '{files_content}'
-      answer_question_prompt: '{question}'
-    files:
-      - train_model_unsloth.ps1
-      - train.py
-  InstallModel:
-    iterations: 3
-    prompts:
-      question_prompt_headers:
-        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
-        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
-      question_prompt_footer: |
-        For each question please reference the file name for Install Model in some way based on the user's personality.
-        Please generate a question list:
-        1. <question 1>
-        2. <question 2>
-        3. <question 3>
-        etc.
-      answer_file_prompt_header: 'The file contents for: {file_name}'
-      answer_context_prompt: '{files_content}'
-      answer_question_prompt: '{question}'
-    files:
-      - install_model.ps1
-  ListModels:
-    iterations: 3
-    prompts:
-      question_prompt_headers:
-        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
-        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
-      question_prompt_footer: |
-        For each question please reference the file name for List Models in some way based on the user's personality.
-        Please generate a question list:
-        1. <question 1>
-        2. <question 2>
-        3. <question 3>
-        etc.
-      answer_file_prompt_header: 'The file contents for: {file_name}'
-      answer_context_prompt: '{files_content}'
-      answer_question_prompt: '{question}'
-    files:
-      - list_models.ps1
-  CopyTrainingData:
-    iterations: 3
-    prompts:
-      question_prompt_headers:
-        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
-        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
-      question_prompt_footer: |
-        For each question please reference the file name for Copy Training Data in some way based on the user's personality.
-        Please generate a question list:
-        1. <question 1>
-        2. <question 2>
-        3. <question 3>
-        etc.
-      answer_file_prompt_header: 'The file contents for: {file_name}'
-      answer_context_prompt: '{files_content}'
-      answer_question_prompt: '{question}'
-    files:
-      - copy_training_data.ps1
+    question_prompt: WithFileName
+    generate_question_list: [CodingList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]

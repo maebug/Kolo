@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Initialize logging.
+# Logging setup
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -19,11 +19,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Try importing the new OpenAI client
 try:
     from openai import OpenAI
 except ImportError:
     OpenAI = None
-    logger.warning("OpenAI package not installed; openai provider will not work.")
+    logger.warning("OpenAI package (new interface) not installed; openai provider will not work.")
+
+
+def get_item_by_name(item_list: List[Dict[str, Any]], name: str) -> Optional[Dict[str, Any]]:
+    """
+    Helper to return the dict that has 'name' == name from a list of dicts.
+    """
+    for obj in item_list:
+        if obj.get("name") == name:
+            return obj
+    return None
+
 
 # --- Helper Functions ---
 def call_api(
@@ -31,7 +43,7 @@ def call_api(
     model: str,
     prompt: str,
     global_ollama_url: Optional[str] = None,
-    client: Optional[Any] = None
+    openai_client: Optional[OpenAI] = None
 ) -> Optional[str]:
     """
     Calls the appropriate API (OpenAI or Ollama) using the selected model and prompt.
@@ -41,18 +53,20 @@ def call_api(
     backoff_factor = 1  # Base backoff time in seconds
 
     if provider.lower() == "openai":
-        if client is None:
-            logger.error("OpenAI client is not initialized.")
+        if not openai_client:
+            logger.error("OpenAI client is not initialized. Cannot generate via openai provider.")
             return None
 
         attempt = 0
         while attempt <= max_retries:
             try:
-                response = client.chat.completions.create(
-                    model=model,
+                # Using your new `openai` library code
+                response = openai_client.chat.completions.create(
                     messages=[{"role": "user", "content": prompt}],
+                    model=model
                 )
-                return response.choices[0].message.content.strip()
+                return response.choices[0].message.content
+
             except Exception as e:
                 logger.error(f"OpenAI API error on attempt {attempt+1}/{max_retries}: {e}")
                 if attempt == max_retries:
@@ -80,6 +94,7 @@ def call_api(
                 response.raise_for_status()
                 result = response.json()
                 return result.get("response", "").strip()
+
             except Exception as e:
                 logger.error(f"Ollama API error on attempt {attempt+1}/{max_retries}: {e}")
                 if attempt == max_retries:
@@ -90,8 +105,9 @@ def call_api(
                 attempt += 1
 
     else:
-        logger.error("Unknown provider specified.")
+        logger.error(f"Unknown provider specified: {provider}")
         return None
+
 
 def find_file_in_subdirectories(base_dir: Path, relative_path: str) -> Optional[Path]:
     """
@@ -101,13 +117,17 @@ def find_file_in_subdirectories(base_dir: Path, relative_path: str) -> Optional[
     if possible_path.exists():
         return possible_path
 
-    target = Path(relative_path).name
-    for path in base_dir.rglob(target):
+    target_name = Path(relative_path).name
+    for path in base_dir.rglob(target_name):
         if path.is_file():
             return path
     return None
 
+
 def parse_questions(question_text: str) -> List[str]:
+    """
+    Parses the output from the LLM to extract lines that contain question-like strings.
+    """
     questions = []
     for line in question_text.splitlines():
         stripped = line.strip()
@@ -118,84 +138,132 @@ def parse_questions(question_text: str) -> List[str]:
         cleaned = re.sub(r'^[\d\.\-\+\*]+\s*', '', stripped)
         # Remove extra asterisks used for formatting
         cleaned = re.sub(r'\*+', '', cleaned).strip()
-        # Check if this looks like a question
         if '?' in cleaned:
             questions.append(cleaned)
     return questions
 
+
 def get_hash(text: str) -> str:
     """Returns the SHA-256 hash of the given text."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
 
 def write_text_to_file(file_path: Path, text: str) -> None:
     """Writes text to a file ensuring the parent directory exists."""
     file_path.parent.mkdir(parents=True, exist_ok=True)
     file_path.write_text(text, encoding="utf-8")
 
+
 def read_text_from_file(file_path: Path) -> str:
     """Reads and returns text from a file."""
     return file_path.read_text(encoding="utf-8")
 
-def build_files_prompt(file_list: List[str], base_dir: Path, template: str) -> str:
+
+def build_files_content(
+    file_list: List[str],
+    base_dir: Path,
+    file_header_template: str
+) -> str:
     """
-    Build a combined prompt string by iterating over a list of files
-    using the provided individual prompt template.
+    Build a combined string by iterating over a list of files, 
+    inserting a file header and then the file contents.
     """
     combined = ""
     for rel_path in file_list:
         file_path = find_file_in_subdirectories(base_dir, rel_path)
         if file_path and file_path.exists():
             content = file_path.read_text(encoding="utf-8")
-            combined += f"{template.format(file_name=rel_path)}\n\n{content}\n\n"
+            combined += file_header_template.format(file_name=rel_path) + "\n"
+            combined += content + "\n\n"
         else:
             logger.warning(f"{rel_path} not found in {base_dir} or its subdirectories.")
     return combined
 
-# --- Main Processing Function ---
+
 def process_file_group(
     group_name: str,
     group_config: Dict[str, Any],
+    config: Dict[str, Any],
     full_base_dir: Path,
     base_output_path: Path,
     question_provider_config: Dict[str, Any],
     answer_provider_config: Dict[str, Any],
     global_ollama_url: Optional[str],
-    openai_client: Optional[Any],
-    global_thread_count: int,
-    question_personas: List[str] = None
+    openai_client: Optional[OpenAI],
+    global_thread_count: int
 ) -> None:
     """
-    Processes a group of files to generate questions and answers using LLM providers.
-    Instead of submitting inner tasks to a global executor (which can deadlock with only 1 thread),
-    we use local (nested) executors—or run sequentially if global_thread_count == 1.
+    Processes a group of files to generate questions and answers using the new config format.
     """
+
+    # 1) Gather the relevant config sections/lists
+    file_headers = config.get("FileHeaders", [])
+    question_prompts = config.get("QuestionPrompt", [])
+    answer_prompts = config.get("AnswerPrompt", [])
+    question_instruction_lists = config.get("QuestionInstructionList", [])
+    answer_instruction_lists = config.get("AnswerInstructionList", [])
+    generate_question_lists = config.get("GenerateQuestionLists", [])
+
+    # 2) Group-level info
     file_list: List[str] = group_config.get("files", [])
-    group_prompts = group_config.get("prompts", {})
+    file_header_name = group_config.get("file_header", "")
+    question_prompt_name = group_config.get("question_prompt", "")
+    answer_prompt_name = group_config.get("answer_prompt", "")
 
-    # Extract file group specific prompts.
-    q_prompt_headers: List[str] = group_prompts.get("question_prompt_headers", [])
-    q_prompt_footer: str = group_prompts.get("question_prompt_footer", "")
-    q_file_prompt_header: str = group_prompts.get("question_file_prompt_header", "File: {file_name}")
-    q_context_prompt: str = group_prompts.get("question_context_prompt", "{files_content}")
-    a_file_prompt_header: str = group_prompts.get("answer_file_prompt_header", "File: {file_name}")
-    a_context_prompt: str = group_prompts.get("answer_context_prompt", "{files_content}")
-    a_question_prompt: str = group_prompts.get("answer_question_prompt", "{question}")
+    # 2a) Instruction list names
+    question_instruction_list_names = group_config.get("question_instruction_list", [])
+    answer_instruction_list_names = group_config.get("answer_instruction_list", [])
 
-    try:
-        iteration = int(group_name.split('_')[-1])
-    except Exception as e:
-        logger.warning(f"Could not determine iteration for group {group_name}: {e}")
-        iteration = 1
+    # 2b) Generate question list names
+    generate_question_list_names = group_config.get("generate_question_list", [])
 
-    # Randomize file order for prompt construction.
-    file_list_for_questions = file_list.copy()
-    random.shuffle(file_list_for_questions)
-    logger.info(f"[Group: {group_name}] File order for question generation: {file_list_for_questions}")
-    combined_files_with_prompts = build_files_prompt(file_list_for_questions, full_base_dir, q_file_prompt_header)
+    # 3) Resolve the actual template strings
+    file_header_obj = get_item_by_name(file_headers, file_header_name)
+    file_header_template = file_header_obj["description"] if file_header_obj else ""
 
-    personas = question_personas if question_personas else [""]
+    question_prompt_obj = get_item_by_name(question_prompts, question_prompt_name)
+    if not question_prompt_obj:
+        logger.error(f"No question prompt found for name '{question_prompt_name}'.")
+        return
+    question_prompt_template = question_prompt_obj["description"]
 
-    # Prepare directories.
+    answer_prompt_obj = get_item_by_name(answer_prompts, answer_prompt_name)
+    if not answer_prompt_obj:
+        logger.error(f"No answer prompt found for name '{answer_prompt_name}'.")
+        return
+    answer_prompt_template = answer_prompt_obj["description"]
+
+    # 4) Collect all instructions from the relevant lists
+    #    We'll generate questions for each combination of question-lists x question-instructions
+    #    and then generate answers for each question x answer-instructions
+    all_question_instructions = []
+    for q_list_name in question_instruction_list_names:
+        instr_list_obj = get_item_by_name(question_instruction_lists, q_list_name)
+        if instr_list_obj:
+            all_question_instructions.extend(instr_list_obj.get("instruction", []))
+
+    all_answer_instructions = []
+    for a_list_name in answer_instruction_list_names:
+        instr_list_obj = get_item_by_name(answer_instruction_lists, a_list_name)
+        if instr_list_obj:
+            all_answer_instructions.extend(instr_list_obj.get("instruction", []))
+
+    # 5) Collect all "question seeds" from the relevant generate question lists
+    all_question_seeds = []
+    for gq_list_name in generate_question_list_names:
+        gq_obj = get_item_by_name(generate_question_lists, gq_list_name)
+        if gq_obj:
+            all_question_seeds.extend(gq_obj.get("questions", []))
+
+    # If no seeds or instructions, we won't do anything
+    if not all_question_seeds or not all_question_instructions:
+        logger.warning(f"[Group: {group_name}] No question seeds or instructions found.")
+        return
+
+    # 6) Build file content for the prompt (shared for question generation)
+    combined_file_content_for_questions = build_files_content(file_list, full_base_dir, file_header_template)
+
+    # 7) Prepare output directories
     output_dir = base_output_path / "qa_generation_output"
     questions_dir = output_dir / "questions"
     answers_dir = output_dir / "answers"
@@ -204,162 +272,176 @@ def process_file_group(
     answers_dir.mkdir(parents=True, exist_ok=True)
     debug_dir.mkdir(parents=True, exist_ok=True)
 
-    # --- QUESTION GENERATION ---
-    generated_questions = []
-
-    def generate_question_combo(h_idx: int, p_idx: int, header: str, persona: str) -> Optional[tuple]:
-        persona_instructions = (f"Please use the following persona when generating the questions: {persona}."
-                                if persona else "")
-        final_question_prompt = (
-            f"{q_context_prompt.format(files_content=combined_files_with_prompts)}\n\n"
-            f"{header}\n\n"
-            f"{persona_instructions}\n\n"
-            f"{q_prompt_footer}"
+    # 8) We'll generate questions for each (question_seed, question_instruction)
+    def generate_questions(q_seed_idx: int, instr_idx: int, seed_text: str, instruction: str):
+        """
+        Generate a block of questions from a single question seed + instruction pair.
+        Return the text as well as the parsed list of questions.
+        """
+        # Format the final question prompt
+        file_name_list_str = ", ".join(file_list)
+        final_question_prompt = question_prompt_template.format(
+            file_content=combined_file_content_for_questions,
+            generate_question=seed_text,
+            instruction=instruction,
+            file_name_list=file_name_list_str
         )
-        question_file_name = f"questions_{group_name}_h{h_idx+1}_p{p_idx+1}.txt"
-        question_debug_name = f"debug_{group_name}_h{h_idx+1}_p{p_idx+1}_questions.txt"
-        question_file_path = questions_dir / question_file_name
-        question_debug_path = debug_dir / question_debug_name
 
-        logger.info(f"[Group: {group_name}] Generating questions using header {h_idx+1} and persona {p_idx+1}.")
+        out_filename = f"questions_{group_name}_seed{q_seed_idx}_instr{instr_idx}.txt"
+        debug_filename = f"debug_{group_name}_seed{q_seed_idx}_instr{instr_idx}_questions.txt"
+        questions_path = questions_dir / out_filename
+        debug_path = debug_dir / debug_filename
 
-        if question_file_path.exists():
-            question_list_text = read_text_from_file(question_file_path).strip()
-            logger.info(f"[Group: {group_name}] Questions file {question_file_name} already exists. Using existing questions.")
+        if questions_path.exists():
+            # If we already have this questions file, reuse it
+            question_list_text = read_text_from_file(questions_path).strip()
+            logger.info(f"[Group: {group_name}] Using existing questions file: {out_filename}")
         else:
+            # Call the LLM
             question_list_text = call_api(
-                provider=question_provider_config["provider"],
-                model=question_provider_config["model"],
+                provider=question_provider_config.get("provider"),
+                model=question_provider_config.get("model"),
                 prompt=final_question_prompt,
                 global_ollama_url=global_ollama_url,
-                client=openai_client,
+                openai_client=openai_client
             )
             if not question_list_text:
-                logger.error(f"[Group: {group_name}] Failed to generate questions for header {h_idx+1} persona {p_idx+1}.")
-                return None
-            write_text_to_file(question_file_path, question_list_text)
-            write_text_to_file(question_debug_path, final_question_prompt)
-            logger.info(f"[Group: {group_name}] Questions saved to {question_file_path}")
-            logger.info(f"[Group: {group_name}] Debug info saved to {question_debug_path}")
+                logger.error(f"[Group: {group_name}] Failed to generate questions (seed={q_seed_idx}, instr={instr_idx}).")
+                return ""
 
-        return (h_idx, p_idx, question_list_text)
+            # Save outputs
+            write_text_to_file(questions_path, question_list_text)
+            write_text_to_file(debug_path, final_question_prompt)
 
-    # Decide on inner concurrency: if global_thread_count==1, run sequentially.
+        return question_list_text
+
+    # Collect tasks for concurrency
+    question_generation_tasks = []
+    for q_seed_idx, seed_text in enumerate(all_question_seeds, start=1):
+        for instr_idx, instruction in enumerate(all_question_instructions, start=1):
+            question_generation_tasks.append((q_seed_idx, instr_idx, seed_text, instruction))
+
+    # Decide how many workers to use
     inner_workers = global_thread_count if global_thread_count > 1 else 1
 
-    # Prepare question-generation tasks.
-    question_tasks = []
-    for h_idx, header in enumerate(q_prompt_headers or [""]):
-        for p_idx, persona in enumerate(personas):
-            # Use default args to capture the current values.
-            question_tasks.append(lambda h_idx=h_idx, p_idx=p_idx, header=header, persona=persona: 
-                                  generate_question_combo(h_idx, p_idx, header, persona))
+    # We'll store (seed_idx, instr_idx) -> [questions]
+    question_collections: Dict[(int, int), List[str]] = {}
 
+    def handle_question_generation_task(task_tuple):
+        q_seed_idx, instr_idx, seed_text, instruction = task_tuple
+        text_block = generate_questions(q_seed_idx, instr_idx, seed_text, instruction)
+        if not text_block:
+            return (q_seed_idx, instr_idx, [])
+        parsed_list = parse_questions(text_block)
+        return (q_seed_idx, instr_idx, parsed_list)
+
+    # Generate questions concurrently or sequentially
     if inner_workers > 1:
-        with ThreadPoolExecutor(max_workers=inner_workers) as inner_pool:
-            futures = [inner_pool.submit(task) for task in question_tasks]
-            for future in as_completed(futures):
-                result = future.result()
-                if result is not None:
-                    generated_questions.append(result)
+        with ThreadPoolExecutor(max_workers=inner_workers) as pool:
+            future_map = {pool.submit(handle_question_generation_task, t): t for t in question_generation_tasks}
+            for f in as_completed(future_map):
+                (q_seed_idx, instr_idx, q_list) = f.result()
+                question_collections[(q_seed_idx, instr_idx)] = q_list
     else:
-        for task in question_tasks:
-            result = task()
-            if result is not None:
-                generated_questions.append(result)
+        for t in question_generation_tasks:
+            q_seed_idx, instr_idx, q_list = handle_question_generation_task(t)
+            question_collections[(q_seed_idx, instr_idx)] = q_list
 
     # --- ANSWER GENERATION ---
-    answer_tasks = []
-    total_questions_overall = 0
+    # Build file content again for answers
+    combined_file_content_for_answers = build_files_content(file_list, full_base_dir, file_header_template)
 
-    for (h_idx, p_idx, question_list_text) in generated_questions:
-        questions = parse_questions(question_list_text)
-        if not questions:
-            logger.error(f"[Group: {group_name}] No valid questions found in generated list for header {h_idx+1} and persona {p_idx+1}.")
-            continue
+    def generate_answer(
+        q_seed_idx: int,
+        instr_idx: int,
+        question_number: int,
+        question_text: str,
+        answer_instruction: str
+    ):
+        """
+        Generate an answer to a single question with a single answer instruction.
+        """
+        # The answer prompt might have placeholders:
+        final_answer_prompt = answer_prompt_template.format(
+            file_content=combined_file_content_for_answers,
+            instruction=answer_instruction,
+            question=question_text
+        )
 
-        logger.info(f"[Group: {group_name}] Found {len(questions)} questions for header {h_idx+1} and persona {p_idx+1}.")
-        total_questions_overall += len(questions)
-
-        for q_idx, question in enumerate(questions, start=1):
-            answer_tasks.append((h_idx, p_idx, q_idx, question))
-
-    logger.info(f"[Group: {group_name}] Total of {total_questions_overall} questions found. Beginning answer generation...")
-
-    def process_question(h_idx: int, p_idx: int, q_idx: int, question: str) -> None:
-        logger.info(f"[Group: {group_name}] Processing question h{h_idx+1} p{p_idx+1} q{q_idx}: {question}")
-
-        answer_filename = f"answer_{group_name}_h{h_idx+1}_p{p_idx+1}_{q_idx}.txt"
-        answer_debug_filename = f"debug_{group_name}_answer_h{h_idx+1}_p{p_idx+1}_{q_idx}.txt"
-        meta_filename = f"answer_{group_name}_h{h_idx+1}_p{p_idx+1}_{q_idx}.meta"
+        answer_filename = f"answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{question_number}.txt"
+        debug_filename = f"debug_{group_name}_answer_seed{q_seed_idx}_instr{instr_idx}_q{question_number}.txt"
+        meta_filename = f"answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{question_number}.meta"
 
         answer_file_path = answers_dir / answer_filename
-        answer_debug_path = debug_dir / answer_debug_filename
+        answer_debug_path = debug_dir / debug_filename
         meta_file_path = answers_dir / meta_filename
 
-        current_hash = get_hash(question)
-        regenerate = True
+        # Compute a hash of question + instruction so we can detect changes
+        current_hash = get_hash(question_text + answer_instruction)
 
+        # Determine if we regenerate
+        regenerate = True
         if answer_file_path.exists():
             if meta_file_path.exists():
                 stored_hash = read_text_from_file(meta_file_path).strip()
                 if stored_hash == current_hash:
-                    logger.info(f"[Group: {group_name}] Answer h{h_idx+1} p{p_idx+1} q{q_idx} is up-to-date. Skipping regeneration.")
+                    logger.info(
+                        f"[Group: {group_name}] Answer for (seed={q_seed_idx}, instr={instr_idx}, q={question_number}) is up to date."
+                    )
                     regenerate = False
                 else:
-                    logger.info(f"[Group: {group_name}] Question h{h_idx+1} p{p_idx+1} q{q_idx} has changed. Regenerating answer.")
+                    logger.info(f"[Group: {group_name}] Detected changed question/instruction, regenerating answer.")
             else:
+                # If there's no meta file, create one now
                 write_text_to_file(meta_file_path, current_hash)
-                logger.info(f"[Group: {group_name}] Meta file created for answer h{h_idx+1} p{p_idx+1} q{q_idx}. Skipping regeneration.")
                 regenerate = False
-
-        if not answer_file_path.exists():
-            logger.info(f"[Group: {group_name}] Generating answer for question h{h_idx+1} p{p_idx+1} q{q_idx}.")
 
         if not regenerate:
             return
 
-        file_list_for_answers = file_list.copy()
-        random.shuffle(file_list_for_answers)
-        logger.info(f"[Group: {group_name}] File order for answer generation (h{h_idx+1} p{p_idx+1} q{q_idx}): {file_list_for_answers}")
-        combined_files_for_answers = build_files_prompt(file_list_for_answers, full_base_dir, a_file_prompt_header)
-
-        final_answer_prompt = (
-            f"{a_context_prompt.format(files_content=combined_files_for_answers)}\n\n"
-            f"{a_question_prompt.format(question=question)}"
-        )
-
+        # Actually generate
         answer_text = call_api(
-            provider=answer_provider_config["provider"],
-            model=answer_provider_config["model"],
+            provider=answer_provider_config.get("provider"),
+            model=answer_provider_config.get("model"),
             prompt=final_answer_prompt,
             global_ollama_url=global_ollama_url,
-            client=openai_client,
+            openai_client=openai_client
         )
         if not answer_text:
-            logger.error(f"[Group: {group_name}] Failed to generate answer for question h{h_idx+1} p{p_idx+1} q{q_idx}.")
+            logger.error(
+                f"[Group: {group_name}] Failed to generate answer for (seed={q_seed_idx}, instr={instr_idx}, q={question_number})."
+            )
             return
 
+        # Save
         write_text_to_file(answer_file_path, answer_text)
         write_text_to_file(answer_debug_path, final_answer_prompt)
         write_text_to_file(meta_file_path, current_hash)
-        logger.info(f"[Group: {group_name}] Saved answer for question h{h_idx+1} p{p_idx+1} q{q_idx} -> {answer_file_path}")
+        logger.info(f"[Group: {group_name}] Saved answer -> {answer_file_path}")
 
-    # Wrap answer tasks into callables.
-    def process_answer_task(task_tuple):
-        h_idx, p_idx, q_idx, question = task_tuple
-        process_question(h_idx, p_idx, q_idx, question)
+    # Prepare tasks for answer-generation
+    answer_tasks = []
+    for (q_seed_idx, instr_idx), question_list in question_collections.items():
+        if not question_list:
+            continue
+        for q_num, q_text in enumerate(question_list, start=1):
+            # Possibly generate multiple answers for each question if we have multiple answer instructions
+            for ans_instr in all_answer_instructions:
+                answer_tasks.append((q_seed_idx, instr_idx, q_num, q_text, ans_instr))
 
+    def handle_answer_task(task_tuple):
+        q_seed_idx, instr_idx, question_number, question_text, answer_instruction = task_tuple
+        generate_answer(q_seed_idx, instr_idx, question_number, question_text, answer_instruction)
+
+    # Run answer tasks
     if inner_workers > 1:
-        with ThreadPoolExecutor(max_workers=inner_workers) as inner_pool:
-            futures = [inner_pool.submit(process_answer_task, task) for task in answer_tasks]
-            for future in as_completed(futures):
-                future.result()
+        with ThreadPoolExecutor(max_workers=inner_workers) as pool:
+            _ = list(as_completed(pool.submit(handle_answer_task, t) for t in answer_tasks))
     else:
-        for task in answer_tasks:
-            process_answer_task(task)
+        for t in answer_tasks:
+            handle_answer_task(t)
 
-# --- Main Script ---
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate QA data for LLM fine-tuning.")
     parser.add_argument("--config", default="generate_qa_config.yaml", help="Path to configuration YAML file")
@@ -371,72 +453,72 @@ def main() -> None:
         logger.error(f"Configuration file not found: {config_path}")
         return
 
+    # Load the main config
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
 
-    # Global settings.
+    # Global settings
     global_config = config.get("global", {})
     base_dir = global_config.get("base_dir", "")
-    output_dir = global_config.get("output_dir", "output")
     output_base_path = Path(global_config.get("output_base_path", "/var/kolo_data"))
     full_base_dir = output_base_path / base_dir
     global_ollama_url = global_config.get("ollama_url", "http://localhost:11434/api/generate")
 
-    # Provider settings.
+    # Providers
     question_provider_config = config.get("providers", {}).get("question", {})
     answer_provider_config = config.get("providers", {}).get("answer", {})
 
-    # Load question personas.
-    question_personas = config.get("personas", {}).get("question_personas", [])
-
-    # File groups.
-    file_groups_config = config.get("file_groups", {})
-
-    # Initialize OpenAI client if needed.
+    # Initialize an OpenAI client if needed
     openai_client = None
-    if (question_provider_config.get("provider", "").lower() == "openai" or 
-        answer_provider_config.get("provider", "").lower() == "openai"):
+    if (
+        question_provider_config.get("provider", "").lower() == "openai"
+        or answer_provider_config.get("provider", "").lower() == "openai"
+    ):
         if OpenAI is None:
             logger.error("OpenAI client cannot be initialized because the package is missing.")
         else:
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                logger.error("OPENAI_API_KEY environment variable not set.")
-            else:
-                openai_client = OpenAI(api_key=api_key)
+            # Create a single client, referencing your example usage
+            api_key = os.environ.get("OPENAI_API_KEY")
+            openai_client = OpenAI(api_key=api_key)
 
-    # Expand file groups by iterations.
-    allowed_file_groups = {}
-    for group_name, group_config in file_groups_config.items():
-        iterations = group_config.get("iterations", 1)
+    # File groups
+    file_groups_config = config.get("file_groups", {})
+
+    # Expand file groups by 'iterations'
+    expanded_file_groups = {}
+    for group_name, g_config in file_groups_config.items():
+        iterations = g_config.get("iterations", 1)
         for i in range(1, iterations + 1):
             key = f"{group_name}_{i}"
-            allowed_file_groups[key] = group_config
+            expanded_file_groups[key] = g_config
 
-    total_groups = len(allowed_file_groups)
-    logger.info(f"Starting processing of {total_groups} file groups.")
+    total_groups = len(expanded_file_groups)
+    logger.info(f"Starting processing of {total_groups} file groups with up to {args.threads} threads...")
 
-    # Use a global executor for file groups.
+    # Use a thread pool for the groups
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         futures = []
-        for group_name, group_config in allowed_file_groups.items():
+        for group_name, group_conf in expanded_file_groups.items():
             future = executor.submit(
                 process_file_group,
                 group_name=group_name,
-                group_config=group_config,
+                group_config=group_conf,
+                config=config,
                 full_base_dir=full_base_dir,
                 base_output_path=output_base_path,
                 question_provider_config=question_provider_config,
                 answer_provider_config=answer_provider_config,
                 global_ollama_url=global_ollama_url,
                 openai_client=openai_client,
-                global_thread_count=args.threads,
-                question_personas=question_personas
+                global_thread_count=args.threads
             )
             futures.append(future)
+
         for future in as_completed(futures):
+            # Raise exceptions if any occurred
             future.result()
 
-    logger.info("All file groups have been processed.")
+    logger.info("All file groups have been processed successfully.")
+
 
 if __name__ == "__main__":
     main()
