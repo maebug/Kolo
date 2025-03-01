@@ -1,30 +1,23 @@
 # Kolo
 
-**Kolo** is a lightweight tool designed for **fast and efficient data generation, fine-tuning and testing of Large Language Models (LLMs)** on your local machine. It leverages cutting-edge tools to simplify the fine-tuning and data generation process, making it as quick and seamless as possible.
+Tired of spending hours setting up your LLM fine-tuning environment? Kolo automates the entire process, getting you up and running in just 5 minutes with zero hassle. Get started instantly—whether you're an AI researcher, developer, or just experimenting with fine-tuning, Kolo makes it effortless.
 
-## 🚀 Features
-
-- ⚡ **Runs Locally**: No need for cloud-based services; fine-tune models on your own machine.
-- 🛠 **Easy Setup**: Simple installation of all dependencies with Docker. No more wasting time setting up your own LLM development environment we already did it for you!
-- 📁 **Generate Training Data**: Generate synthetic QA training data using your text files quick and easy!
-- 🔌 **Support for Popular Frameworks**: Integrates with major LLM toolkits such as Unsloth, Torchtune, Llama.cpp, Ollama and Open WebUI.
-
-## 🛠 Tools Used
+## 🛠 Tools Installed
 
 Kolo is built using a powerful stack of LLM tools:
 
 - [Unsloth](https://github.com/unslothai/unsloth) – Open-source LLM fine-tuning; faster training, lower VRAM.
-- [Torchtune](https://github.com/pytorch/torchtune) – Native PyTorch library simplifying LLM fine-tuning workflows.
-- [Llama.cpp](https://github.com/ggerganov/llama.cpp) – Fast C/C++ inference for Llama models.
-- [Ollama](https://ollama.ai/) – Portable, user-friendly LLM model management and deployment.
-- [Docker](https://www.docker.com/) – Containerized environment ensuring consistent, scalable deployments.
-- [Open WebUI](https://github.com/open-webui/open-webui) – Intuitive self-hosted web interface for LLM management.
+- [Torchtune](https://github.com/pytorch/torchtune) – Native PyTorch library LLM fine-tuning which supports AMD GPU and CPU fine tuning.
+- [Llama.cpp](https://github.com/ggerganov/llama.cpp) – C/C++ converting and quantization of LLMs into GGUFs for easy testing and deployment.
+- [Ollama](https://ollama.ai/) – Portable, user-friendly LLM model management and deployment software.
+- [Docker](https://www.docker.com/) – Containerized environment to automatically setup the entire LLM development environment with the necessary tools and dependencies automatically installed along with scripts to make fine tuning and testing easy.
+- [Open WebUI](https://github.com/open-webui/open-webui) – Self-hosted web interface for LLM testing.
 
 ## Recommended System Requirements
 
 - Operating System: Windows 10 or later, or Linux
 - Graphics Card: Nvidia GPU with CUDA 12.1 support and at least 8GB of VRAM
-- AMD GPU Users: Linux is required; Windows WSL2 does not support `ROCM`
+- AMD GPU Users: Linux is required; Windows WSL2 does not support ROCM.
 - Memory: 16GB or more of system RAM
 
 May work on other systems, your results may vary. Let us know!
