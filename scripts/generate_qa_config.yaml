@@ -23,7 +23,6 @@ file_groups:
     files:
       - README.md
     prompts:
-      # For question generation:
       question_prompt_headers:
         - 'Generate a list of questions where the user wants to know how to do something.'
         - 'Generate a list of questions where the user wants to know a specific thing.'
@@ -37,15 +36,12 @@ file_groups:
         etc.
       question_file_prompt_header: 'The file contents for: {file_name}'
       question_context_prompt: '{files_content}'
-
-      # For answer generation:
       answer_file_prompt_header: 'The file contents for: {file_name}'
       answer_context_prompt: '{files_content}'
       answer_question_prompt: '{question}'
   UninstallModel:
     iterations: 3
     prompts:
-      # For question generation:
       question_prompt_headers:
         - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
         - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
@@ -64,7 +60,6 @@ file_groups:
   DeleteModel:
     iterations: 3
     prompts:
-      # For question generation:
       question_prompt_headers:
         - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
         - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
@@ -80,121 +75,118 @@ file_groups:
       answer_question_prompt: '{question}'
     files:
       - delete_model.ps1
-  # TrainTorchTune:
-  #   iterations: 30
-  #   files:
-  #     - train_model_torchtune.ps1
-  #     - merge_lora.py
-  #     - convert_jsonl_to_json.py
-  # BuildImage:
-  #   iterations: 30
-  #   files:
-  #     - build_image.ps1
-  #     - dockerfile
-  #     - supervisord.conf
-  # RunContainer:
-  #   iterations: 10
-  #   files:
-  #     - create_and_run_container.ps1
-  #     - run_container.ps1
-  # TrainUnsloth:
-  #   iterations: 30
-  #   files:
-  #     - train_model_unsloth.ps1
-  #     - train.py
-  # TrainingPSCommands:
-  #   iterations: 30
-  #   files:
-  #     - train_model_torchtune.ps1
-  #     - train_model_unsloth.ps1
-  # InstallModel:
-  #   iterations: 10
-  #   files:
-  #     - install_model.ps1
-  # ListModels:
-  #   iterations: 10
-  #   files:
-  #     - list_models.ps1
-  # CopyScripts:
-  #   iterations: 10
-  #   files:
-  #     - copy_scripts.ps1
-  # CopyConfigs:
-  #   iterations: 10
-  #   files:
-  #     - copy_configs.ps1
-  # ConnectSSH:
-  #   iterations: 10
-  #   files:
-  #     - connect.ps1
-  # FineTuningGuide:
-  #   iterations: 30
-  #   files:
-  #     - FineTuningGuide.md
-  #   question_prompt_footer: |
-  #     Please generate the following list:
-  #     1. <question 1>
-  #     2. <question 2>
-  #     3. <question 3>
-  #     etc.
-  # GenerateQAData:
-  #   iterations: 30
-  #   files:
-  #     - generate_qa_data.ps1
-  #     - generate_qa_data.py
-  #     - generate_qa_config.yaml
-  # ConvertQAData:
-  #   iterations: 15
-  #   files:
-  #     - parse_qa_data.py
-  #     - convert_qa_output.ps1
-  # GenerateTrainingDataGuide:
-  #   iterations: 30
-  #   files:
-  #     - GenerateTrainingDataGuide.md
-  # CopyQAInputGeneration:
-  #   iterations: 10
-  #   files:
-  #     - copy_qa_input_generation.ps1
-  # GenerateQADataPy:
-  #   iterations: 30
-  #   files:
-  #     - generate_qa_data.py
-  # GenerateQADataPs1:
-  #   iterations: 10
-  #   files:
-  #     - generate_qa_data.ps1
-  # GenerateQADataYaml:
-  #   iterations: 10
-  #   files:
-  #     - generate_qa_config.yaml
-  # DeleteQAGeneration:
-  #   iterations: 10
-  #   files:
-  #     - delete_qa_generation_output.ps1
-  # CreateAndrunContainerAMD:
-  #   iterations: 10
-  #   files:
-  #     - create_and_run_container_amd.ps1
-  # BuildImageAMD:
-  #   iterations: 10
-  #   files:
-  #     - build_image_amd.ps1
-  # TrainModelTorchtuneAMDBoth:
-  #   iterations: 10
-  #   files:
-  #     - train_model_torchtune_amd.ps1
-  #     - train_model_torchtune.ps1
-  # TrainModelTorchtuneAMD:
-  #   iterations: 5
-  #   files:
-  #     - train_model_torchtune_amd.ps1
-  # DockerFileAMD:
-  #   iterations: 10
-  #   files:
-  #     - dockerfile-amd
-  #     - dockerfile
-  # CopyTrainingData:
-  #   iterations: 10
-  #   files:
-  #     - copy_training_data.ps1
+  TrainTorchTune:
+    iterations: 3
+    prompts:
+      question_prompt_headers:
+        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
+        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
+      question_prompt_footer: |
+        For each question please reference the file name for Train Model Torchtune, Merge Lora or Convert JSONL to JSON in some way based on the user's personality.
+        Please generate a question list:
+        1. <question 1>
+        2. <question 2>
+        3. <question 3>
+        etc.
+      answer_file_prompt_header: 'The file contents for: {file_name}'
+      answer_context_prompt: '{files_content}'
+      answer_question_prompt: '{question}'
+    files:
+      - train_model_torchtune.ps1
+      - merge_lora.py
+      - convert_jsonl_to_json.py
+  BuildImage:
+    iterations: 3
+    prompts:
+      question_prompt_headers:
+        - 'Generate a list of questions where the user wants to about specific things that are being installed.'
+        - 'Generate a list of questions where the user wants to know about how things are being set up.'
+        - 'Generate a list of questions where the user wants to know about the environment configurations.'
+        - 'Generate a list of questions where the user wants to know how the files interact with each other and what they do.'
+      question_prompt_footer: |
+        For each question please reference the file name for Build Image, dockerfile or supervisord in some way based on the user's personality.
+        Please generate a question list:
+        1. <question 1>
+        2. <question 2>
+        3. <question 3>
+        etc.
+      answer_file_prompt_header: 'The file contents for: {file_name}'
+      answer_context_prompt: '{files_content}'
+      answer_question_prompt: '{question}'
+    files:
+      - build_image.ps1
+      - dockerfile
+      - supervisord.conf
+  TrainUnsloth:
+    iterations: 3
+    prompts:
+      question_prompt_headers:
+        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
+        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
+      question_prompt_footer: |
+        For each question please reference the file name for Train Model Unsloth or Train.py in some way based on the user's personality.
+        Please generate a question list:
+        1. <question 1>
+        2. <question 2>
+        3. <question 3>
+        etc.
+      answer_file_prompt_header: 'The file contents for: {file_name}'
+      answer_context_prompt: '{files_content}'
+      answer_question_prompt: '{question}'
+    files:
+      - train_model_unsloth.ps1
+      - train.py
+  InstallModel:
+    iterations: 3
+    prompts:
+      question_prompt_headers:
+        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
+        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
+      question_prompt_footer: |
+        For each question please reference the file name for Install Model in some way based on the user's personality.
+        Please generate a question list:
+        1. <question 1>
+        2. <question 2>
+        3. <question 3>
+        etc.
+      answer_file_prompt_header: 'The file contents for: {file_name}'
+      answer_context_prompt: '{files_content}'
+      answer_question_prompt: '{question}'
+    files:
+      - install_model.ps1
+  ListModels:
+    iterations: 3
+    prompts:
+      question_prompt_headers:
+        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
+        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
+      question_prompt_footer: |
+        For each question please reference the file name for List Models in some way based on the user's personality.
+        Please generate a question list:
+        1. <question 1>
+        2. <question 2>
+        3. <question 3>
+        etc.
+      answer_file_prompt_header: 'The file contents for: {file_name}'
+      answer_context_prompt: '{files_content}'
+      answer_question_prompt: '{question}'
+    files:
+      - list_models.ps1
+  CopyTrainingData:
+    iterations: 3
+    prompts:
+      question_prompt_headers:
+        - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
+        - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
+      question_prompt_footer: |
+        For each question please reference the file name for Copy Training Data in some way based on the user's personality.
+        Please generate a question list:
+        1. <question 1>
+        2. <question 2>
+        3. <question 3>
+        etc.
+      answer_file_prompt_header: 'The file contents for: {file_name}'
+      answer_context_prompt: '{files_content}'
+      answer_question_prompt: '{question}'
+    files:
+      - copy_training_data.ps1
