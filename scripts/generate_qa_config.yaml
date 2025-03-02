@@ -15,25 +15,25 @@ providers:
 QuestionInstructionList:
   - name: 'CasualandFormal'
     instruction:
-      - 'For each question write like a casual person that makes grammatical mistakes and typos'
-      - 'For each question write like a formal person who is concise and uses correct terminology.'
+      - 'For each question write like a casual person.'
+      - 'For each question write like a formal person.'
 
 AnswerInstructionList:
   - name: 'SimpleAndComplex'
     instruction:
-      - 'Keep the answer simple and direct.'
+      - 'For your answer keep it simple.'
       - 'For your answer give a lot of detail.'
 
 GenerateQuestionLists:
   - name: 'DocumentList'
     questions:
       - 'Generate a list of questions where the user wants to know how to do something.'
-      - 'Generate a list of questions where the user wants to know a specific thing.'
       - 'Generate a list of questions where the user asks how to do something given their particular situation.'
-      - 'Generate a list of questions where the user asks about something broad.'
+      - 'Generate a list of questions where the user asks to summarize something.'
+      - 'Generate a list of questions where the user wants you to rephrase something they do not know how to use.'
   - name: 'CodingList'
     questions:
-      - 'Generate a list of questions where the user wants to how to use the following code for their particular situation.'
+      - 'Generate a list of questions where the user wants to know the various ways they can use the code.'
       - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
 
 FileHeaders:
@@ -63,13 +63,24 @@ QuestionPrompt:
       {file_content}
       {generate_question}
       {instruction}
-      Use the following output format and for each question reference {file_name_list}:
+      Use the following output format.
         1. <question 1>
         2. <question 2>
         3. <question 3>
       etc.
+      You are required to reference {file_name_list} for every single question that you generate!
 
 file_groups:
+  UninstallModel:
+    iterations: 3
+    files:
+      - uninstall_model.ps1
+    question_prompt: WithFileName
+    generate_question_list: [CodingList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
   README:
     iterations: 3
     files:
@@ -80,10 +91,10 @@ file_groups:
     file_header: DefaultFileHeader
     answer_prompt: DefaultAnswerPrompt
     answer_instruction_list: [SimpleAndComplex]
-  UninstallModel:
+  DeleteModel:
     iterations: 3
     files:
-      - uninstall_model.ps1
+      - delete_model.ps1
     question_prompt: WithFileName
     generate_question_list: [CodingList]
     question_instruction_list: [CasualandFormal]

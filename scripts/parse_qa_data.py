@@ -9,8 +9,6 @@ QUESTIONS_DIR = os.path.join(BASE_OUTPUT_DIR, "questions")
 ANSWERS_DIR = os.path.join(BASE_OUTPUT_DIR, "answers")
 OUTPUT_FILE = "/app/data.jsonl"
 
-import re
-
 def parse_questions_from_file(filepath: str) -> List[str]:
     """
     Reads file content and extracts question texts from a wide range of formats.
@@ -40,12 +38,12 @@ def pair_questions_and_answers():
     """
     Looks for all question files in the QUESTIONS_DIR and then for each question,
     pairs it with the corresponding answer file from ANSWERS_DIR.
-    Assumes the naming convention:
-      - Questions: questions_<group>.txt
-      - Answers: answer_<group>_<index>.txt
-    Returns a tuple of:
-      - a list of dictionaries with the conversation messages,
-      - a dictionary with counts of questions and answers per group.
+
+    Assumes the new naming convention:
+      - Questions: questions_<some_identifier>.txt
+      - Answers:   answer_<some_identifier>_q<index>.txt
+
+    Where <some_identifier> can be something like "UninstallModel_1_seed1_instr1".
     """
     qa_pairs = []
     group_stats = {}  # { group_name: {'questions': count, 'answers': count} }
@@ -55,7 +53,7 @@ def pair_questions_and_answers():
         if not q_filename.startswith("questions_") or not q_filename.endswith(".txt"):
             continue
 
-        # Extract group name from filename, e.g. "questions_group_foo.txt" => "group_foo"
+        # Extract group name by removing the 'questions_' prefix and '.txt' suffix
         group_name = q_filename[len("questions_"):-len(".txt")]
         q_filepath = os.path.join(QUESTIONS_DIR, q_filename)
         questions = parse_questions_from_file(q_filepath)
@@ -63,12 +61,13 @@ def pair_questions_and_answers():
         # Initialize stats for this group.
         group_stats[group_name] = {'questions': len(questions), 'answers': 0}
 
-        # For each question, look for a corresponding answer file.
+        # For each question, look for a corresponding answer file:
+        #   answer_<group_name>_q<idx>.txt
         for idx, question in enumerate(questions, start=1):
-            answer_filename = f"answer_{group_name}_{idx}.txt"
+            answer_filename = f"answer_{group_name}_q{idx}.txt"
             answer_filepath = os.path.join(ANSWERS_DIR, answer_filename)
             if not os.path.exists(answer_filepath):
-                print(f"Warning: Answer file {answer_filename} not found for group {group_name} question {idx}.")
+                print(f"Warning: Answer file {answer_filename} not found for group {group_name}, question {idx}.")
                 continue
 
             with open(answer_filepath, 'r', encoding='utf-8') as af:
