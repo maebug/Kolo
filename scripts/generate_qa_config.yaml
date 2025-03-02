@@ -101,3 +101,78 @@ file_groups:
     file_header: DefaultFileHeader
     answer_prompt: DefaultAnswerPrompt
     answer_instruction_list: [SimpleAndComplex]
+  BuildImage:
+    iterations: 3
+    question_prompt: WithFileName
+    generate_question_list: [CodingList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
+    files:
+      - build_image.ps1
+      - dockerfile
+      - supervisord.conf
+  TrainTorchTune:
+    iterations: 3
+    question_prompt: WithFileName
+    generate_question_list: [CodingList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
+    files:
+      - train_model_torchtune.ps1
+      - merge_lora.py
+      - convert_jsonl_to_json.py
+  TrainUnsloth:
+    iterations: 3
+    question_prompt: WithFileName
+    generate_question_list: [CodingList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
+    files:
+      - train_model_unsloth.ps1
+      - train.py
+  InstallModel:
+    iterations: 3
+    question_prompt: WithFileName
+    generate_question_list: [CodingList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
+    files:
+      - install_model.ps1
+  ListModels:
+    iterations: 3
+    question_prompt: WithFileName
+    generate_question_list: [CodingList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
+    files:
+      - list_models.ps1
+  FineTuningGuide:
+    iterations: 3
+    question_prompt: NoFileName
+    generate_question_list: [DocumentList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
+    files:
+      - FineTuningGuide.md
+  GenerateTrainingDataGuide:
+    iterations: 3
+    question_prompt: NoFileName
+    generate_question_list: [DocumentList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
+    files:
+      - GenerateTrainingDataGuide.md

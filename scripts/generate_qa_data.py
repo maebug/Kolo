@@ -367,17 +367,19 @@ def process_file_group(
             instruction=answer_instruction,
             question=question_text
         )
-
-        answer_filename = f"answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{question_number}.txt"
-        debug_filename = f"debug_{group_name}_answer_seed{q_seed_idx}_instr{instr_idx}_q{question_number}.txt"
-        meta_filename = f"answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{question_number}.meta"
+        
+        # Incorporate a short hash of the answer_instruction into the filenames
+        ans_instr_hash = get_hash(answer_instruction)[:8]
+        answer_filename = f"answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{question_number}_{ans_instr_hash}.txt"
+        debug_filename = f"debug_{group_name}_answer_seed{q_seed_idx}_instr{instr_idx}_q{question_number}_{ans_instr_hash}.txt"
+        meta_filename = f"answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{question_number}_{ans_instr_hash}.meta"
 
         answer_file_path = answers_dir / answer_filename
         answer_debug_path = debug_dir / debug_filename
         meta_file_path = answers_dir / meta_filename
 
-        # Compute a hash of question + instruction so we can detect changes
-        current_hash = get_hash(question_text + answer_instruction)
+        # Compute a hash of the fully formatted answer prompt to capture all relevant changes
+        current_hash = get_hash(final_answer_prompt)
 
         # Determine if we regenerate
         regenerate = True
@@ -392,7 +394,7 @@ def process_file_group(
                 else:
                     logger.info(f"[Group: {group_name}] Detected changed question/instruction, regenerating answer.")
             else:
-                # If there's no meta file, create one now
+                # If there's no meta file, create one now and assume it is up-to-date
                 write_text_to_file(meta_file_path, current_hash)
                 regenerate = False
 
@@ -413,11 +415,13 @@ def process_file_group(
             )
             return
 
-        # Save
+        # Save outputs
         write_text_to_file(answer_file_path, answer_text)
         write_text_to_file(answer_debug_path, final_answer_prompt)
         write_text_to_file(meta_file_path, current_hash)
         logger.info(f"[Group: {group_name}] Saved answer -> {answer_file_path}")
+
+
 
     # Prepare tasks for answer-generation
     answer_tasks = []
