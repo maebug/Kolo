@@ -77,6 +77,22 @@ Define the API providers for generating both questions and answers. Each provide
 - **`provider`**: The service to use (e.g., `openai` or `ollama`).
 - **`model`**: The model to be used (e.g., `gpt-4o-mini`).
 
+```
+global:
+  base_dir: qa_generation_input
+  output_dir: qa_generation_output
+  output_base_path: /var/kolo_data
+  ollama_url: http://localhost:11434/api/generate
+
+providers:
+  question:
+    provider: openai # Use "ollama" or "openai"
+    model: gpt-4o-mini
+  answer:
+    provider: openai # Use "ollama" or "openai"
+    model: gpt-4o-mini
+```
+
 ## Prompts
 
 ### Instruction Lists
@@ -135,7 +151,7 @@ Prompt templates are used to construct the text sent to the language model.
 
 #### FileHeaders
 
-The FileHeaders section specifies the header format inserted before file contents:
+The FileHeaders section specifies the header prompt that will be inserted above each file content.
 
 ````
 FileHeaders:
@@ -143,7 +159,7 @@ FileHeaders:
     description: 'The file contents for: {file_name}'
 ````
 
-Usage: When reading files, this header is prepended with the actual file name substituted for {file_name}.
+- {file_name}: Represents the file name.
 
 #### Answer Prompt
 
@@ -166,7 +182,9 @@ Usage: Placeholders are replaced as follows:
 
 #### QuestionPrompt
 
-There are two variants for question prompts, depending on whether file names should be referenced.
+Defines how to format the question prompt:
+
+For this example, there are two variants for question prompts, depending on whether the file names should be referenced or not.
 
 ```
 QuestionPrompt:
