@@ -31,6 +31,7 @@ GenerateQuestionLists:
       - 'Based on the above content, generate a list of questions where the user asks to summarize different parts of the content.'
       - 'Based on the above content, generate a list of questions where the user wants to learn certain parts of the content.'
       - 'Based on the above content, generate a list of questions where the user wants to understand the concepts in the content.'
+      - 'Based on the above content, generate a list of questions where the users ask you to help do something for them based on various needs and requirements.'
   - name: 'CodingList'
     questions:
       - 'Based on the above content, generate a list of questions where a new user wants to learn how to use the code and what it does using different tones and styles.'
