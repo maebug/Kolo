@@ -15,26 +15,26 @@ providers:
 QuestionInstructionList:
   - name: 'CasualandFormal'
     instruction:
-      - 'For each question write like a casual person.'
-      - 'For each question write like a formal person.'
+      - 'For each question you generate write casually.'
+      - 'For each question you generate write formally.'
 
 AnswerInstructionList:
   - name: 'SimpleAndComplex'
     instruction:
-      - 'For your answer keep it simple.'
-      - 'For your answer give a lot of detail.'
+      - 'For your answer keep it simple and short.'
+      - 'For your answer give detail and reference any relevant content.'
 
 GenerateQuestionLists:
   - name: 'DocumentList'
     questions:
-      - 'Generate a list of questions where the user wants to know how to do something.'
-      - 'Generate a list of questions where the user asks how to do something given their particular situation.'
-      - 'Generate a list of questions where the user asks to summarize something.'
-      - 'Generate a list of questions where the user wants you to rephrase something they do not know how to use.'
+      - 'Based on the above content, generate a list of questions where the user asks how to use different things.'
+      - 'Based on the above content, generate a list of questions where the user asks to summarize different parts of the content.'
+      - 'Based on the above content, generate a list of questions where the user wants to learn certain parts of the content.'
+      - 'Based on the above content, generate a list of questions where the user wants to understand the concepts in the content.'
   - name: 'CodingList'
     questions:
-      - 'Generate a list of questions where the user wants to know the various ways they can use the code.'
-      - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
+      - 'Based on the above content, generate a list of questions where a new user wants to learn how to use the code and what it does using different tones and styles.'
+      - 'Based on the above content, generate a list of questions where the user wants to know what a specific thing does in the code.'
 
 FileHeaders:
   - name: 'DefaultFileHeader'
@@ -51,8 +51,8 @@ QuestionPrompt:
   - name: 'NoFileName'
     description: |
       {file_content}
-      {generate_question}
       {instruction}
+      {generate_question}
       Use the following output format:
         1. <question 1>
         2. <question 2>
@@ -61,8 +61,8 @@ QuestionPrompt:
   - name: 'WithFileName'
     description: |
       {file_content}
-      {generate_question}
       {instruction}
+      {generate_question}
       Use the following output format.
         1. <question 1>
         2. <question 2>
@@ -104,7 +104,7 @@ file_groups:
   BuildImage:
     iterations: 3
     question_prompt: WithFileName
-    generate_question_list: [CodingList]
+    generate_question_list: [CodingList, DocumentList]
     question_instruction_list: [CasualandFormal]
     file_header: DefaultFileHeader
     answer_prompt: DefaultAnswerPrompt
