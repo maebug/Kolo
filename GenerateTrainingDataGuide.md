@@ -33,7 +33,7 @@ The **Kolo** project uses the following scripts and configuration file to genera
    Multi-threaded parameters
 
    ```bash
-   ./generate_qa_data.ps1 -OPENAI_API_KEY "your key" -GroupWorkers 8 -AnswerWorkers 4
+   ./generate_qa_data.ps1 -OPENAI_API_KEY "your key" -Threads 16
    ```
 
 1. After generating the QA prompts, this command converts the question and answer text files inside  
@@ -77,35 +77,196 @@ Define the API providers for generating both questions and answers. Each provide
 - **`provider`**: The service to use (e.g., `openai` or `ollama`).
 - **`model`**: The model to be used (e.g., `gpt-4o-mini`).
 
+```
+global:
+  base_dir: qa_generation_input
+  output_dir: qa_generation_output
+  output_base_path: /var/kolo_data
+  ollama_url: http://localhost:11434/api/generate
+
+providers:
+  question:
+    provider: openai # Use "ollama" or "openai"
+    model: gpt-4o-mini
+  answer:
+    provider: openai # Use "ollama" or "openai"
+    model: gpt-4o-mini
+```
+
 ## Prompts
 
-All prompts that control the instructions provided to the LLM during QA generation.
+### Instruction Lists
 
-- **`question_prompt_headers`**: The list of question header prompts instructing the LLM on how to generate a list of questions. It will iterate through the list.
-- **`question_prompt_footer`**: Defines the expected output format for questions. `{file_references}` for a list of the file names in the file group. If you want to instruct the LLM to reference them for each question.
-  NOTE: Changing the output format may break the conversion script.
-- **`individual_question_prompt`**: A prompt that is used for each file in a group. Typically includes a `{file_name}` placeholder to refer to the specific file.
-- **`group_question_prompt`**: A prompt that includes the `{files_content}` variable. You can place additional information around the file content if needed.
-- **`answer_prompt`**: The prompt instructing the LLM how to generate an answer based on each question The placholder `{question}` refers to the question.
+#### Question Instruction List
 
-### Overall Prompt Structure
+This list defines different instructions to style the generated questions. Each entry may have multiple instructions. For example:
 
-This is what is sent to the LLM provider for question and answer generation. You can look at `/var/kolo_data/qa_generation_output/debug` folder to see exactly what is sent to the LLM provider during generation.
+````
+QuestionInstructionList:
+  - name: 'CasualandFormal'
+    instruction:
+      - 'For each question write like a casual person.'
+      - 'For each question write like a formal person.'
+````
 
-#### Question Prompt
+Usage: During question generation, each instruction is applied to a seed to create variations in tone.
 
-```
-<question_prompt_header>
-<group_question_prompt (which includes for each file: <individual_question_prompt> + file content)
-<question_prompt_footer>
-```
+#### Answer Instruction List
+
+This list provides variations in the answer generation style:
+
+````
+AnswerInstructionList:
+  - name: 'SimpleAndComplex'
+    instruction:
+      - 'For your answer keep it simple.'
+      - 'For your answer give a lot of detail.'
+````
+
+Usage: Each answer instruction is paired with a question to generate answers with different levels of complexity or detail.
+
+### Question Generation Seeds
+
+The GenerateQuestionLists section provides seed questions or prompts that drive the question generation process:
+
+````
+GenerateQuestionLists:
+  - name: 'DocumentList'
+    questions:
+      - 'Generate a list of questions where the user wants to know how to do something.'
+      - 'Generate a list of questions where the user asks how to do something given their particular situation.'
+      - 'Generate a list of questions where the user asks to summarize something.'
+      - 'Generate a list of questions where the user wants you to rephrase something they do not know how to use.'
+  - name: 'CodingList'
+    questions:
+      - 'Generate a list of questions where the user wants to know the various ways they can use the code.'
+      - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
+````
+
+Usage: The seeds are combined with the instructions to produce a variety of questions, such as tailoring them to either document or coding contexts.
+
+### Prompt Templates
+
+Prompt templates are used to construct the text sent to the language model.
+
+#### FileHeaders
+
+The FileHeaders section specifies the header prompt that will be inserted above each file content.
+
+````
+FileHeaders:
+  - name: 'DefaultFileHeader'
+    description: 'The file contents for: {file_name}'
+````
+
+- {file_name}: Represents the file name.
 
 #### Answer Prompt
 
+Defines how to format the answer prompt:
+
+````
+AnswerPrompt:
+  - name: 'DefaultAnswerPrompt'
+    description: |
+      {file_content}
+      {instruction}
+      {question}
+````
+
+Usage: Placeholders are replaced as follows:
+
+- {file_content}: Combined content of the source files.
+- {instruction}: The answer instruction text.
+- {question}: The specific question to answer.
+
+#### QuestionPrompt
+
+Defines how to format the question prompt:
+
+For this example, there are two variants for question prompts, depending on whether the file names should be referenced or not.
+
 ```
-<Combined_file_content>
-<Answer_prompt_header>
-<Question>
+QuestionPrompt:
+  - name: 'NoFileName'
+    description: |
+      {file_content}
+      {generate_question}
+      {instruction}
+      Use the following output format:
+        1. <question 1>
+        2. <question 2>
+        3. <question 3>
+      etc.
+  - name: 'WithFileName'
+    description: |
+      {file_content}
+      {generate_question}
+      {instruction}
+      Use the following output format.
+        1. <question 1>
+        2. <question 2>
+        3. <question 3>
+      etc.
+      You are required to reference {file_name_list} for every single question that you generate!
+```
+
+Usage:
+
+- {file_content}: Combined content of the source files.
+- {instruction}: The question instruction text.
+- {generate_question}: The specific generate question instruction from the Generate Question List.
+- {file_name_list} is the list of file names that you can use to instruct the LLM to use when generating questions.
+
+Note: Changing the output format may impact how well the conversion script works.
+
+### File Groups
+
+The file_groups section organizes the files into groups that will each be processed independently. Each file group defines:
+
+- iterations: How many times the group should be processed (each iteration may generate a new set of Q&A outputs).
+- files: List of files that you want to use for the LLM context.
+- question_prompt: Which question prompt template to use (e.g., NoFileName or WithFileName).
+- generate_question_list: Which question generation seed list(s) to use.
+- question_instruction_list: Which instruction list to apply when generating questions.
+- file_header: Which file header template to use.
+- answer_prompt: Which answer prompt template to use.
+- answer_instruction_list: Which answer instruction list to apply when generating answers.
+
+Example configuration for three groups:
+
+```
+file_groups:
+  UninstallModel:
+    iterations: 3
+    files:
+      - uninstall_model.ps1
+    question_prompt: WithFileName
+    generate_question_list: [CodingList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
+  README:
+    iterations: 3
+    files:
+      - README.md
+    question_prompt: NoFileName
+    generate_question_list: [DocumentList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
+  DeleteModel:
+    iterations: 3
+    files:
+      - delete_model.ps1
+    question_prompt: WithFileName
+    generate_question_list: [CodingList]
+    question_instruction_list: [CasualandFormal]
+    file_header: DefaultFileHeader
+    answer_prompt: DefaultAnswerPrompt
+    answer_instruction_list: [SimpleAndComplex]
 ```
 
 See [generate_qa_config.yaml](https://github.com/MaxHastings/Kolo/blob/main/scripts/generate_qa_config.yaml) for a full config example.
