@@ -101,13 +101,13 @@ providers:
 
 This list defines different instructions to style the generated questions. Each entry may have multiple instructions. For example:
 
-````
+```
 QuestionInstructionList:
   - name: 'CasualandFormal'
     instruction:
       - 'For each question write like a casual person.'
       - 'For each question write like a formal person.'
-````
+```
 
 Usage: During question generation, each instruction is applied to a seed to create variations in tone.
 
@@ -115,13 +115,13 @@ Usage: During question generation, each instruction is applied to a seed to crea
 
 This list provides variations in the answer generation style:
 
-````
+```
 AnswerInstructionList:
   - name: 'SimpleAndComplex'
     instruction:
-      - 'For your answer keep it simple.'
-      - 'For your answer give a lot of detail.'
-````
+      - 'For your answer keep it simple and short.'
+      - 'For your answer give detail and reference any relevant content.'
+```
 
 Usage: Each answer instruction is paired with a question to generate answers with different levels of complexity or detail.
 
@@ -129,19 +129,20 @@ Usage: Each answer instruction is paired with a question to generate answers wit
 
 The GenerateQuestionLists section provides seed questions or prompts that drive the question generation process:
 
-````
+```
 GenerateQuestionLists:
   - name: 'DocumentList'
     questions:
-      - 'Generate a list of questions where the user wants to know how to do something.'
-      - 'Generate a list of questions where the user asks how to do something given their particular situation.'
-      - 'Generate a list of questions where the user asks to summarize something.'
-      - 'Generate a list of questions where the user wants you to rephrase something they do not know how to use.'
+      - 'Based on the above content, generate a list of questions where the user asks how to use different things.'
+      - 'Based on the above content, generate a list of questions where the user asks to summarize different parts of the content.'
+      - 'Based on the above content, generate a list of questions where the user wants to learn certain parts of the content.'
+      - 'Based on the above content, generate a list of questions where the user wants to understand the concepts in the content.'
+      - 'Based on the above content, generate a list of questions where the users ask you to help do something for them based on various needs and requirements.'
   - name: 'CodingList'
     questions:
-      - 'Generate a list of questions where the user wants to know the various ways they can use the code.'
-      - 'Generate a list of questions where the user wants to know what a specific thing does in the code.'
-````
+      - 'Based on the above content, generate a list of questions where a new user wants to learn how to use the code and what it does using different tones and styles.'
+      - 'Based on the above content, generate a list of questions where the user wants to know what a specific thing does in the code.'
+```
 
 Usage: The seeds are combined with the instructions to produce a variety of questions, such as tailoring them to either document or coding contexts.
 
@@ -153,11 +154,11 @@ Prompt templates are used to construct the text sent to the language model.
 
 The FileHeaders section specifies the header prompt that will be inserted above each file content.
 
-````
+```
 FileHeaders:
   - name: 'DefaultFileHeader'
     description: 'The file contents for: {file_name}'
-````
+```
 
 - {file_name}: Represents the file name.
 
@@ -165,14 +166,14 @@ FileHeaders:
 
 Defines how to format the answer prompt:
 
-````
+```
 AnswerPrompt:
   - name: 'DefaultAnswerPrompt'
     description: |
       {file_content}
       {instruction}
       {question}
-````
+```
 
 Usage: Placeholders are replaced as follows:
 

@@ -23,6 +23,7 @@ AnswerInstructionList:
     instruction:
       - 'For your answer keep it simple and short.'
       - 'For your answer give detail and reference any relevant content.'
+      - ''
 
 GenerateQuestionLists:
   - name: 'DocumentList'

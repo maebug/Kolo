@@ -38,11 +38,14 @@ def parse_questions_from_file(filepath: str) -> List[str]:
 def pair_questions_and_answers():
     """
     Looks for all question files in the QUESTIONS_DIR and then for each question,
-    pairs it with the corresponding answer file from ANSWERS_DIR.
+    pairs it with the corresponding answer files from ANSWERS_DIR.
 
     Assumes the new naming convention:
       - Questions: questions_{group_name}_seed{q_seed_idx}_instr{instr_idx}.txt
       - Answers:   answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{question_number}_{hash}.txt
+
+    If there are multiple answer files for a given question, they are all included as separate
+    assistant messages in the output.
     """
     qa_pairs = []
     group_stats = {}  # { identifier: {'questions': count, 'answers': count} }
@@ -64,7 +67,7 @@ def pair_questions_and_answers():
         # Initialize stats for this identifier.
         group_stats[identifier] = {'questions': len(questions), 'answers': 0}
 
-        # For each question, look for a corresponding answer file using a glob pattern.
+        # For each question, look for the corresponding answer files using a glob pattern.
         # Expected answer file format: answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{idx}_{hash}.txt
         for idx, question in enumerate(questions, start=1):
             pattern = os.path.join(
@@ -76,20 +79,23 @@ def pair_questions_and_answers():
                 print(f"Warning: No answer file found for identifier {identifier}, question {idx}.")
                 continue
 
-            # If more than one file matches, you might decide how to handle it.
-            # Here, we take the first match.
-            answer_filepath = matching_files[0]
-            with open(answer_filepath, 'r', encoding='utf-8') as af:
-                answer = af.read().strip()
+            answers = []
+            for answer_filepath in matching_files:
+                with open(answer_filepath, 'r', encoding='utf-8') as af:
+                    answer = af.read().strip()
+                    answers.append(answer)
+            
+            group_stats[identifier]['answers'] += len(matching_files)
 
+            # Build the qa pair with one user message and one assistant message per answer.
             qa_pair = {
                 "messages": [
-                    {"role": "user", "content": question},
-                    {"role": "assistant", "content": answer}
+                    {"role": "user", "content": question}
                 ]
             }
+            for answer in answers:
+                qa_pair["messages"].append({"role": "assistant", "content": answer})
             qa_pairs.append(qa_pair)
-            group_stats[identifier]['answers'] += 1
 
     return qa_pairs, group_stats
 
