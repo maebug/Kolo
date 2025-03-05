@@ -44,8 +44,7 @@ def pair_questions_and_answers():
       - Questions: questions_{group_name}_seed{q_seed_idx}_instr{instr_idx}.txt
       - Answers:   answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{question_number}_{hash}.txt
 
-    If there are multiple answer files for a given question, they are all included as separate
-    assistant messages in the output.
+    If there are multiple answer files for a given question, each answer is saved as its own QA pair.
     """
     qa_pairs = []
     group_stats = {}  # { identifier: {'questions': count, 'answers': count} }
@@ -79,23 +78,18 @@ def pair_questions_and_answers():
                 print(f"Warning: No answer file found for identifier {identifier}, question {idx}.")
                 continue
 
-            answers = []
             for answer_filepath in matching_files:
                 with open(answer_filepath, 'r', encoding='utf-8') as af:
                     answer = af.read().strip()
-                    answers.append(answer)
-            
-            group_stats[identifier]['answers'] += len(matching_files)
-
-            # Build the qa pair with one user message and one assistant message per answer.
-            qa_pair = {
-                "messages": [
-                    {"role": "user", "content": question}
-                ]
-            }
-            for answer in answers:
-                qa_pair["messages"].append({"role": "assistant", "content": answer})
-            qa_pairs.append(qa_pair)
+                # Each answer file gets its own Q&A pair.
+                qa_pair = {
+                    "messages": [
+                        {"role": "user", "content": question},
+                        {"role": "assistant", "content": answer}
+                    ]
+                }
+                qa_pairs.append(qa_pair)
+                group_stats[identifier]['answers'] += 1
 
     return qa_pairs, group_stats
 
@@ -121,7 +115,7 @@ def main():
         print(f"  Identifier '{identifier}': {stats['questions']} questions, {stats['answers']} answers processed.")
 
     print(f"Total: {total_questions} questions and {total_answers} answers processed.")
-    print(f"Total pairs saved to {OUTPUT_FILE}: {len(qa_pairs)}")
+    print(f"Total QA pairs saved to {OUTPUT_FILE}: {len(qa_pairs)}")
 
 if __name__ == "__main__":
     main()
