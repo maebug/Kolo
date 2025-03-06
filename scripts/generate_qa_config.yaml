@@ -28,7 +28,7 @@ AnswerInstructionList:
 GenerateQuestionLists:
   - name: 'DocumentList'
     questions:
-      - 'Based on the following, generate a list of questions where the user asks to make something custom.'
+      - 'Based on the following, generate a list of questions where the user requests for a custom thing. Be elaborate and specific.'
       - 'Based on the following, generate a list of questions where the user asks how to use different things.'
       - 'Based on the following, generate a list of questions where the user asks about different parts.'
       - 'Based on the following, generate a list of questions where the user asks to understand the concepts.'
