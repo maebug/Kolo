@@ -4,36 +4,13 @@ import re
 import glob
 from typing import List
 
+from SyntheticDataGeneration.TextParser import TextParser
+
 # Adjust these paths as needed.
 BASE_OUTPUT_DIR = "/var/kolo_data/qa_generation_output"
 QUESTIONS_DIR = os.path.join(BASE_OUTPUT_DIR, "questions")
 ANSWERS_DIR = os.path.join(BASE_OUTPUT_DIR, "answers")
 OUTPUT_FILE = "/app/data.jsonl"
-
-def parse_questions_from_file(filepath: str) -> List[str]:
-    """
-    Reads file content and extracts question texts from a wide range of formats.
-    Processes the file line by line, removing numbering, bullet symbols, and markdown formatting,
-    and only returns lines containing a '?'.
-    """
-    with open(filepath, 'r', encoding='utf-8') as f:
-        text = f.read()
-
-    questions = []
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped:
-            continue
-
-        # Remove leading numbering or bullet symbols (like "1.", "-", "+", or "*")
-        cleaned = re.sub(r'^[\d\.\-\+\*]+\s*', '', stripped)
-        # Remove extra asterisks used for markdown formatting
-        cleaned = re.sub(r'\*+', '', cleaned).strip()
-
-        if '?' in cleaned:
-            questions.append(cleaned)
-
-    return questions
 
 def pair_questions_and_answers():
     """
@@ -61,7 +38,11 @@ def pair_questions_and_answers():
         instr_idx = m.group(3)
         identifier = f"{group_name}_seed{q_seed_idx}_instr{instr_idx}"
         q_filepath = os.path.join(QUESTIONS_DIR, q_filename)
-        questions = parse_questions_from_file(q_filepath)
+
+        # Read file content and extract questions using TextParser.
+        with open(q_filepath, 'r', encoding='utf-8') as f:
+            file_content = f.read()
+        questions = TextParser.parse_questions(file_content)
 
         # Initialize stats for this identifier.
         group_stats[identifier] = {'questions': len(questions), 'answers': 0}
