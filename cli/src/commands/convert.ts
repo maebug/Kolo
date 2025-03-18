@@ -1,6 +1,6 @@
 import { style } from "../colors.ts"
 import { convertToTrainingDataset, saveTrainingDataset } from "../converter.ts"
-import { CommandOptions } from "../types.ts"
+import type { CommandOptions } from "../types.ts"
 import { validateSourceFile } from "../validator.ts"
 import { Command } from "commander"
 import inquirer from "inquirer"

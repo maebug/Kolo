@@ -4,6 +4,7 @@
     "jsr:@std/fs@^1.0.13": "1.0.13",
     "jsr:@std/path@^1.0.8": "1.0.8",
     "npm:@trivago/prettier-plugin-sort-imports@^5.2.2": "5.2.2_prettier@3.5.1",
+    "npm:@types/node@^22.13.10": "22.13.10",
     "npm:ajv@^8.12.0": "8.17.1",
     "npm:chalk@^5.4.1": "5.4.1",
     "npm:cli-table3@~0.6.5": "0.6.5",
@@ -236,6 +237,12 @@
         "javascript-natural-sort",
         "lodash",
         "prettier"
+      ]
+    },
+    "@types/node@22.13.10": {
+      "integrity": "sha512-I6LPUvlRH+O6VRUqYOcMudhaIdUVWfsjnZavnsraHvpBwaEyMN29ry+0UVJhImYL16xsscu0aske3yA+uPOWfw==",
+      "dependencies": [
+        "undici-types"
       ]
     },
     "ajv@8.17.1": {
@@ -553,6 +560,9 @@
     "type-fest@1.4.0": {
       "integrity": "sha512-yGSza74xk0UG8k+pLh5oeoYirvIiWo5t0/o3zHHAO2tRDiZcxWP7fywNlXhqb6/r6sWvwi+RsyQMWhVLe4BVuA=="
     },
+    "undici-types@6.20.0": {
+      "integrity": "sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg=="
+    },
     "which@2.0.2": {
       "integrity": "sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==",
       "dependencies": [
@@ -579,6 +589,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@trivago/prettier-plugin-sort-imports@^5.2.2",
+        "npm:@types/node@^22.13.10",
         "npm:ajv@^8.12.0",
         "npm:chalk@^5.4.1",
         "npm:cli-table3@~0.6.5",

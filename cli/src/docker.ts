@@ -365,3 +365,67 @@ export async function checkDockerAndContainer(): Promise<DockerContainerCheckRes
     dockerVersion: dockerStatus.version,
   }
 }
+
+/**
+ * Copies a directory or file from host to Docker container
+ * @param sourcePath The path on the host machine to copy from
+ * @param containerName The name of the target Docker container
+ * @param destinationPath The destination path in the container
+ * @returns A promise that resolves when the copy operation completes
+ */
+export async function copyToContainer(
+  sourcePath: string,
+  containerName: string,
+  destinationPath: string,
+): Promise<string> {
+  try {
+    const target = `${containerName}:${destinationPath}`
+    const { stdout } = await execAsync(`docker cp "${sourcePath}" "${target}"`)
+    return stdout.trim()
+  } catch (error) {
+    throw new Error(
+      `Failed to copy to container: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+}
+
+/**
+ * Executes a command inside a Docker container
+ * @param containerName The name of the Docker container
+ * @param command The command to execute inside the container
+ * @returns The stdout of the command execution
+ */
+export async function executeInContainer(
+  containerName: string,
+  command: string,
+): Promise<string> {
+  try {
+    const { stdout } = await execAsync(
+      `docker exec ${containerName} bash -c "${command}"`,
+    )
+    return stdout.trim()
+  } catch (error) {
+    throw new Error(
+      `Failed to execute command in container: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+}
+
+/**
+ * Clears a directory inside a Docker container
+ * @param containerName The name of the Docker container
+ * @param directoryPath The path of the directory to clear inside the container
+ * @returns A promise that resolves when the directory is cleared
+ */
+export async function clearContainerDirectory(
+  containerName: string,
+  directoryPath: string,
+): Promise<string> {
+  try {
+    return await executeInContainer(containerName, `rm -rf ${directoryPath}/*`)
+  } catch (error) {
+    throw new Error(
+      `Failed to clear directory in container: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+}

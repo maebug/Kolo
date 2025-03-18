@@ -1,6 +1,6 @@
 import { style } from "../colors.ts"
 import {
-  DockerContainerCheckResult,
+  type DockerContainerCheckResult,
   checkDockerAndContainer,
 } from "../docker.ts"
 import process from "node:process"
@@ -51,7 +51,7 @@ export function withSpinner<T>(
   errorMessage: string,
 ): () => Promise<T> {
   return async () => {
-    const spinner = ora(message).start()
+    const spinner = ora(style.primary(message)).start()
     try {
       const result = await action(spinner)
       return result

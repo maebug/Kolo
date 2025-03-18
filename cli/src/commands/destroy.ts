@@ -1,6 +1,6 @@
 import { style } from "../colors.ts"
 import { destroyContainer } from "../docker.ts"
-import { CommandOptions } from "../types.ts"
+import type { CommandOptions } from "../types.ts"
 import Table from "cli-table3"
 import { Command } from "commander"
 import inquirer from "inquirer"

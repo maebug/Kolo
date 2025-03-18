@@ -1,7 +1,7 @@
 import { style } from "../colors.ts"
 import { initContainer, checkComponents, containerServices } from "../docker.ts"
 import { displayHealthCheck } from "../helpers/health.ts"
-import { CommandOptions } from "../types.ts"
+import type { CommandOptions } from "../types.ts"
 import Table from "cli-table3"
 import { Command } from "commander"
 import process from "node:process"
@@ -14,6 +14,7 @@ export function createInitCommand() {
     .description("Initialize and start the Kolo container")
     .option("-v, --verbose", "display verbose output", false)
     .action(async (options: CommandOptions) => {
+      // @todo Add a spinner while checking components
       const components = await checkComponents()
 
       console.log(style.title(" Detected Kolo components:"))

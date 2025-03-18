@@ -4,5 +4,18 @@
     "@std/path": "jsr:@std/path@^1.0.8",
     "schema/": "./src/schema/",
     "types/": "./src/types/"
-  }
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "verbatimModuleSyntax": true,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true
+  },
+  "unstable": [
+    "sloppy-imports"
+  ]
 }
