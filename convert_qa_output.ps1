@@ -20,7 +20,7 @@ $envActivate = "source /opt/conda/bin/activate kolo_env"
 # Step 1: Run parse_qa_data.py inside the container
 try {
     Write-Host "Running parse_qa_data.py in container $containerName..."
-    docker exec $containerName bash -c "$envActivate && python /app/parse_qa_data.py"
+    docker exec -it $containerName bash -c "$envActivate && python /app/parse_qa_data.py"
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "parse_qa_data.py executed successfully." -ForegroundColor Green
@@ -38,7 +38,7 @@ catch {
 # Step 2: Run convert_jsonl_to_json.py inside the container
 try {
     Write-Host "Running convert_jsonl_to_json.py in container $containerName..."
-    docker exec $containerName bash -c "$envActivate && python /app/convert_jsonl_to_json.py '$qaJsonlFile' '$finalJsonFile'"
+    docker exec -it $containerName bash -c "$envActivate && python /app/convert_jsonl_to_json.py '$qaJsonlFile' '$finalJsonFile'"
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Conversion successful! JSON file created at $finalJsonFile." -ForegroundColor Green
@@ -52,3 +52,4 @@ catch {
     Write-Host "An error occurred while running convert_jsonl_to_json.py: $_" -ForegroundColor Red
     exit 1
 }
+

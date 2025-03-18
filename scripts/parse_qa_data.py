@@ -1,7 +1,10 @@
 import os
 import json
 import re
-from typing import List
+import glob
+
+from SyntheticDataGeneration.TextParser import TextParser
+from SyntheticDataGeneration.Utils import Utils  # Import the Utils class with the logger
 
 # Adjust these paths as needed.
 BASE_OUTPUT_DIR = "/var/kolo_data/qa_generation_output"
@@ -9,79 +12,71 @@ QUESTIONS_DIR = os.path.join(BASE_OUTPUT_DIR, "questions")
 ANSWERS_DIR = os.path.join(BASE_OUTPUT_DIR, "answers")
 OUTPUT_FILE = "/app/data.jsonl"
 
-import re
-
-def parse_questions_from_file(filepath: str) -> List[str]:
-    """
-    Reads file content and extracts question texts from a wide range of formats.
-    Processes the file line by line, removing numbering, bullet symbols, and markdown formatting,
-    and only returns lines containing a '?'.
-    """
-    with open(filepath, 'r', encoding='utf-8') as f:
-        text = f.read()
-
-    questions = []
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped:
-            continue
-        
-        # Remove leading numbering or bullet symbols (like "1.", "-", "+", or "*")
-        cleaned = re.sub(r'^[\d\.\-\+\*]+\s*', '', stripped)
-        # Remove extra asterisks used for markdown formatting
-        cleaned = re.sub(r'\*+', '', cleaned).strip()
-        
-        if '?' in cleaned:
-            questions.append(cleaned)
-    
-    return questions
-
 def pair_questions_and_answers():
     """
     Looks for all question files in the QUESTIONS_DIR and then for each question,
-    pairs it with the corresponding answer file from ANSWERS_DIR.
-    Assumes the naming convention:
-      - Questions: questions_<group>.txt
-      - Answers: answer_<group>_<index>.txt
-    Returns a tuple of:
-      - a list of dictionaries with the conversation messages,
-      - a dictionary with counts of questions and answers per group.
+    pairs it with the corresponding answer files from ANSWERS_DIR.
+
+    Assumes the new naming convention:
+      - Questions: questions_{group_name}_seed{q_seed_idx}_instr{instr_idx}.txt
+      - Answers:   answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{question_number}_{hash}.txt
+
+    If there are multiple answer files for a given question, each answer is saved as its own QA pair.
     """
     qa_pairs = []
-    group_stats = {}  # { group_name: {'questions': count, 'answers': count} }
+    group_stats = {}  # { identifier: {'questions': count, 'answers': count} }
 
     # Process each question file.
     for q_filename in os.listdir(QUESTIONS_DIR):
-        if not q_filename.startswith("questions_") or not q_filename.endswith(".txt"):
+        q_filepath = os.path.join(QUESTIONS_DIR, q_filename)
+        Utils.logger.info(f"Processing question file: {q_filepath}")
+
+        # Expect filenames like: questions_{group_name}_seed{q_seed_idx}_instr{instr_idx}.txt
+        m = re.match(r"questions_(.+)_seed(\d+)_instr(\d+)\.txt", q_filename)
+        if not m:
+            Utils.logger.warning(f"Skipping file with unexpected format: {q_filename}")
             continue
 
-        # Extract group name from filename, e.g. "questions_group_foo.txt" => "group_foo"
-        group_name = q_filename[len("questions_"):-len(".txt")]
-        q_filepath = os.path.join(QUESTIONS_DIR, q_filename)
-        questions = parse_questions_from_file(q_filepath)
+        group_name = m.group(1)
+        q_seed_idx = m.group(2)
+        instr_idx = m.group(3)
+        identifier = f"{group_name}_seed{q_seed_idx}_instr{instr_idx}"
 
-        # Initialize stats for this group.
-        group_stats[group_name] = {'questions': len(questions), 'answers': 0}
+        # Read file content and extract questions using TextParser.
+        with open(q_filepath, 'r', encoding='utf-8') as f:
+            file_content = f.read()
+        questions = TextParser.parse_questions(file_content)
+        Utils.logger.info(f"Found {len(questions)} questions in file: {q_filename}")
 
-        # For each question, look for a corresponding answer file.
+        # Initialize stats for this identifier.
+        group_stats[identifier] = {'questions': len(questions), 'answers': 0}
+
+        # For each question, look for the corresponding answer files using a glob pattern.
+        # Expected answer file format: answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{idx}_{hash}.txt
         for idx, question in enumerate(questions, start=1):
-            answer_filename = f"answer_{group_name}_{idx}.txt"
-            answer_filepath = os.path.join(ANSWERS_DIR, answer_filename)
-            if not os.path.exists(answer_filepath):
-                print(f"Warning: Answer file {answer_filename} not found for group {group_name} question {idx}.")
+            Utils.logger.info(f"Processing question {idx} in file: {q_filename}")
+            pattern = os.path.join(
+                ANSWERS_DIR,
+                f"answer_{group_name}_seed{q_seed_idx}_instr{instr_idx}_q{idx}_*.txt"
+            )
+            matching_files = glob.glob(pattern)
+            if not matching_files:
+                Utils.logger.warning(f"No answer file found for identifier {identifier}, question {idx}.")
                 continue
 
-            with open(answer_filepath, 'r', encoding='utf-8') as af:
-                answer = af.read().strip()
-            
-            qa_pair = {
-                "messages": [
-                    {"role": "user", "content": question},
-                    {"role": "assistant", "content": answer}
-                ]
-            }
-            qa_pairs.append(qa_pair)
-            group_stats[group_name]['answers'] += 1
+            for answer_filepath in matching_files:
+                Utils.logger.info(f"Processing answer file: {answer_filepath} for question {idx} in file: {q_filename}")
+                with open(answer_filepath, 'r', encoding='utf-8') as af:
+                    answer = af.read().strip()
+                # Each answer file gets its own Q&A pair.
+                qa_pair = {
+                    "messages": [
+                        {"role": "user", "content": question},
+                        {"role": "assistant", "content": answer}
+                    ]
+                }
+                qa_pairs.append(qa_pair)
+                group_stats[identifier]['answers'] += 1
 
     return qa_pairs, group_stats
 
@@ -89,25 +84,25 @@ def main():
     qa_pairs, group_stats = pair_questions_and_answers()
     
     if not qa_pairs:
-        print("No QA pairs found.")
+        Utils.logger.info("No QA pairs found.")
         return
 
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as out_f:
         for pair in qa_pairs:
             json_line = json.dumps(pair, ensure_ascii=False)
             out_f.write(json_line + "\n")
-    
-    # Print summary statistics.
+
+    # Log summary statistics.
     total_questions = 0
     total_answers = 0
-    print("Processing Summary:")
-    for group, stats in group_stats.items():
+    Utils.logger.info("Processing Summary:")
+    for identifier, stats in group_stats.items():
         total_questions += stats['questions']
         total_answers += stats['answers']
-        print(f"  Group '{group}': {stats['questions']} questions, {stats['answers']} answers processed.")
-    
-    print(f"Total: {total_questions} questions and {total_answers} answers processed.")
-    print(f"Total pairs saved to {OUTPUT_FILE}: {len(qa_pairs)}")
-    
+        Utils.logger.info(f"  Identifier '{identifier}': {stats['questions']} questions, {stats['answers']} answers processed.")
+
+    Utils.logger.info(f"Total: {total_questions} questions and {total_answers} answers processed.")
+    Utils.logger.info(f"Total QA pairs saved to {OUTPUT_FILE}: {len(qa_pairs)}")
+
 if __name__ == "__main__":
     main()
